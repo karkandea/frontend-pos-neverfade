@@ -47,6 +47,7 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
 
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Form>(emptyForm);
 
   useEffect(() => {
@@ -63,9 +64,29 @@ export default function ProductPage() {
   }
 
   function openCreate() {
+    setEditingId(null);
     setForm(emptyForm);
     setOpen(true);
   }
+
+  function openEdit(product: Product) {
+  setEditingId(product.id);
+
+  setForm({
+    kode: product.kode,
+    barcode: product.barcode ?? "",
+    nama: product.nama,
+    kategori: product.kategori,
+    hargaModal: product.hargaModal,
+    hargaJual: product.hargaJual,
+    stok: product.stok,
+    supplier: product.supplier ?? "",
+    satuan: product.satuan ?? "",
+    deskripsi: product.deskripsi ?? "",
+  });
+
+  setOpen(true);
+}
 
   function closeModal() {
     setOpen(false);
@@ -80,17 +101,24 @@ export default function ProductPage() {
     });
   }
 
-  async function save() {
-    await api.post("/api/products", {
-      ...form,
-      hargaModal: Number(form.hargaModal),
-      hargaJual: Number(form.hargaJual),
-      stok: Number(form.stok),
-    });
+async function save() {
+  const payload = {
+    ...form,
+    hargaModal: Number(form.hargaModal),
+    hargaJual: Number(form.hargaJual),
+    stok: Number(form.stok),
+  };
 
-    setOpen(false);
-    await load();
+  if (editingId) {
+    await api.put(`/api/products/${editingId}`, payload);
+  } else {
+    await api.post("/api/products", payload);
   }
+
+  setOpen(false);
+  setEditingId(null);
+  await load();
+}
 
   return (
     <AppShell>
@@ -125,6 +153,7 @@ export default function ProductPage() {
                   <th>Harga Jual</th>
                   <th>Stok</th>
                   <th>Satuan</th>
+                  <th>Aksi</th>
                 </tr>
               </thead>
 
@@ -139,6 +168,14 @@ export default function ProductPage() {
                     <td>{p.hargaJual}</td>
                     <td>{p.stok}</td>
                     <td>{p.satuan ?? "-"}</td>
+                    <td>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => openEdit(p)}
+                    >
+                      Edit
+                    </button>
+                  </td>
                   </tr>
                 ))}
               </tbody>
@@ -152,7 +189,7 @@ export default function ProductPage() {
 
             {/* HEADER */}
             <div className="modal-header">
-              <h3>Tambah Produk</h3>
+              <h3>{editingId ? "Edit Produk" : "Tambah Produk"}</h3>
               <button className="modal-close" onClick={closeModal}>
                 ×
               </button>
