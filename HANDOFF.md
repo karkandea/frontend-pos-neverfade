@@ -1,4 +1,4 @@
-# HANDOFF — FE v1 → FE v2
+# HANDOFF — FE v5 → NEXT
 
 ## DONE
 
@@ -18,84 +18,62 @@
 - GET /api/products berhasil (200)
 - AppShell dibuat
 - Login UI mendekati vanilla (belum pixel-perfect)
+- React activation untuk `.page.page-active` & `.content-section.active`
+- ProductPage:
+  - GET list
+  - CREATE (POST)
+  - EDIT (PUT)
+  - DELETE
+  - Search (`?search=`)
+  - Filter kategori (`?kategori=`)
+  - Modal vanilla (.open toggle)
+  - Styling parity (form-grid 2 kolom + uppercase label)
+  - DELETE sukses → refresh list
+  - DELETE gagal → tampilkan `message` dari backend (409)
 
 ## NEXT
 
-1. PIXEL PASS shell
-   - Sidebar 100% (seluruh SVG + markup)
-   - Topbar 100%
-   - Responsive sidebar
-   - Role gating mengikuti DOM vanilla
-
-2. Dashboard
-
-3. Produk (markup vanilla + API)
-
-4. Kasir
-
-5. Inventaris
-
-6. Pelanggan
-
-7. Transaksi
-
-8. Karyawan
-
-9. Absensi
-
-10. Laporan
-
-11. Pengaturan
+1. Pelanggan
+2. Karyawan
+3. Inventaris
+4. Absensi
+5. Laporan
+6. Pengaturan
+7. Dashboard polish (jika masih ada gap)
+8. TransactionPage **PALING AKHIR** (lapor sebelum mulai)
 
 ## GOTCHAS
 
-- Sidebar dan Login masih kompromi.
-- Masih ada SVG, markup, dan id yang belum 1:1 dengan vanilla/index.html.
-- Target berikutnya adalah preserve UI 100%.
-- Markup berasal dari proyek user; lakukan konversi HTML → JSX tanpa redesign.
-- Backend boleh dimatikan saat migrasi UI murni.
-- Backend harus dijalankan di http://localhost:5012 saat menguji endpoint.
+- Edit file pakai full rewrite (`cat > file <<'EOF'`), jangan `perl` / `sed -i` / regex patch.
+- Modal vanilla pakai toggle class `.open`, bukan conditional render.
+- Markup tetap mengikuti vanilla (`vanilla/index.html`) sebisa mungkin.
+- Jangan klaim selesai tanpa:
+  - build hijau
+  - commit
+  - data tampil / endpoint tervalidasi
+- Backend:
+  - DELETE produk yang memiliki riwayat stok/transaksi mengembalikan `409 Conflict`.
+  - Frontend menampilkan `response.data.message` dari backend.
+  - Keputusan soft delete masih di backend.
 
 ## VERIFY
 
+```bash
 npm run dev
 
 Login:
 
-owner / owner123
+owner
+owner123
 
-Expected:
+Verifikasi ProductPage:
 
-- Login berhasil
-- Restore session via /auth/me
-- Produk tampil dari backend
-
-
-## React Migration Gotcha
-
-Vanilla CSS menyembunyikan page secara default.
-
-- .page -> display:none
-- .content-section -> display:none
-
-React harus mengaktifkan:
-
-- page.page-active
-- content-section active
-
-Kalau tidak login sukses tetapi seluruh UI blank.
-
-DONE:
-- ProductPage — GET list + CREATE (POST) + modal vanilla (.open toggle) JALAN & ke-commit.
-
-NEXT (v5):
-- ProductPage styling parity (form-grid 2-kolom, label uppercase — fungsional udah ok, tinggal CSS)
-- ProductPage CRUD lengkapin: EDIT (PUT) + DELETE + search + filter kategori
-- lanjut page lain (Pelanggan/Karyawan/dll), TransactionPage paling akhir (rawan)
-
-GOTCHAS (PENTING, warisan v1-v4):
-- HARAM edit pakai perl/sed/regex. Edit = full rewrite via cat >. Ini matiin v3.
-- Modal vanilla pakai toggle class .open (display:none → .open jadi flex), BUKAN conditional render React. Liat vanilla/style.css line 540-552.
-- markup modal asli ada di vanilla/index.html (produk: line 557-575).
-- jangan klaim "selesai" tanpa build ijo + commit + data tampil.
+List tampil
+Create berhasil
+Edit berhasil
+Delete produk baru → sukses
+Delete produk ber-riwayat → 409 + pesan backend tampil
+Search menghasilkan GET /api/products?search=...
+Filter kategori menghasilkan GET /api/products?kategori=...
+Search + kategori bekerja bersamaan
 
