@@ -5,7 +5,7 @@ export default function LaporanPage() {
     <AppShell>
       <section
         id="sec-laporan"
-        className="content-section"
+        className="content-section active"
       >
         <div className="section-header">
           <div>

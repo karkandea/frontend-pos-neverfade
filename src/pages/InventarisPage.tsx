@@ -5,7 +5,7 @@ export default function InventarisPage() {
     <AppShell>
       <section
         id="sec-inventaris"
-        className="content-section"
+        className="content-section active"
       >
         <div className="section-header">
           <div>

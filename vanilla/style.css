@@ -40,6 +40,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-we
 
 /* ── PAGES ── */
 .page{display:none;width:100%;height:100vh;min-height:100vh;overflow:hidden}
+.page.page-active{display:flex}
 .page.active{display:flex}
 
 /* ═══════════════════════════════════════

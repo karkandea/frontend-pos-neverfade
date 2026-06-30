@@ -3,7 +3,7 @@ import AppShell from "../components/layout/AppShell";
 export default function DashboardPage() {
   return (
     <AppShell>
-      <section id="sec-dashboard" className="content-section">
+      <section id="sec-dashboard" className="content-section active">
         <div className="section-header">
           <div>
             <h2 className="section-title">Dashboard</h2>

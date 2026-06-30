@@ -5,7 +5,7 @@ export default function TransaksiPage() {
     <AppShell>
       <section
         id="sec-transaksi"
-        className="content-section"
+        className="content-section active"
       >
         <div className="section-header">
           <div>

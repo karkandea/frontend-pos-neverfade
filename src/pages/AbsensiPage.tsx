@@ -5,7 +5,7 @@ export default function AbsensiPage() {
     <AppShell>
       <section
         id="sec-absensi"
-        className="content-section"
+        className="content-section active"
       >
         <div className="section-header">
           <div>

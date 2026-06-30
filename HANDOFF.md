@@ -69,3 +69,18 @@ Expected:
 - Login berhasil
 - Restore session via /auth/me
 - Produk tampil dari backend
+
+
+## React Migration Gotcha
+
+Vanilla CSS menyembunyikan page secara default.
+
+- .page -> display:none
+- .content-section -> display:none
+
+React harus mengaktifkan:
+
+- page.page-active
+- content-section active
+
+Kalau tidak login sukses tetapi seluruh UI blank.

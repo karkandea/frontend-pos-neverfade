@@ -5,7 +5,7 @@ export default function KasirPage() {
     <AppShell>
       <section
         id="sec-kasir"
-        className="content-section"
+        className="content-section active"
       >
         <div className="section-header">
           <div>

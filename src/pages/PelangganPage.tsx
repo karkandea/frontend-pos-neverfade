@@ -5,7 +5,7 @@ export default function PelangganPage() {
     <AppShell>
       <section
         id="sec-pelanggan"
-        className="content-section"
+        className="content-section active"
       >
         <div className="section-header">
           <div>

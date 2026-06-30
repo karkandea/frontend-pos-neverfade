@@ -5,7 +5,7 @@ export default function KaryawanPage() {
     <AppShell>
       <section
         id="sec-karyawan"
-        className="content-section"
+        className="content-section active"
       >
         <div className="section-header">
           <div>

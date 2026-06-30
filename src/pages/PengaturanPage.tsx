@@ -13,7 +13,7 @@ export default function PengaturanPage() {
 
         id="sec-pengaturan"
 
-        className="content-section"
+        className="content-section active"
 
       >
 

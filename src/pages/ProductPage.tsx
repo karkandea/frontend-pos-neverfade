@@ -42,7 +42,7 @@ export default function ProductPage() {
     <AppShell>
       <section
         id="sec-produk"
-        className="content-section"
+        className="content-section active"
       >
         <div className="section-header">
           <div>
