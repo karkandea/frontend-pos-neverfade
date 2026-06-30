@@ -9,23 +9,21 @@ type Props = {
 
 export default function AppShell({ children }: Props) {
   return (
-    <>
+    <div id="page-app" className="page">
       <div
         className="sidebar-overlay"
         id="sidebar-overlay"
-      ></div>
+      />
 
-      <div className="app-shell">
-        <Sidebar />
+      <Sidebar />
 
-        <div className="main-wrapper">
-          <Topbar />
+      <div className="main-wrapper">
+        <Topbar />
 
-          <main className="content-area">
-            {children}
-          </main>
-        </div>
+        <main className="content-area">
+          {children}
+        </main>
       </div>
-    </>
+    </div>
   );
 }
