@@ -6,6 +6,7 @@ import DashboardPage from "./pages/DashboardPage";
 import InventarisPage from "./pages/InventarisPage";
 import KasirPage from "./pages/KasirPage";
 import KaryawanPage from "./pages/KaryawanPage";
+import LaporanPage from "./pages/LaporanPage";
 import LoginPage from "./pages/LoginPage";
 import PelangganPage from "./pages/PelangganPage";
 import ProductPage from "./pages/ProductPage";
@@ -33,9 +34,7 @@ export default function App() {
     restore();
   }, [restore]);
 
-  if (loading) {
-    return <LoadingPage />;
-  }
+  if (loading) return <LoadingPage />;
 
   return (
     <Routes>
@@ -48,6 +47,7 @@ export default function App() {
       <Route path="/transaksi" element={token ? <TransaksiPage /> : <Navigate replace to="/login" />} />
       <Route path="/karyawan" element={token ? <KaryawanPage /> : <Navigate replace to="/login" />} />
       <Route path="/absensi" element={token ? <AbsensiPage /> : <Navigate replace to="/login" />} />
+      <Route path="/laporan" element={token ? <LaporanPage /> : <Navigate replace to="/login" />} />
 
       <Route
         path="*"
