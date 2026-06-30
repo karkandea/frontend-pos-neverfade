@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import DashboardPage from "./pages/DashboardPage";
+import InventarisPage from "./pages/InventarisPage";
 import KasirPage from "./pages/KasirPage";
 import LoginPage from "./pages/LoginPage";
 import ProductPage from "./pages/ProductPage";
@@ -52,6 +53,11 @@ export default function App() {
       <Route
         path="/kasir"
         element={token ? <KasirPage /> : <Navigate replace to="/login" />}
+      />
+
+      <Route
+        path="/inventaris"
+        element={token ? <InventarisPage /> : <Navigate replace to="/login" />}
       />
 
       <Route
