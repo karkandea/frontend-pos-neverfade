@@ -39,6 +39,8 @@ export default function PelangganPage() {
               Tambah
             </button>
           </div>
+        </div>
+
         <div className="table-card">
           <div className="table-scroll">
             <table className="data-table">
