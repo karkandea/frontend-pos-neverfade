@@ -17,6 +17,8 @@ export default function InventarisPage() {
               Kelola stok & mutasi barang
             </p>
           </div>
+        </div>
+
         <div className="section-actions">
           <div className="search-bar">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
