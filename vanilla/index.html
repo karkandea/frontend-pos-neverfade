@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#FFFFFF" />
+  <title>NEVERFADE POS — Business Management Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,700;1,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="page-login" class="page active">
+  <div class="login-bg"><div class="login-grid-overlay"></div></div>
+  <div class="login-container">
+    <div class="login-brand">
+      <div class="logo-text-wrap">
+        <span class="logo-never">NEVER</span><span class="logo-fade">FADE.</span>
+      </div>
+      <div class="brand-tagline-login">Business Management Suite</div>
+    </div>
+    <div class="login-card">
+      <div class="login-header">
+        <h1>Selamat Datang</h1>
+        <p>Masuk ke akun Anda untuk melanjutkan</p>
+      </div>
+      <div class="login-form">
+        <div class="form-group">
+          <label>Username</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            <input type="text" id="login-username" placeholder="Masukkan username" autocomplete="username" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" id="login-password" placeholder="Masukkan password" autocomplete="current-password" />
+            <button type="button" class="toggle-password" id="toggle-pw">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="login-options">
+          <label class="checkbox-label">
+            <input type="checkbox" id="remember-me" />
+            <span class="checkbox-custom"></span>
+            Ingat saya
+          </label>
+        </div>
+        <button class="btn-primary btn-full" id="btn-login">
+          <span>Masuk</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+        <div id="login-error" class="login-error hidden"></div>
+      </div>
+    </div>
+    <div class="login-footer">Demo: owner/owner123 · admin/admin123 · kasir/kasir123</div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="page-app" class="page">
+
+  <!-- Mobile overlay -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo-wrap">
+        <div class="logo-text-wrap logo-text-sm">
+          <span class="logo-never">NEVER</span><span class="logo-fade">FADE.</span>
+        </div>
+        <span class="sidebar-brand-sub">POS Suite</span>
+      </div>
+      <button class="sidebar-close-btn" id="sidebar-close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">UTAMA</div>
+      <a class="nav-item" data-page="dashboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item" data-page="kasir">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h2M11 8h6M7 12h2M11 12h2"/></svg>
+        <span>Kasir</span>
+        <span class="nav-badge" id="cart-badge" style="display:none">0</span>
+      </a>
+
+      <div class="nav-section-label">MANAJEMEN</div>
+      <a class="nav-item" data-page="produk">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+        <span>Produk</span>
+      </a>
+      <a class="nav-item" data-page="inventaris">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        <span>Inventaris</span>
+      </a>
+      <a class="nav-item" data-page="pelanggan">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Pelanggan</span>
+      </a>
+
+      <div class="nav-section-label">ANALITIK</div>
+      <a class="nav-item" data-page="transaksi">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Transaksi</span>
+      </a>
+      <a class="nav-item" data-page="laporan">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Laporan</span>
+      </a>
+
+      <div class="nav-section-label nav-admin-section">SDM</div>
+      <a class="nav-item nav-admin-only" data-page="karyawan">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Karyawan</span>
+      </a>
+      <a class="nav-item nav-admin-only" data-page="absensi">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="9 16 11 18 15 14"/></svg>
+        <span>Absensi</span>
+      </a>
+
+      <div class="nav-section-label nav-admin-section">SISTEM</div>
+      <a class="nav-item nav-admin-only" data-page="pengguna">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Pengguna</span>
+      </a>
+      <a class="nav-item nav-admin-only" data-page="pengaturan">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Pengaturan</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user-info">
+        <div class="sidebar-avatar" id="sidebar-avatar">O</div>
+        <div>
+          <div class="sidebar-user-name" id="sidebar-user-name">Owner</div>
+          <div class="sidebar-user-role" id="sidebar-user-role">Owner</div>
+        </div>
+      </div>
+      <div class="sidebar-version" id="sidebar-version">v1.0.0 · Memeriksa koneksi...</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-wrapper">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle" id="sidebar-toggle">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-datetime">
+          <div class="topbar-date" id="topbar-date"></div>
+          <div class="topbar-time" id="topbar-time"></div>
+        </div>
+        <div class="topbar-divider"></div>
+        <div class="topbar-user">
+          <div class="user-avatar" id="user-avatar">O</div>
+          <div class="user-info">
+            <div class="user-name" id="user-name">Owner</div>
+            <div class="user-role" id="user-role">Owner</div>
+          </div>
+        </div>
+        <button class="btn-logout" id="btn-logout">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span class="btn-logout-text">Keluar</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="content-area">
+
+      <!-- DASHBOARD -->
+      <section id="sec-dashboard" class="content-section">
+        <div class="section-header">
+          <div><h2 class="section-title">Dashboard</h2><p class="section-sub">Ringkasan bisnis hari ini</p></div>
+          <span class="status-badge" id="conn-status-badge">● Memeriksa...</span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="stat-body"><div class="stat-label">Omzet Hari Ini</div><div class="stat-value" id="stat-omzet-hari">Rp 0</div><div class="stat-delta" id="stat-omzet-delta">0 transaksi</div></div></div>
+          <div class="stat-card"><div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="stat-body"><div class="stat-label">Omzet Bulan Ini</div><div class="stat-value" id="stat-omzet-bulan">Rp 0</div><div class="stat-delta" id="stat-trx-bulan">0 transaksi</div></div></div>
+          <div class="stat-card"><div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></div><div class="stat-body"><div class="stat-label">Total Produk</div><div class="stat-value" id="stat-produk">0</div><div class="stat-delta" id="stat-stok">0 unit</div></div></div>
+          <div class="stat-card"><div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="stat-body"><div class="stat-label">Total Transaksi</div><div class="stat-value" id="stat-transaksi">0</div><div class="stat-delta" id="stat-trx-hari">0 hari ini</div></div></div>
+          <div class="stat-card"><div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="stat-body"><div class="stat-label">Total Pelanggan</div><div class="stat-value" id="stat-pelanggan">0</div><div class="stat-delta">Member aktif</div></div></div>
+          <div class="stat-card"><div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div><div class="stat-body"><div class="stat-label">Total Stok</div><div class="stat-value" id="stat-total-stok">0</div><div class="stat-delta" id="stat-stok-low">— stok rendah</div></div></div>
+        </div>
+        <div class="dashboard-bottom">
+          <div class="dashboard-chart-card">
+            <div class="card-header"><h3>Penjualan 7 Hari Terakhir</h3></div>
+            <div class="chart-container"><canvas id="sales-chart"></canvas></div>
+          </div>
+          <div class="dashboard-side">
+            <div class="card-panel"><div class="card-header"><h3>Produk Terlaris</h3></div><div id="top-products-list" class="top-list"><div class="empty-state-sm">Belum ada data</div></div></div>
+            <div class="card-panel"><div class="card-header"><h3>Aktivitas Terbaru</h3></div><div id="recent-activity-list" class="activity-list"><div class="empty-state-sm">Belum ada aktivitas</div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- KASIR -->
+      <section id="sec-kasir" class="content-section">
+        <div class="section-header">
+          <div><h2 class="section-title">Kasir</h2><p class="section-sub">Point of Sale</p></div>
+          <button class="btn-secondary" id="btn-clear-cart">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Kosongkan
+          </button>
+        </div>
+        <div class="pos-layout">
+          <div class="pos-left">
+            <div class="pos-search-bar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="pos-search" placeholder="Cari produk atau scan barcode..." />
+            </div>
+            <div class="pos-filter-bar" id="pos-filter-bar">
+              <button class="filter-chip active" data-cat="all">Semua</button>
+            </div>
+            <div class="pos-products-grid" id="pos-products-grid"></div>
+          </div>
+          <div class="pos-right">
+            <div class="pos-cart">
+              <div class="cart-header">
+                <h3>Keranjang</h3>
+                <div class="cart-count" id="cart-count">0 item</div>
+              </div>
+              <div class="cart-customer-select">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <select id="cart-customer"><option value="">— Pilih Pelanggan (Opsional) —</option></select>
+              </div>
+              <div class="cart-items" id="cart-items">
+                <div class="cart-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><p>Keranjang kosong</p></div>
+              </div>
+              <div class="cart-summary">
+                <div class="summary-row"><span>Subtotal</span><span id="cart-subtotal">Rp 0</span></div>
+                <div class="summary-row"><span>Diskon</span><div class="discount-input-wrap"><input type="number" id="cart-discount" value="0" min="0" max="100"/><span>%</span></div></div>
+                <div class="summary-row"><span>Pajak (PPN)</span><div class="discount-input-wrap"><input type="number" id="cart-tax" value="0" min="0" max="100"/><span>%</span></div></div>
+                <div class="summary-row total-row"><span>TOTAL</span><span id="cart-total">Rp 0</span></div>
+              </div>
+              <div class="payment-method">
+                <div class="payment-label">Metode Pembayaran</div>
+                <div class="payment-options">
+                  <button class="pay-btn active" data-method="tunai">Tunai</button>
+                  <button class="pay-btn" data-method="transfer">Transfer</button>
+                  <button class="pay-btn" data-method="qris">QRIS</button>
+                </div>
+              </div>
+              <div class="cash-input-wrap" id="cash-input-wrap">
+                <label>Uang Diterima</label>
+                <input type="number" id="cash-received" placeholder="0" />
+                <div class="change-row"><span>Kembalian</span><span id="cart-change" class="change-amount">Rp 0</span></div>
+              </div>
+              <button class="btn-checkout" id="btn-checkout">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                Proses Transaksi
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRODUK -->
+      <section id="sec-produk" class="content-section">
+        <div class="section-header">
+          <div><h2 class="section-title">Produk</h2><p class="section-sub">Kelola katalog produk</p></div>
+          <div class="section-actions">
+            <div class="search-bar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="produk-search" placeholder="Cari produk..." /></div>
+            <select class="select-sm" id="produk-filter-cat"><option value="">Semua Kategori</option></select>
+            <button class="btn-primary" id="btn-add-produk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Tambah</button>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-scroll">
+            <table class="data-table"><thead><tr><th>Kode</th><th>Nama Produk</th><th>Kategori</th><th>Harga Modal</th><th>Harga Jual</th><th>Stok</th><th>Supplier</th><th>Aksi</th></tr></thead><tbody id="produk-tbody"></tbody></table>
+          </div>
+          <div id="produk-empty" class="table-empty hidden"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/></svg><p>Belum ada produk.</p></div>
+        </div>
+      </section>
+
+      <!-- INVENTARIS -->
+      <section id="sec-inventaris" class="content-section">
+        <div class="section-header">
+          <div><h2 class="section-title">Inventaris</h2><p class="section-sub">Kelola stok dan pergerakan barang</p></div>
+          <div class="section-actions">
+            <button class="btn-secondary" id="btn-stok-masuk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg>Masuk</button>
+            <button class="btn-secondary" id="btn-stok-keluar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 19 19 12"/></svg>Keluar</button>
+            <button class="btn-secondary" id="btn-stok-adjust"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Sesuaikan</button>
+          </div>
+        </div>
+        <div class="table-card"><div class="card-header"><h3>Status Stok</h3></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Produk</th><th>Kategori</th><th>Stok</th><th>Status</th></tr></thead><tbody id="inventory-tbody"></tbody></table></div></div>
+        <div class="table-card mt-4"><div class="card-header"><h3>Riwayat Pergerakan Stok</h3></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Tanggal</th><th>Produk</th><th>Tipe</th><th>Jumlah</th><th>Stok Akhir</th><th>Keterangan</th></tr></thead><tbody id="stock-history-tbody"></tbody></table></div></div>
+      </section>
+
+      <!-- PELANGGAN -->
+      <section id="sec-pelanggan" class="content-section">
+        <div class="section-header">
+          <div><h2 class="section-title">Pelanggan</h2><p class="section-sub">Database member dan pelanggan</p></div>
+          <div class="section-actions">
+            <div class="search-bar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="pelanggan-search" placeholder="Cari pelanggan..." /></div>
+            <button class="btn-primary" id="btn-add-pelanggan"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Tambah</button>
+          </div>
+        </div>
+        <div class="table-card"><div class="table-scroll"><table class="data-table"><thead><tr><th>Nama</th><th>No. HP</th><th>Email</th><th>Alamat</th><th>Poin</th><th>Transaksi</th><th>Aksi</th></tr></thead><tbody id="pelanggan-tbody"></tbody></table></div><div id="pelanggan-empty" class="table-empty hidden"><p>Belum ada pelanggan.</p></div></div>
+      </section>
+
+      <!-- TRANSAKSI -->
+      <section id="sec-transaksi" class="content-section">
+        <div class="section-header">
+          <div><h2 class="section-title">Transaksi</h2><p class="section-sub">Riwayat seluruh transaksi</p></div>
+          <div class="section-actions">
+            <input type="date" class="input-date" id="trx-filter-start" />
+            <span style="color:var(--text-3)">—</span>
+            <input type="date" class="input-date" id="trx-filter-end" />
+            <div class="search-bar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="trx-search" placeholder="Cari no. transaksi..." /></div>
+          </div>
+        </div>
+        <div class="table-card"><div class="table-scroll"><table class="data-table"><thead><tr><th>No. Transaksi</th><th>Tanggal</th><th>Kasir</th><th>Pelanggan</th><th>Items</th><th>Total</th><th>Metode</th><th>Aksi</th></tr></thead><tbody id="transaksi-tbody"></tbody></table></div><div id="transaksi-empty" class="table-empty hidden"><p>Belum ada transaksi.</p></div></div>
+      </section>
+
+      <!-- LAPORAN -->
+      <section id="sec-laporan" class="content-section">
+        <div class="section-header">
+          <div><h2 class="section-title">Laporan</h2><p class="section-sub">Analisis dan ringkasan bisnis</p></div>
+          <div class="section-actions">
+            <div class="btn-group">
+              <button class="period-btn active" data-period="harian">Harian</button>
+              <button class="period-btn" data-period="mingguan">Mingguan</button>
+              <button class="period-btn" data-period="bulanan">Bulanan</button>
+              <button class="period-btn" data-period="tahunan">Tahunan</button>
+            </div>
+            <button class="btn-secondary" id="btn-export-pdf"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF</button>
+            <button class="btn-secondary" id="btn-export-excel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>CSV</button>
+          </div>
+        </div>
+        <div class="laporan-stats">
+          <div class="stat-card"><div class="stat-body"><div class="stat-label">Total Omzet</div><div class="stat-value" id="lap-omzet">Rp 0</div></div></div>
+          <div class="stat-card"><div class="stat-body"><div class="stat-label">Jumlah Transaksi</div><div class="stat-value" id="lap-trx">0</div></div></div>
+          <div class="stat-card"><div class="stat-body"><div class="stat-label">Rata-rata Transaksi</div><div class="stat-value" id="lap-avg">Rp 0</div></div></div>
+          <div class="stat-card"><div class="stat-body"><div class="stat-label">Total Pelanggan</div><div class="stat-value" id="lap-pelanggan">0</div></div></div>
+        </div>
+        <div class="dashboard-bottom">
+          <div class="dashboard-chart-card"><div class="card-header"><h3>Grafik Omzet</h3></div><div class="chart-container"><canvas id="laporan-chart"></canvas></div></div>
+          <div class="card-panel"><div class="card-header"><h3>Produk Terlaris</h3></div><div id="lap-top-products" class="top-list"></div></div>
+        </div>
+      </section>
+
+      <!-- PENGGUNA -->
+      <section id="sec-pengguna" class="content-section">
+        <div class="section-header">
+          <div><h2 class="section-title">Pengguna</h2><p class="section-sub">Kelola akun dan hak akses</p></div>
+          <button class="btn-primary" id="btn-add-user"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Tambah Pengguna</button>
+        </div>
+        <div class="table-card"><div class="table-scroll"><table class="data-table"><thead><tr><th>Nama</th><th>Username</th><th>Role</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="pengguna-tbody"></tbody></table></div></div>
+      </section>
+
+      <!-- PENGATURAN -->
+      <section id="sec-pengaturan" class="content-section">
+        <div class="section-header">
+          <div><h2 class="section-title">Pengaturan</h2><p class="section-sub">Konfigurasi toko dan sistem</p></div>
+          <button class="btn-primary" id="btn-save-settings"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Simpan</button>
+        </div>
+        <div class="settings-grid">
+          <div class="card-panel"><div class="card-header"><h3>Informasi Toko</h3></div><div class="settings-form">
+            <div class="form-group"><label>Nama Toko</label><input type="text" id="set-nama-toko" placeholder="Nama toko" /></div>
+            <div class="form-group"><label>Alamat</label><textarea id="set-alamat" rows="3" placeholder="Alamat lengkap"></textarea></div>
+            <div class="form-group"><label>No. Telepon</label><input type="text" id="set-telepon" placeholder="08xxxxxxxxxx" /></div>
+            <div class="form-group"><label>Email</label><input type="email" id="set-email" placeholder="email@toko.com" /></div>
+          </div></div>
+          <div class="card-panel"><div class="card-header"><h3>Pengaturan Struk</h3></div><div class="settings-form">
+            <div class="form-group"><label>Header Struk</label><textarea id="set-header-struk" rows="2" placeholder="Teks header..."></textarea></div>
+            <div class="form-group"><label>Footer Struk</label><textarea id="set-footer-struk" rows="2" placeholder="Terima kasih..."></textarea></div>
+          </div></div>
+          <div class="card-panel"><div class="card-header"><h3>Pengaturan Sistem</h3></div><div class="settings-form">
+            <div class="form-group"><label>Default Pajak (%)</label><input type="number" id="set-default-tax" value="0" min="0" max="100" /></div>
+            <div class="form-group"><label>Stok Minimum Alert</label><input type="number" id="set-min-stok" value="5" min="0" /></div>
+            <div class="form-group"><label>Poin per Rp 1.000</label><input type="number" id="set-poin-rate" value="1" min="0" /></div>
+          </div></div>
+          <div class="card-panel"><div class="card-header"><h3>Mode Operasi & Sinkronisasi</h3></div><div class="settings-form">
+            <div class="form-group">
+              <label>Mode Koneksi</label>
+              <div class="conn-mode-options">
+                <label class="conn-mode-option">
+                  <input type="radio" name="conn-mode" value="auto" id="conn-mode-auto"/>
+                  <div><strong>Otomatis</strong><span>Pakai server jika tersedia, otomatis ke mode lokal jika server mati (mati lampu/internet putus)</span></div>
+                </label>
+                <label class="conn-mode-option">
+                  <input type="radio" name="conn-mode" value="online" id="conn-mode-online"/>
+                  <div><strong>Selalu Online</strong><span>Wajib terhubung ke server. Tampilkan error jika server tidak tersedia</span></div>
+                </label>
+                <label class="conn-mode-option">
+                  <input type="radio" name="conn-mode" value="offline" id="conn-mode-offline"/>
+                  <div><strong>Selalu Lokal (Manual)</strong><span>Tidak mencoba ke server sama sekali, semua data disimpan lokal</span></div>
+                </label>
+              </div>
+            </div>
+            <div class="sync-status-box" id="sync-status-box">
+              <div class="sync-status-row">
+                <span id="sync-status-text">Memeriksa status koneksi...</span>
+                <button class="btn-secondary btn-sm" id="btn-sync-now">Sinkron Sekarang</button>
+              </div>
+              <div class="sync-pending-text" id="sync-pending-text"></div>
+            </div>
+          </div></div>
+        </div>
+      </section>
+
+      <!-- KARYAWAN -->
+      <section id="sec-karyawan" class="content-section">
+        <div class="section-header">
+          <div><h2 class="section-title">Karyawan</h2><p class="section-sub">Kelola data dan informasi karyawan</p></div>
+          <button class="btn-primary" id="btn-add-karyawan"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Tambah Karyawan</button>
+        </div>
+        <div class="stats-grid" style="margin-bottom:16px">
+          <div class="stat-card"><div class="stat-body"><div class="stat-label">Total Karyawan</div><div class="stat-value" id="stat-total-karyawan">0</div></div></div>
+          <div class="stat-card"><div class="stat-body"><div class="stat-label">Aktif</div><div class="stat-value" id="stat-aktif-karyawan">0</div></div></div>
+          <div class="stat-card"><div class="stat-body"><div class="stat-label">Total Gaji/Bulan</div><div class="stat-value" id="stat-total-gaji">Rp 0</div></div></div>
+        </div>
+        <div class="table-card">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>Karyawan</th><th>Telepon</th><th>Gaji</th><th>Tgl Masuk</th><th>Status</th><th>Aksi</th></tr></thead>
+              <tbody id="karyawan-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABSENSI -->
+      <section id="sec-absensi" class="content-section">
+        <div class="section-header">
+          <div><h2 class="section-title">Absensi</h2><p class="section-sub">Rekam kehadiran karyawan dengan foto</p></div>
+          <div class="absensi-date-badge" id="absensi-today-date"></div>
+        </div>
+        <div class="table-card" style="margin-bottom:16px">
+          <div class="card-header"><h3>Kehadiran Hari Ini</h3></div>
+          <div id="absensi-today-list"></div>
+        </div>
+        <div class="table-card">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+            <h3>Riwayat Absensi</h3>
+            <button class="btn-secondary btn-sm" id="btn-export-absensi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</button>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>Tanggal</th><th>Nama</th><th>Jabatan</th><th>Check In</th><th>Check Out</th><th>Durasi</th><th>Foto</th></tr></thead>
+              <tbody id="absensi-history-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- CHATBOT FAB -->
+  <button class="chatbot-fab" id="chatbot-fab" title="Asisten Virtual">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  </button>
+
+  <!-- CHATBOT PANEL -->
+  <div class="chatbot-panel" id="chatbot-panel">
+    <div class="chatbot-header">
+      <div class="chatbot-header-info">
+        <div class="chatbot-avatar-icon">AI</div>
+        <div>
+          <div class="chatbot-title">Asisten Virtual</div>
+          <div class="chatbot-online">● Online</div>
+        </div>
+      </div>
+      <button class="chatbot-close-btn" id="chatbot-close-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="chatbot-messages" id="chatbot-messages"></div>
+    <div class="chatbot-typing" id="chatbot-typing" style="display:none">
+      <div class="chat-avatar-bot">AI</div>
+      <div class="typing-dots"><span></span><span></span><span></span></div>
+    </div>
+    <div class="chatbot-input-row">
+      <input type="text" id="chatbot-input" placeholder="Ketik pesan..." autocomplete="off"/>
+      <button class="chatbot-send-btn" id="chatbot-send-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+
+</div><!-- end page-app -->
+<!-- Modal Karyawan -->
+<div class="modal-overlay" id="modal-karyawan">
+  <div class="modal modal-wide">
+    <div class="modal-header"><h3 id="karyawan-modal-title">Tambah Karyawan</h3><button class="modal-close" data-close="modal-karyawan">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="karyawan-id"/>
+      <div class="form-grid-2">
+        <div class="form-group span-2"><label>Nama Lengkap *</label><input type="text" id="k-nama" placeholder="Nama lengkap karyawan"/></div>
+        <div class="form-group"><label>Jabatan *</label><input type="text" id="k-jabatan" placeholder="Kasir, Gudang, dll"/></div>
+        <div class="form-group"><label>No. Telepon</label><input type="text" id="k-telepon" placeholder="08xxxxxxxxxx"/></div>
+        <div class="form-group"><label>Email</label><input type="email" id="k-email" placeholder="email@contoh.com"/></div>
+        <div class="form-group"><label>Gaji (Rp)</label><input type="number" id="k-gaji" placeholder="0" min="0"/></div>
+        <div class="form-group"><label>Tanggal Masuk</label><input type="date" id="k-tanggal-masuk"/></div>
+        <div class="form-group"><label>Status</label><select id="k-status"><option value="aktif">Aktif</option><option value="nonaktif">Non-aktif</option></select></div>
+        <div class="form-group span-2"><label>Catatan</label><textarea id="k-catatan" rows="2" placeholder="Catatan tambahan"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" data-close="modal-karyawan">Batal</button><button class="btn-primary" id="btn-save-karyawan">Simpan</button></div>
+  </div>
+</div>
+
+<!-- Modal Absensi Kamera -->
+<div class="modal-overlay" id="modal-absensi">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3 id="camera-modal-title">Check In</h3><button class="modal-close" data-close="modal-absensi">×</button></div>
+    <div class="modal-body">
+      <div class="camera-wrap">
+        <video id="camera-video" autoplay playsinline muted></video>
+        <img id="camera-preview" style="display:none;width:100%;border-radius:10px" alt="preview"/>
+      </div>
+      <div class="camera-btn-row">
+        <button class="btn-primary" id="btn-capture" style="flex:1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Ambil Foto
+        </button>
+        <button class="btn-secondary" id="btn-retake" style="display:none">Ulangi</button>
+        <button class="btn-primary" id="btn-save-absensi" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Lihat Foto -->
+<div class="modal-overlay" id="modal-photo">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3>Foto Absensi</h3><button class="modal-close" data-close="modal-photo">×</button></div>
+    <div class="modal-body" style="text-align:center"><img id="photo-view-img" style="max-width:100%;border-radius:10px" alt="foto"/></div>
+  </div>
+</div>
+
+<!-- Modal Produk -->
+<div class="modal-overlay" id="modal-produk">
+  <div class="modal">
+    <div class="modal-header"><h3 id="modal-produk-title">Tambah Produk</h3><button class="modal-close" data-close="modal-produk">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="produk-id" />
+      <div class="form-grid-2">
+        <div class="form-group"><label>Kode Produk *</label><input type="text" id="p-kode" placeholder="PRD-001" /></div>
+        <div class="form-group"><label>Barcode</label><input type="text" id="p-barcode" placeholder="8991234..." /></div>
+        <div class="form-group span-2"><label>Nama Produk *</label><input type="text" id="p-nama" placeholder="Nama produk" /></div>
+        <div class="form-group"><label>Kategori *</label><input type="text" id="p-kategori" placeholder="Makanan" list="kategori-list" /><datalist id="kategori-list"></datalist></div>
+        <div class="form-group"><label>Supplier</label><input type="text" id="p-supplier" placeholder="Nama supplier" /></div>
+        <div class="form-group"><label>Harga Modal (Rp) *</label><input type="number" id="p-harga-modal" placeholder="0" min="0" /></div>
+        <div class="form-group"><label>Harga Jual (Rp) *</label><input type="number" id="p-harga-jual" placeholder="0" min="0" /></div>
+        <div class="form-group"><label>Stok *</label><input type="number" id="p-stok" placeholder="0" min="0" /></div>
+        <div class="form-group"><label>Satuan</label><input type="text" id="p-satuan" placeholder="pcs, porsi, buah..." /></div>
+        <div class="form-group span-2"><label>Deskripsi</label><textarea id="p-deskripsi" rows="2" placeholder="Deskripsi (opsional)"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" data-close="modal-produk">Batal</button><button class="btn-primary" id="btn-save-produk">Simpan Produk</button></div>
+  </div>
+</div>
+
+<!-- Modal Pelanggan -->
+<div class="modal-overlay" id="modal-pelanggan">
+  <div class="modal">
+    <div class="modal-header"><h3 id="modal-pelanggan-title">Tambah Pelanggan</h3><button class="modal-close" data-close="modal-pelanggan">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="pelanggan-id" />
+      <div class="form-grid-2">
+        <div class="form-group span-2"><label>Nama *</label><input type="text" id="c-nama" placeholder="Nama lengkap" /></div>
+        <div class="form-group"><label>No. HP *</label><input type="text" id="c-hp" placeholder="08xxxxxxxxxx" /></div>
+        <div class="form-group"><label>Email</label><input type="email" id="c-email" placeholder="email@example.com" /></div>
+        <div class="form-group span-2"><label>Alamat</label><textarea id="c-alamat" rows="2" placeholder="Alamat lengkap"></textarea></div>
+        <div class="form-group"><label>Poin Awal</label><input type="number" id="c-poin" value="0" min="0" /></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" data-close="modal-pelanggan">Batal</button><button class="btn-primary" id="btn-save-pelanggan">Simpan</button></div>
+  </div>
+</div>
+
+<!-- Modal Stok -->
+<div class="modal-overlay" id="modal-stok">
+  <div class="modal">
+    <div class="modal-header"><h3 id="modal-stok-title">Stok Masuk</h3><button class="modal-close" data-close="modal-stok">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="stok-type" value="masuk" />
+      <div class="form-grid-2">
+        <div class="form-group span-2"><label>Produk *</label><select id="stok-produk"></select></div>
+        <div class="form-group" id="stok-jumlah-group"><label>Jumlah *</label><input type="number" id="stok-jumlah" placeholder="0" min="1" /></div>
+        <div class="form-group" id="stok-final-group" style="display:none"><label>Stok Akhir *</label><input type="number" id="stok-final" placeholder="0" min="0" /></div>
+        <div class="form-group span-2"><label>Keterangan</label><input type="text" id="stok-keterangan" placeholder="Keterangan..." /></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" data-close="modal-stok">Batal</button><button class="btn-primary" id="btn-save-stok">Simpan</button></div>
+  </div>
+</div>
+
+<!-- Modal User -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal">
+    <div class="modal-header"><h3 id="modal-user-title">Tambah Pengguna</h3><button class="modal-close" data-close="modal-user">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="user-edit-id" />
+      <div class="form-grid-2">
+        <div class="form-group span-2"><label>Nama Lengkap *</label><input type="text" id="u-nama" placeholder="Nama pengguna" /></div>
+        <div class="form-group"><label>Username *</label><input type="text" id="u-username" placeholder="username" /></div>
+        <div class="form-group"><label>Password *</label><input type="password" id="u-password" placeholder="••••••••" /></div>
+        <div class="form-group span-2"><label>Role *</label><select id="u-role"><option value="owner">Owner</option><option value="admin">Admin</option><option value="kasir">Kasir</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" data-close="modal-user">Batal</button><button class="btn-primary" id="btn-save-user">Simpan</button></div>
+  </div>
+</div>
+
+<!-- Modal Detail Transaksi -->
+<div class="modal-overlay" id="modal-transaksi-detail">
+  <div class="modal modal-wide">
+    <div class="modal-header"><h3>Detail Transaksi</h3><button class="modal-close" data-close="modal-transaksi-detail">×</button></div>
+    <div class="modal-body" id="transaksi-detail-body"></div>
+    <div class="modal-footer"><button class="btn-secondary" data-close="modal-transaksi-detail">Tutup</button><button class="btn-primary" id="btn-print-trx"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print Struk</button></div>
+  </div>
+</div>
+
+<!-- Modal Struk -->
+<div class="modal-overlay" id="modal-struk">
+  <div class="modal modal-struk">
+    <div class="modal-header"><h3>Preview Struk</h3><button class="modal-close" data-close="modal-struk">×</button></div>
+    <div class="modal-body"><div class="struk-container" id="struk-content"></div></div>
+    <div class="modal-footer"><button class="btn-secondary" data-close="modal-struk">Tutup</button><button class="btn-primary" id="btn-print-struk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print</button></div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3 id="confirm-title">Konfirmasi</h3><button class="modal-close" data-close="modal-confirm">×</button></div>
+    <div class="modal-body"><p id="confirm-message" style="color:var(--text-2);font-size:14px;line-height:1.6"></p></div>
+    <div class="modal-footer"><button class="btn-secondary" data-close="modal-confirm">Batal</button><button class="btn-danger" id="btn-confirm-ok">Ya, Lanjutkan</button></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+<div id="print-area" style="display:none"></div>
+<script src="script.js"></script>
+</body>
+</html>
