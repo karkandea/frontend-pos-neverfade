@@ -5,6 +5,7 @@ import DashboardPage from "./pages/DashboardPage";
 import InventarisPage from "./pages/InventarisPage";
 import KasirPage from "./pages/KasirPage";
 import LoginPage from "./pages/LoginPage";
+import PelangganPage from "./pages/PelangganPage";
 import ProductPage from "./pages/ProductPage";
 import { useAuthStore } from "./stores/auth";
 
@@ -58,6 +59,11 @@ export default function App() {
       <Route
         path="/inventaris"
         element={token ? <InventarisPage /> : <Navigate replace to="/login" />}
+      />
+
+      <Route
+        path="/pelanggan"
+        element={token ? <PelangganPage /> : <Navigate replace to="/login" />}
       />
 
       <Route
