@@ -84,3 +84,18 @@ React harus mengaktifkan:
 - content-section active
 
 Kalau tidak login sukses tetapi seluruh UI blank.
+
+DONE:
+- ProductPage — GET list + CREATE (POST) + modal vanilla (.open toggle) JALAN & ke-commit.
+
+NEXT (v5):
+- ProductPage styling parity (form-grid 2-kolom, label uppercase — fungsional udah ok, tinggal CSS)
+- ProductPage CRUD lengkapin: EDIT (PUT) + DELETE + search + filter kategori
+- lanjut page lain (Pelanggan/Karyawan/dll), TransactionPage paling akhir (rawan)
+
+GOTCHAS (PENTING, warisan v1-v4):
+- HARAM edit pakai perl/sed/regex. Edit = full rewrite via cat >. Ini matiin v3.
+- Modal vanilla pakai toggle class .open (display:none → .open jadi flex), BUKAN conditional render React. Liat vanilla/style.css line 540-552.
+- markup modal asli ada di vanilla/index.html (produk: line 557-575).
+- jangan klaim "selesai" tanpa build ijo + commit + data tampil.
+
