@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
+import AbsensiPage from "./pages/AbsensiPage";
 import DashboardPage from "./pages/DashboardPage";
 import InventarisPage from "./pages/InventarisPage";
 import KasirPage from "./pages/KasirPage";
@@ -46,6 +47,7 @@ export default function App() {
       <Route path="/pelanggan" element={token ? <PelangganPage /> : <Navigate replace to="/login" />} />
       <Route path="/transaksi" element={token ? <TransaksiPage /> : <Navigate replace to="/login" />} />
       <Route path="/karyawan" element={token ? <KaryawanPage /> : <Navigate replace to="/login" />} />
+      <Route path="/absensi" element={token ? <AbsensiPage /> : <Navigate replace to="/login" />} />
 
       <Route
         path="*"
