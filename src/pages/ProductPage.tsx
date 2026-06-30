@@ -45,18 +45,28 @@ const emptyForm: Form = {
 export default function ProductPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [search, setSearch] = useState("");
+  const [kategori, setKategori] = useState("");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Form>(emptyForm);
+  
 
   useEffect(() => {
-    load();
-  }, []);
+  load();
+}, [search, kategori]);
 
   async function load() {
+    setLoading(true);
+
     try {
-      const { data } = await api.get("/api/products");
+      const { data } = await api.get("/api/products", {
+        params: {
+  search: search || undefined,
+  kategori: kategori || undefined,
+},
+      });
+
       setProducts(data);
     } finally {
       setLoading(false);
@@ -70,27 +80,41 @@ export default function ProductPage() {
   }
 
   function openEdit(product: Product) {
-  setEditingId(product.id);
+    setEditingId(product.id);
 
-  setForm({
-    kode: product.kode,
-    barcode: product.barcode ?? "",
-    nama: product.nama,
-    kategori: product.kategori,
-    hargaModal: product.hargaModal,
-    hargaJual: product.hargaJual,
-    stok: product.stok,
-    supplier: product.supplier ?? "",
-    satuan: product.satuan ?? "",
-    deskripsi: product.deskripsi ?? "",
-  });
+    setForm({
+      kode: product.kode,
+      barcode: product.barcode ?? "",
+      nama: product.nama,
+      kategori: product.kategori,
+      hargaModal: product.hargaModal,
+      hargaJual: product.hargaJual,
+      stok: product.stok,
+      supplier: product.supplier ?? "",
+      satuan: product.satuan ?? "",
+      deskripsi: product.deskripsi ?? "",
+    });
 
-  setOpen(true);
-}
+    setOpen(true);
+  }
 
   function closeModal() {
     setOpen(false);
   }
+
+  async function remove(id: string) {
+  if (!confirm("Hapus produk ini?")) return;
+
+  try {
+    await api.delete(`/api/products/${id}`);
+    await load();
+  } catch (err: any) {
+    alert(
+      err?.response?.data?.message ??
+      "Terjadi kesalahan saat menghapus produk."
+    );
+  }
+}
 
   function onChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -101,24 +125,24 @@ export default function ProductPage() {
     });
   }
 
-async function save() {
-  const payload = {
-    ...form,
-    hargaModal: Number(form.hargaModal),
-    hargaJual: Number(form.hargaJual),
-    stok: Number(form.stok),
-  };
+  async function save() {
+    const payload = {
+      ...form,
+      hargaModal: Number(form.hargaModal),
+      hargaJual: Number(form.hargaJual),
+      stok: Number(form.stok),
+    };
 
-  if (editingId) {
-    await api.put(`/api/products/${editingId}`, payload);
-  } else {
-    await api.post("/api/products", payload);
+    if (editingId) {
+      await api.put(`/api/products/${editingId}`, payload);
+    } else {
+      await api.post("/api/products", payload);
+    }
+
+    setOpen(false);
+    setEditingId(null);
+    await load();
   }
-
-  setOpen(false);
-  setEditingId(null);
-  await load();
-}
 
   return (
     <AppShell>
@@ -131,10 +155,27 @@ async function save() {
           </div>
 
           <div className="section-actions">
-            <button className="btn-primary" onClick={openCreate}>
-              Tambah
-            </button>
-          </div>
+  <input
+    type="text"
+    placeholder="Cari produk..."
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+  />
+
+  <select
+    value={kategori}
+    onChange={(e) => setKategori(e.target.value)}
+  >
+    <option value="">Semua Kategori</option>
+    <option value="Makanan">Makanan</option>
+    <option value="Minuman">Minuman</option>
+    <option value="Snack">Snack</option>
+  </select>
+
+  <button className="btn-primary" onClick={openCreate}>
+    Tambah
+  </button>
+</div>
         </div>
 
         {/* TABLE */}
@@ -168,14 +209,21 @@ async function save() {
                     <td>{p.hargaJual}</td>
                     <td>{p.stok}</td>
                     <td>{p.satuan ?? "-"}</td>
-                    <td>
-                    <button
-                      className="btn-secondary"
-                      onClick={() => openEdit(p)}
-                    >
-                      Edit
-                    </button>
-                  </td>
+                    <td style={{ display: "flex", gap: 8 }}>
+                      <button
+                        className="btn-secondary"
+                        onClick={() => openEdit(p)}
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        className="btn-secondary"
+                        onClick={() => remove(p.id)}
+                      >
+                        Hapus
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -186,7 +234,6 @@ async function save() {
         {/* MODAL — VANILLA STYLE (FIX .open pattern) */}
         <div className={"modal-overlay" + (open ? " open" : "")}>
           <div className="modal modal-wide">
-
             {/* HEADER */}
             <div className="modal-header">
               <h3>{editingId ? "Edit Produk" : "Tambah Produk"}</h3>
@@ -198,25 +245,44 @@ async function save() {
             {/* BODY */}
             <div className="modal-body">
               <div className="form-grid-2">
-
                 <div className="form-group">
                   <label>Kode</label>
-                  <input name="kode" value={form.kode} onChange={onChange} type="text" />
+                  <input
+                    name="kode"
+                    value={form.kode}
+                    onChange={onChange}
+                    type="text"
+                  />
                 </div>
 
                 <div className="form-group">
                   <label>Barcode</label>
-                  <input name="barcode" value={form.barcode} onChange={onChange} type="text" />
+                  <input
+                    name="barcode"
+                    value={form.barcode}
+                    onChange={onChange}
+                    type="text"
+                  />
                 </div>
 
                 <div className="form-group">
                   <label>Nama</label>
-                  <input name="nama" value={form.nama} onChange={onChange} type="text" />
+                  <input
+                    name="nama"
+                    value={form.nama}
+                    onChange={onChange}
+                    type="text"
+                  />
                 </div>
 
                 <div className="form-group">
                   <label>Kategori</label>
-                  <input name="kategori" value={form.kategori} onChange={onChange} type="text" />
+                  <input
+                    name="kategori"
+                    value={form.kategori}
+                    onChange={onChange}
+                    type="text"
+                  />
                 </div>
 
                 <div className="form-group">
@@ -267,7 +333,6 @@ async function save() {
                     onChange={onChange}
                   />
                 </div>
-
               </div>
             </div>
 
@@ -280,10 +345,8 @@ async function save() {
                 Simpan
               </button>
             </div>
-
           </div>
         </div>
-
       </section>
     </AppShell>
   );
