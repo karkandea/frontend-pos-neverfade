@@ -160,56 +160,78 @@ export default function ProductPage() {
 
             {/* BODY */}
             <div className="modal-body">
+              <div className="form-grid-2">
 
-              <div className="form-group">
-                <label>Kode</label>
-                <input name="kode" value={form.kode} onChange={onChange} />
+                <div className="form-group">
+                  <label>Kode</label>
+                  <input name="kode" value={form.kode} onChange={onChange} type="text" />
+                </div>
+
+                <div className="form-group">
+                  <label>Barcode</label>
+                  <input name="barcode" value={form.barcode} onChange={onChange} type="text" />
+                </div>
+
+                <div className="form-group">
+                  <label>Nama</label>
+                  <input name="nama" value={form.nama} onChange={onChange} type="text" />
+                </div>
+
+                <div className="form-group">
+                  <label>Kategori</label>
+                  <input name="kategori" value={form.kategori} onChange={onChange} type="text" />
+                </div>
+
+                <div className="form-group">
+                  <label>Harga Modal</label>
+                  <input
+                    name="hargaModal"
+                    type="number"
+                    value={form.hargaModal}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Harga Jual</label>
+                  <input
+                    name="hargaJual"
+                    type="number"
+                    value={form.hargaJual}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Stok</label>
+                  <input
+                    name="stok"
+                    type="number"
+                    value={form.stok}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Satuan</label>
+                  <input
+                    name="satuan"
+                    value={form.satuan}
+                    onChange={onChange}
+                    type="text"
+                  />
+                </div>
+
+                <div className="form-group span-2">
+                  <label>Deskripsi</label>
+                  <textarea
+                    name="deskripsi"
+                    value={form.deskripsi}
+                    onChange={onChange}
+                  />
+                </div>
+
               </div>
-
-              <div className="form-group">
-                <label>Barcode</label>
-                <input name="barcode" value={form.barcode} onChange={onChange} />
-              </div>
-
-              <div className="form-group">
-                <label>Nama</label>
-                <input name="nama" value={form.nama} onChange={onChange} />
-              </div>
-
-              <div className="form-group">
-                <label>Kategori</label>
-                <input name="kategori" value={form.kategori} onChange={onChange} />
-              </div>
-
-              <div className="form-group">
-                <label>Harga Modal</label>
-                <input name="hargaModal" type="number" value={form.hargaModal} onChange={onChange} />
-              </div>
-
-              <div className="form-group">
-                <label>Harga Jual</label>
-                <input name="hargaJual" type="number" value={form.hargaJual} onChange={onChange} />
-              </div>
-
-              <div className="form-group">
-                <label>Stok</label>
-                <input name="stok" type="number" value={form.stok} onChange={onChange} />
-              </div>
-
-              <div className="form-group">
-                <label>Satuan</label>
-                <input name="satuan" value={form.satuan} onChange={onChange} />
-              </div>
-
-              <div className="form-group">
-                <label>Deskripsi</label>
-                <textarea
-                  name="deskripsi"
-                  value={form.deskripsi}
-                  onChange={onChange}
-                />
-              </div>
-
             </div>
 
             {/* FOOTER */}
