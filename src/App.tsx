@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
-
+import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
 import ProductPage from "./pages/ProductPage";
 import { useAuthStore } from "./stores/auth";
@@ -35,17 +35,45 @@ export default function App() {
     <Routes>
       <Route
         path="/login"
-        element={token ? <Navigate replace to="/produk" /> : <LoginPage />}
+        element={
+          token ? (
+            <Navigate replace to="/dashboard" />
+          ) : (
+            <LoginPage />
+          )
+        }
+      />
+
+      <Route
+        path="/dashboard"
+        element={
+          token ? (
+            <DashboardPage />
+          ) : (
+            <Navigate replace to="/login" />
+          )
+        }
       />
 
       <Route
         path="/produk"
-        element={token ? <ProductPage /> : <Navigate replace to="/login" />}
+        element={
+          token ? (
+            <ProductPage />
+          ) : (
+            <Navigate replace to="/login" />
+          )
+        }
       />
 
       <Route
         path="*"
-        element={<Navigate replace to={token ? "/produk" : "/login"} />}
+        element={
+          <Navigate
+            replace
+            to={token ? "/dashboard" : "/login"}
+          />
+        }
       />
     </Routes>
   );
