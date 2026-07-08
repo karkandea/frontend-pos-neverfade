@@ -3,6 +3,7 @@ import api from "../lib/api";
 import { drawChart } from "../lib/chart";
 
 type ChartItem = {
+  date: string;
   label: string;
   total: number;
 };
@@ -15,7 +16,9 @@ export default function DashboardChart() {
 
     async function load() {
       try {
-        const data: ChartItem[] = await api.get("/api/laporan/chart");
+        const { data } = await api.get<ChartItem[]>(
+          "/api/laporan/chart"
+        );
 
         if (!mounted) return;
 
