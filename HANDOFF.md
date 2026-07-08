@@ -1,79 +1,119 @@
-# HANDOFF — FE v5 → NEXT
+# HANDOFF — FE v6 → v7
 
 ## DONE
 
-- Vite + TypeScript + Zustand
-- Vanilla style.css di-import global
-- API client
-  - Bearer token otomatis
-  - base URL dari VITE_API_URL
-  - 401 handling
-- Auth store
-  - login
-  - restore session via GET /api/auth/me
-  - logout
-- Login → backend terbukti jalan
-- owner/owner123 berhasil login
-- JWT tersimpan
-- GET /api/products berhasil (200)
-- AppShell dibuat
-- Login UI mendekati vanilla (belum pixel-perfect)
-- React activation untuk `.page.page-active` & `.content-section.active`
-- ProductPage:
+Semua page berikut sudah selesai, build hijau, dan di-commit:
+
+- Product
+  - CRUD
+  - Search
+  - Filter kategori
+  - Modal vanilla (.open)
+  - DELETE 409 handling
+- Pelanggan
+  - CRUD
+  - Search
+- Karyawan
+  - CRUD
+  - Search
+  - Filter status
+- Inventaris
+  - Master stok (/api/products)
+  - Stock adjustment (/api/stock-history)
+  - Riwayat mutasi
+- Pengaturan
+  - GET /api/settings
+  - PUT /api/settings
+- Absensi
   - GET list
-  - CREATE (POST)
-  - EDIT (PUT)
-  - DELETE
-  - Search (`?search=`)
-  - Filter kategori (`?kategori=`)
-  - Modal vanilla (.open toggle)
-  - Styling parity (form-grid 2 kolom + uppercase label)
-  - DELETE sukses → refresh list
-  - DELETE gagal → tampilkan `message` dari backend (409)
+  - Check In
+  - Check Out
+- Dashboard
+  - Summary
+  - Chart (canvas salvage)
+  - Top Products
+  - Activity placeholder
+  - Tanpa Chart.js/Recharts
 
-## NEXT
+Semua page:
+- Wire API selesai
+- Build hijau
+- Commit per halaman
+- Mengikuti layout vanilla semampunya
 
-1. Pelanggan
-2. Karyawan
-3. Inventaris
-4. Absensi
-5. Laporan
-6. Pengaturan
-7. Dashboard polish (jika masih ada gap)
-8. TransactionPage **PALING AKHIR** (lapor sebelum mulai)
+## NEXT (v7)
+
+TINGGAL SATU PAGE:
+
+### TransactionPage
+
+WAJIB rewrite TOTAL.
+
+File lama (`src/pages/TransactionPage.tsx`, ±333 baris) adalah prototype lama dan HARUS dibuang seluruhnya.
+
+JANGAN dipatch.
+
+Isinya mengandung:
+- ledger
+- event sourcing
+- idempotencyKey
+- version
+- tenantId
+- profit
+- payload berbeda dari CONTRACT
+
+Rewrite dari nol mengikuti:
+
+- CONTRACT backend
+- API-CONTRACT.md
+- vanilla/index.html (Kasir/POS)
+
+Payload checkout wajib:
+
+{
+  customerId,
+  items,
+  subtotal,
+  disc,
+  tax,
+  discAmt,
+  taxAmt,
+  total,
+  metodePembayaran,
+  dibayar,
+  kembalian
+}
+
+Response:
+
+{
+  id,
+  noTrx,
+  total
+}
 
 ## GOTCHAS
 
-- Edit file pakai full rewrite (`cat > file <<'EOF'`), jangan `perl` / `sed -i` / regex patch.
-- Modal vanilla pakai toggle class `.open`, bukan conditional render.
-- Markup tetap mengikuti vanilla (`vanilla/index.html`) sebisa mungkin.
-- Jangan klaim selesai tanpa:
-  - build hijau
-  - commit
-  - data tampil / endpoint tervalidasi
-- Backend:
-  - DELETE produk yang memiliki riwayat stok/transaksi mengembalikan `409 Conflict`.
-  - Frontend menampilkan `response.data.message` dari backend.
-  - Keputusan soft delete masih di backend.
+- Edit file hanya via full rewrite:
+  - cat >
+  - cat >>
+- DILARANG:
+  - perl
+  - sed -i
+  - regex patch
+- Modal menggunakan toggle class `.open`
+- Jangan install library baru
+- Jangan tambah fitur di luar vanilla
+- Jangan buat:
+  - hold
+  - shift
+  - ledger
+  - event sourcing
+  - idempotency
+- TransactionPage adalah page terakhir dan paling sensitif.
 
-## VERIFY
+## STATUS
 
-```bash
-npm run dev
+FE v6 selesai.
 
-Login:
-
-owner
-owner123
-
-Verifikasi ProductPage:
-
-List tampil
-Create berhasil
-Edit berhasil
-Delete produk baru → sukses
-Delete produk ber-riwayat → 409 + pesan backend tampil
-Search menghasilkan GET /api/products?search=...
-Filter kategori menghasilkan GET /api/products?kategori=...
-Search + kategori bekerja bersamaan
-
+Yang tersisa hanya TransactionPage.
