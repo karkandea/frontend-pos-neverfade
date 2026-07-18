@@ -1,4 +1,9 @@
-import { useEffect, useState } from "react";
+import {
+  type ChangeEvent,
+  useEffect,
+  useState,
+} from "react";
+
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
 
@@ -25,12 +30,38 @@ const emptySettings: Settings = {
   website: "",
   headerStruk: "",
   footerStruk: "",
-  showTax: true,
+  showTax: false,
   showPoint: true,
-  defaultTax: 11,
+  defaultTax: 0,
   minStok: 5,
-  poinRate: 10000,
+  poinRate: 1,
 };
+
+function getErrorMessage(error: unknown) {
+  if (
+    typeof error !== "object" ||
+    error === null
+  ) {
+    return "Terjadi kesalahan.";
+  }
+
+  const apiError = error as {
+    message?: string;
+    response?: {
+      data?: {
+        message?: string;
+        title?: string;
+      };
+    };
+  };
+
+  return (
+    apiError.response?.data?.message ??
+    apiError.response?.data?.title ??
+    apiError.message ??
+    "Terjadi kesalahan."
+  );
+}
 
 export default function PengaturanPage() {
   const [settings, setSettings] =
@@ -39,281 +70,372 @@ export default function PengaturanPage() {
   const [loading, setLoading] =
     useState(true);
 
+  const [saving, setSaving] =
+    useState(false);
+
+  const [loadError, setLoadError] =
+    useState("");
+
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   async function load() {
     setLoading(true);
+    setLoadError("");
 
     try {
-      const { data } = await api.get(
-        "/api/settings"
-      );
+      const response =
+        await api.get<Settings>(
+          "/api/settings"
+        );
 
-      setSettings(data);
+      setSettings(response.data);
+    } catch (error) {
+      setLoadError(
+        getErrorMessage(error)
+      );
     } finally {
       setLoading(false);
     }
   }
 
   function onChange(
-    e: React.ChangeEvent<
-      HTMLInputElement |
-      HTMLTextAreaElement
+    event: ChangeEvent<
+      | HTMLInputElement
+      | HTMLTextAreaElement
     >
   ) {
-    const target = e.target;
+    const target = event.target;
 
-    setSettings({
-      ...settings,
+    setSettings((current) => ({
+      ...current,
       [target.name]:
         target.type === "checkbox"
-          ? (target as HTMLInputElement)
-              .checked
+          ? (
+              target as HTMLInputElement
+            ).checked
           : target.type === "number"
           ? Number(target.value)
           : target.value,
-    });
+    }));
   }
 
   async function save() {
-    await api.put(
-      "/api/settings",
-      settings
-    );
+    if (!settings.namaToko.trim()) {
+      window.alert(
+        "Nama toko wajib diisi."
+      );
+      return;
+    }
 
-    alert("Pengaturan berhasil disimpan.");
+    if (
+      settings.defaultTax < 0 ||
+      settings.defaultTax > 100
+    ) {
+      window.alert(
+        "Pajak default harus antara 0 sampai 100."
+      );
+      return;
+    }
 
-    await load();
-  }
+    if (settings.minStok < 0) {
+      window.alert(
+        "Minimum stok tidak boleh negatif."
+      );
+      return;
+    }
 
-  if (loading) {
-    return (
-      <AppShell>
-        <p>Loading...</p>
-      </AppShell>
-    );
+    if (settings.poinRate < 0) {
+      window.alert(
+        "Rasio poin tidak boleh negatif."
+      );
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      await api.put(
+        "/api/settings",
+        settings
+      );
+
+      window.alert(
+        "Pengaturan berhasil disimpan."
+      );
+
+      await load();
+    } catch (error) {
+      window.alert(
+        getErrorMessage(error)
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <AppShell>
       <section className="content-section active">
-
         <div className="section-header">
           <div>
-            <h2>Pengaturan</h2>
+            <h2 className="section-title">
+              Pengaturan
+            </h2>
 
-            <p>
-              Konfigurasi aplikasi
+            <p className="section-sub">
+              Konfigurasi toko dan sistem
             </p>
           </div>
 
-          <div className="section-actions">
-            <button
-              className="btn-primary"
-              onClick={save}
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={
+              saving ||
+              loading ||
+              Boolean(loadError)
+            }
+            onClick={() => void save()}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
             >
-              Simpan
-            </button>
-          </div>
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+
+            {saving
+              ? "Menyimpan..."
+              : "Simpan"}
+          </button>
         </div>
 
-        <div className="card-panel">
-
-          <h3>
-            Informasi Toko
-          </h3>
-
-          <div className="form-grid-2">
-
-            <div className="form-group">
-              <label>
-                Nama Toko
-              </label>
-
-              <input
-                name="namaToko"
-                value={
-                  settings.namaToko
-                }
-                onChange={onChange}
-              />
+        {loading ? (
+          <div className="card-panel">
+            <div className="settings-form">
+              <p>Memuat pengaturan...</p>
             </div>
-
-            <div className="form-group">
-              <label>
-                Telepon
-              </label>
-
-              <input
-                name="telepon"
-                value={
-                  settings.telepon
-                }
-                onChange={onChange}
-              />
-            </div>
-
-            <div className="form-group span-2">
-              <label>
-                Alamat
-              </label>
-
-              <textarea
-                name="alamat"
-                value={
-                  settings.alamat
-                }
-                onChange={onChange}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>
-                Email
-              </label>
-
-              <input
-                name="email"
-                value={
-                  settings.email
-                }
-                onChange={onChange}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>
-                Website
-              </label>
-
-              <input
-                name="website"
-                value={
-                  settings.website
-                }
-                onChange={onChange}
-              />
-            </div>
-            <div className="form-group span-2">
-              <label>
-                Header Struk
-              </label>
-
-              <textarea
-                name="headerStruk"
-                value={settings.headerStruk}
-                onChange={onChange}
-              />
-            </div>
-
-            <div className="form-group span-2">
-              <label>
-                Footer Struk
-              </label>
-
-              <textarea
-                name="footerStruk"
-                value={settings.footerStruk}
-                onChange={onChange}
-              />
-            </div>
-
           </div>
-        </div>
+        ) : loadError ? (
+          <div className="card-panel">
+            <div className="settings-form">
+              <p>{loadError}</p>
 
-        <div className="card-panel">
-
-          <h3>
-            Pengaturan Sistem
-          </h3>
-
-          <div className="form-grid-2">
-
-            <div className="form-group">
-              <label>
-                Pajak Default (%)
-              </label>
-
-              <input
-                type="number"
-                name="defaultTax"
-                value={settings.defaultTax}
-                onChange={onChange}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>
-                Minimum Stok
-              </label>
-
-              <input
-                type="number"
-                name="minStok"
-                value={settings.minStok}
-                onChange={onChange}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>
-                Rasio Poin
-              </label>
-
-              <input
-                type="number"
-                name="poinRate"
-                value={settings.poinRate}
-                onChange={onChange}
-              />
-            </div>
-
-            <div className="form-group">
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  cursor: "pointer",
-                }}
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => void load()}
               >
-                <input
-                  type="checkbox"
-                  name="showTax"
-                  checked={settings.showTax}
-                  onChange={onChange}
-                />
-
-                Tampilkan Pajak
-              </label>
+                Coba Lagi
+              </button>
             </div>
-
-            <div className="form-group">
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  cursor: "pointer",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  name="showPoint"
-                  checked={settings.showPoint}
-                  onChange={onChange}
-                />
-
-                Aktifkan Poin
-              </label>
-            </div>
-
           </div>
+        ) : (
+          <div className="settings-grid">
+            <div className="card-panel">
+              <div className="card-header">
+                <h3>Informasi Toko</h3>
+              </div>
 
-        </div>
+              <div className="settings-form">
+                <div className="form-group">
+                  <label>Nama Toko</label>
 
+                  <input
+                    type="text"
+                    name="namaToko"
+                    placeholder="Nama toko"
+                    value={settings.namaToko}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Alamat</label>
+
+                  <textarea
+                    name="alamat"
+                    rows={3}
+                    placeholder="Alamat lengkap toko"
+                    value={settings.alamat}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>No. Telepon</label>
+
+                  <input
+                    type="text"
+                    name="telepon"
+                    placeholder="08xxxxxxxxxx"
+                    value={settings.telepon}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Email</label>
+
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="email@toko.com"
+                    value={settings.email}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Website</label>
+
+                  <input
+                    type="text"
+                    name="website"
+                    placeholder="www.tokoanda.com"
+                    value={settings.website}
+                    onChange={onChange}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="card-panel">
+              <div className="card-header">
+                <h3>Pengaturan Struk</h3>
+              </div>
+
+              <div className="settings-form">
+                <div className="form-group">
+                  <label>Header Struk</label>
+
+                  <textarea
+                    name="headerStruk"
+                    rows={4}
+                    placeholder="Teks pembuka struk"
+                    value={
+                      settings.headerStruk
+                    }
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Footer Struk</label>
+
+                  <textarea
+                    name="footerStruk"
+                    rows={4}
+                    placeholder="Teks penutup struk"
+                    value={
+                      settings.footerStruk
+                    }
+                    onChange={onChange}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="card-panel">
+              <div className="card-header">
+                <h3>Pengaturan Sistem</h3>
+              </div>
+
+              <div className="settings-form">
+                <div className="form-group">
+                  <label>
+                    Default Pajak (%)
+                  </label>
+
+                  <input
+                    type="number"
+                    name="defaultTax"
+                    min={0}
+                    max={100}
+                    value={
+                      settings.defaultTax
+                    }
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>
+                    Stok Minimum Alert
+                  </label>
+
+                  <input
+                    type="number"
+                    name="minStok"
+                    min={0}
+                    value={
+                      settings.minStok
+                    }
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>
+                    Poin per Rp 1.000
+                  </label>
+
+                  <input
+                    type="number"
+                    name="poinRate"
+                    min={0}
+                    value={
+                      settings.poinRate
+                    }
+                    onChange={onChange}
+                  />
+                </div>
+
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="showTax"
+                    checked={
+                      settings.showTax
+                    }
+                    onChange={onChange}
+                  />
+
+                  <span className="checkbox-custom" />
+
+                  <span>
+                    Tampilkan pajak pada transaksi
+                  </span>
+                </label>
+
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="showPoint"
+                    checked={
+                      settings.showPoint
+                    }
+                    onChange={onChange}
+                  />
+
+                  <span className="checkbox-custom" />
+
+                  <span>
+                    Aktifkan perhitungan poin
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     </AppShell>
   );
