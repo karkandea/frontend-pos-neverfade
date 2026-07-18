@@ -1,333 +1,538 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import CartPanel from "../components/kasir/CartPanel";
+import ProductGrid from "../components/kasir/ProductGrid";
+import ReceiptModal from "../components/kasir/ReceiptModal";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
 
 type Product = {
   id: string;
   kode: string;
+  barcode?: string;
   nama: string;
+  kategori: string;
   hargaJual: number;
-  hargaModal?: number;
   stok: number;
 };
 
+type Customer = {
+  id: string;
+  nama: string;
+};
+
 type CartItem = {
-  product: Product;
+  id: string;
+  nama: string;
+  hargaJual: number;
   qty: number;
+  subtotal: number;
 };
 
-type TransactionEvent = {
-  type: "CHECKOUT_CREATED";
-  timestamp: string;
-  payload: any;
+type Settings = {
+  defaultTax: number;
+  headerStruk: string;
+  footerStruk: string;
 };
 
-type Transaction = {
-  id: number;
-  tenantId: string;
-  user: string;
-  role: string;
+type ReceiptData = {
+  noTrx: string;
+  subtotal: number;
+  discAmt: number;
+  taxAmt: number;
   total: number;
-  cash: number;
-  change: number;
-  profit: number;
-  createdAt: string;
-  events: TransactionEvent[];
-  idempotencyKey: string;
-  version: "v1";
+  dibayar: number;
+  kembalian: number;
+  metodePembayaran: string;
+  items: CartItem[];
 };
+
+type PaymentMethod = "tunai" | "transfer" | "qris";
+
+function getErrorMessage(error: unknown) {
+  if (typeof error !== "object" || error === null) {
+    return "Transaksi gagal diproses.";
+  }
+
+  const apiError = error as {
+    message?: string;
+    response?: {
+      data?: {
+        message?: string;
+      };
+    };
+  };
+
+  return (
+    apiError.response?.data?.message ??
+    apiError.message ??
+    "Transaksi gagal diproses."
+  );
+}
 
 export default function TransactionPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+
   const [search, setSearch] = useState("");
+  const [kategori, setKategori] = useState("");
 
-  const [cash, setCash] = useState<number>(0);
-  const [paidTx, setPaidTx] = useState<Transaction | null>(null);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [customerId, setCustomerId] = useState("");
 
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [discount, setDiscount] = useState(0);
+  const [tax, setTax] = useState(0);
 
-  const tenantId = "tenant-001";
-  const userName = "kasir-1";
-  const role = "kasir";
+  const [paymentMethod, setPaymentMethod] =
+    useState<PaymentMethod>("tunai");
 
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [paid, setPaid] = useState(0);
+
+  const [settings, setSettings] = useState<Settings>({
+    defaultTax: 0,
+    headerStruk: "",
+    footerStruk: "",
+  });
+
+  const [receipt, setReceipt] =
+    useState<ReceiptData | null>(null);
+
+  const [receiptOpen, setReceiptOpen] =
+    useState(false);
+
+  const [submitting, setSubmitting] =
+    useState(false);
+
+  const categories = useMemo(
+    () => [
+      ...new Set(
+        allProducts
+          .map((product) => product.kategori)
+          .filter(Boolean)
+      ),
+    ],
+    [allProducts]
+  );
+
+  const products = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const selectedCategory =
+      kategori.trim().toLowerCase();
+
+    return allProducts.filter((product) => {
+      const matchesSearch =
+        !query ||
+        product.nama.toLowerCase().includes(query) ||
+        product.kode.toLowerCase().includes(query) ||
+        product.barcode?.toLowerCase().includes(query);
+
+      const matchesCategory =
+        !selectedCategory ||
+        product.kategori.toLowerCase() ===
+          selectedCategory;
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [allProducts, search, kategori]);
 
   useEffect(() => {
-    loadProducts();
-    loadTransactions();
+    void loadInitial();
   }, []);
 
-  async function loadProducts() {
+  async function loadInitial() {
+    setLoading(true);
+    setLoadError("");
+
     try {
-      const { data } = await api.get(`/api/products?tenant=${tenantId}`);
-      setProducts(data);
+      const [
+        productResponse,
+        customerResponse,
+        settingsResponse,
+      ] = await Promise.all([
+        api.get<Product[]>("/api/products"),
+        api.get<Customer[]>("/api/customers"),
+        api.get<Settings>("/api/settings"),
+      ]);
+
+      setAllProducts(productResponse.data);
+      setCustomers(customerResponse.data);
+      setSettings(settingsResponse.data);
+      setTax(
+        Number(
+          settingsResponse.data.defaultTax ?? 0
+        )
+      );
+    } catch (error) {
+      setLoadError(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
   }
 
-  async function loadTransactions() {
-    try {
-      const { data } = await api.get(`/api/transactions?tenant=${tenantId}`);
-      setTransactions(data);
-    } catch {}
+  async function reloadProducts() {
+    const response =
+      await api.get<Product[]>("/api/products");
+
+    setAllProducts(response.data);
   }
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  const filtered = useMemo(() => {
-    return products.filter(
-      (p) =>
-        p.nama.toLowerCase().includes(search.toLowerCase()) ||
-        p.kode.toLowerCase().includes(search.toLowerCase())
+  function getProduct(productId: string) {
+    return allProducts.find(
+      (product) => product.id === productId
     );
-  }, [products, search]);
+  }
 
-  function addToCart(p: Product) {
-    if (isProcessing) return;
+  function addToCart(product: Product) {
+    setCart((current) => {
+      const existing = current.find(
+        (item) => item.id === product.id
+      );
 
-    setCart((prev) => {
-      const found = prev.find((c) => c.product.id === p.id);
+      if (existing && existing.qty >= product.stok) {
+        window.alert(
+          `Stok ${product.nama} hanya ${product.stok}.`
+        );
 
-      if (found) {
-        if (found.qty + 1 > p.stok) return prev;
+        return current;
+      }
 
-        return prev.map((c) =>
-          c.product.id === p.id
-            ? { ...c, qty: c.qty + 1 }
-            : c
+      if (existing) {
+        return current.map((item) =>
+          item.id === product.id
+            ? {
+                ...item,
+                qty: item.qty + 1,
+                subtotal:
+                  (item.qty + 1) *
+                  item.hargaJual,
+              }
+            : item
         );
       }
 
-      if (p.stok <= 0) return prev;
+      if (product.stok <= 0) {
+        window.alert(
+          `Stok ${product.nama} habis.`
+        );
 
-      return [...prev, { product: p, qty: 1 }];
+        return current;
+      }
+
+      return [
+        ...current,
+        {
+          id: product.id,
+          nama: product.nama,
+          hargaJual: product.hargaJual,
+          qty: 1,
+          subtotal: product.hargaJual,
+        },
+      ];
     });
   }
 
-  const total = useMemo(() => {
-    return cart.reduce(
-      (sum, c) => sum + c.product.hargaJual * c.qty,
-      0
+  function increase(productId: string) {
+    const product = getProduct(productId);
+
+    setCart((current) =>
+      current.map((item) => {
+        if (item.id !== productId) {
+          return item;
+        }
+
+        if (!product) {
+          return item;
+        }
+
+        if (item.qty >= product.stok) {
+          window.alert(
+            `Stok ${product.nama} hanya ${product.stok}.`
+          );
+
+          return item;
+        }
+
+        const qty = item.qty + 1;
+
+        return {
+          ...item,
+          qty,
+          subtotal: qty * item.hargaJual,
+        };
+      })
     );
-  }, [cart]);
-
-  const change = cash - total;
-
-  function generateIdempotencyKey() {
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   }
 
-  const profit = useMemo(() => {
-    return cart.reduce((sum, c) => {
-      const modal = c.product.hargaModal ?? 0;
-      return sum + (c.product.hargaJual - modal) * c.qty;
-    }, 0);
-  }, [cart]);
+  function decrease(productId: string) {
+    setCart((current) =>
+      current
+        .map((item) => {
+          if (item.id !== productId) {
+            return item;
+          }
 
-  function buildEvents(payload: any): TransactionEvent[] {
-    return [
-      {
-        type: "CHECKOUT_CREATED",
-        timestamp: new Date().toISOString(),
-        payload,
-      },
-    ];
+          const qty = item.qty - 1;
+
+          return {
+            ...item,
+            qty,
+            subtotal: qty * item.hargaJual,
+          };
+        })
+        .filter((item) => item.qty > 0)
+    );
+  }
+
+  function remove(productId: string) {
+    setCart((current) =>
+      current.filter(
+        (item) => item.id !== productId
+      )
+    );
+  }
+
+  function clearCart() {
+    setCart([]);
+    setPaid(0);
+    setCustomerId("");
+    setDiscount(0);
+    setTax(settings.defaultTax ?? 0);
+    setPaymentMethod("tunai");
+  }
+
+  const subtotal = useMemo(
+    () =>
+      cart.reduce(
+        (sum, item) => sum + item.subtotal,
+        0
+      ),
+    [cart]
+  );
+
+  const discAmt = useMemo(
+    () => subtotal * (discount / 100),
+    [subtotal, discount]
+  );
+
+  const taxAmt = useMemo(
+    () =>
+      (subtotal - discAmt) * (tax / 100),
+    [subtotal, discAmt, tax]
+  );
+
+  const total = useMemo(
+    () => subtotal - discAmt + taxAmt,
+    [subtotal, discAmt, taxAmt]
+  );
+
+  const change = useMemo(() => {
+    if (paymentMethod !== "tunai") {
+      return 0;
+    }
+
+    return Math.max(0, paid - total);
+  }, [paymentMethod, paid, total]);
+
+  function validateStock() {
+    for (const item of cart) {
+      const product = getProduct(item.id);
+
+      if (!product) {
+        return `${item.nama} tidak ditemukan. Muat ulang halaman.`;
+      }
+
+      if (item.qty > product.stok) {
+        return `Stok ${item.nama} hanya ${product.stok}.`;
+      }
+    }
+
+    return "";
   }
 
   async function checkout() {
-    if (isProcessing) return;
-    if (cash < total) return;
+    if (submitting || cart.length === 0) {
+      return;
+    }
 
-    setIsProcessing(true);
+    const stockError = validateStock();
 
-    const idempotencyKey = generateIdempotencyKey();
+    if (stockError) {
+      window.alert(stockError);
+      return;
+    }
 
-    const basePayload = {
-      tenantId,
-      user: userName,
-      role,
-      total,
-      cash,
-      change,
-      profit,
-      version: "v1",
-      idempotencyKey,
-      items: cart.map((c) => ({
-        productId: c.product.id,
-        qty: c.qty,
-        price: c.product.hargaJual,
-        cost: c.product.hargaModal ?? 0,
-      })),
-      createdAt: new Date().toISOString(),
-    };
+    if (
+      paymentMethod === "tunai" &&
+      paid < total
+    ) {
+      window.alert("Uang diterima kurang.");
+      return;
+    }
 
-    const payload = {
-      ...basePayload,
-      events: buildEvents(basePayload),
-    };
+    const paidAmount =
+      paymentMethod === "tunai"
+        ? paid
+        : total;
+
+    const changeAmount =
+      paymentMethod === "tunai"
+        ? change
+        : 0;
+
+    const receiptItems = cart.map(
+      (item) => ({ ...item })
+    );
+
+    setSubmitting(true);
 
     try {
-      const { data } = await api.post("/api/transactions", payload);
-
-      setProducts((prev) =>
-        prev.map((p) => {
-          const bought = cart.find((c) => c.product.id === p.id);
-          if (!bought) return p;
-
-          return {
-            ...p,
-            stok: Math.max(0, p.stok - bought.qty),
-          };
-        })
-      );
-
-      const tx: Transaction = {
-        ...data,
-        events: payload.events,
+      const payload = {
+        customerId: customerId || null,
+        items: cart.map((item) => ({
+          id: item.id,
+          nama: item.nama,
+          hargaJual: item.hargaJual,
+          qty: item.qty,
+          subtotal: item.subtotal,
+        })),
+        subtotal,
+        disc: discount,
+        tax,
+        discAmt,
+        taxAmt,
+        total,
+        metodePembayaran: paymentMethod,
+        dibayar: paidAmount,
+        kembalian: changeAmount,
       };
 
-      setPaidTx(tx);
-      setTransactions((prev) => [tx, ...prev]);
+      const response = await api.post(
+        "/api/transactions",
+        payload
+      );
 
-      setCart([]);
-      setCash(0);
-      setSearch("");
+      setReceipt({
+        noTrx: response.data.noTrx,
+        subtotal,
+        discAmt,
+        taxAmt,
+        total,
+        dibayar: paidAmount,
+        kembalian: changeAmount,
+        metodePembayaran: paymentMethod,
+        items: receiptItems,
+      });
 
-      setTimeout(() => setPaidTx(null), 2500);
-    } catch (e) {
-      await loadProducts();
+      setReceiptOpen(true);
+      clearCart();
+
+      await reloadProducts();
+    } catch (error) {
+      window.alert(getErrorMessage(error));
+
+      try {
+        await reloadProducts();
+      } catch {
+        // Error checkout utama sudah ditampilkan.
+      }
     } finally {
-      setIsProcessing(false);
+      setSubmitting(false);
     }
   }
 
-  const shiftTotal = useMemo(() => {
-    return transactions.reduce((sum, t) => sum + t.total, 0);
-  }, [transactions]);
-
-  const shiftProfit = useMemo(() => {
-    return transactions.reduce((sum, t) => sum + t.profit, 0);
-  }, [transactions]);
-
   return (
     <AppShell>
-      <div style={{ display: "flex", gap: 20 }}>
-
-        {/* LEFT */}
-        <div style={{ flex: 2 }}>
-          <h2>PRODUCTION LEDGER POS</h2>
-
+      <section className="content-section active">
+        <div className="section-header">
           <div>
-            tenant: {tenantId} | user: {userName} | role: {role}
+            <h2 className="section-title">
+              Kasir
+            </h2>
+
+            <p className="section-sub">
+              Point of Sale
+            </p>
           </div>
 
-          <input
-            ref={inputRef}
-            placeholder="scan / search product..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            disabled={isProcessing}
-          />
-
-          {loading ? (
-            <p>Loading...</p>
-          ) : (
-            <div>
-              {filtered.map((p) => (
-                <div
-                  key={p.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: 10,
-                    border: "1px solid #ddd",
-                  }}
-                >
-                  <div>
-                    <b>{p.nama}</b>
-                    <div>Rp {p.hargaJual}</div>
-                    <small>Stock: {p.stok}</small>
-                  </div>
-
-                  <button
-                    onClick={() => addToCart(p)}
-                    disabled={p.stok <= 0 || isProcessing}
-                  >
-                    Add
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT */}
-        <div style={{ flex: 1, borderLeft: "1px solid #ddd", paddingLeft: 20 }}>
-          <h3>Cart</h3>
-
-          {cart.map((c) => (
-            <div key={c.product.id}>
-              {c.product.nama} x {c.qty}
-            </div>
-          ))}
-
-          <hr />
-
-          <h3>Total: Rp {total}</h3>
-          <h4>Profit: Rp {profit}</h4>
-
-          <input
-            type="number"
-            placeholder="cash"
-            value={cash}
-            onChange={(e) => setCash(Number(e.target.value))}
-            disabled={isProcessing}
-          />
-
-          <div>change: {change >= 0 ? change : 0}</div>
-
           <button
-            onClick={checkout}
-            disabled={!cart.length || cash < total || isProcessing}
+            type="button"
+            className="btn-secondary"
+            onClick={clearCart}
+            disabled={submitting}
           >
-            {isProcessing ? "processing..." : "checkout"}
+            Kosongkan
           </button>
-
-          {paidTx && (
-            <div style={{ marginTop: 10, border: "1px dashed #000", padding: 10 }}>
-              <pre style={{ fontSize: 11 }}>
-{`===== LEDGER RECEIPT =====
-TX ID : ${paidTx.id}
-TENANT: ${paidTx.tenantId}
-USER  : ${paidTx.user}
-ROLE  : ${paidTx.role}
-TOTAL : ${paidTx.total}
-PROFIT: ${paidTx.profit}
-EVENTS: ${paidTx.events.length}
-==========================`}
-              </pre>
-            </div>
-          )}
         </div>
 
-      </div>
+        {loading ? (
+          <div className="table-card">
+            <p>Memuat kasir...</p>
+          </div>
+        ) : loadError ? (
+          <div className="table-card">
+            <p>{loadError}</p>
 
-      <hr />
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => void loadInitial()}
+            >
+              Coba Lagi
+            </button>
+          </div>
+        ) : (
+          <div className="pos-layout">
+            <ProductGrid
+              products={products}
+              categories={categories}
+              search={search}
+              selectedCategory={kategori}
+              onSearchChange={setSearch}
+              onCategoryChange={setKategori}
+              onAdd={addToCart}
+            />
 
-      <div>
-        <h3>SHIFT LEDGER SUMMARY</h3>
-        <p>Transactions: {transactions.length}</p>
-        <p>Total Sales: Rp {shiftTotal}</p>
-        <p>Total Profit: Rp {shiftProfit}</p>
-      </div>
+            <CartPanel
+              submitting={submitting}
+              items={cart}
+              customers={customers}
+              customerId={customerId}
+              discount={discount}
+              tax={tax}
+              subtotal={subtotal}
+              total={total}
+              paymentMethod={paymentMethod}
+              paid={paid}
+              change={change}
+              onCustomerChange={setCustomerId}
+              onDiscountChange={setDiscount}
+              onTaxChange={setTax}
+              onPaymentMethodChange={
+                setPaymentMethod
+              }
+              onPaidChange={setPaid}
+              onIncrease={increase}
+              onDecrease={decrease}
+              onRemove={remove}
+              onClear={clearCart}
+              onCheckout={() => void checkout()}
+            />
+          </div>
+        )}
 
+        <ReceiptModal
+          open={receiptOpen}
+          receipt={receipt}
+          header={settings.headerStruk}
+          footer={settings.footerStruk}
+          onClose={() =>
+            setReceiptOpen(false)
+          }
+        />
+      </section>
     </AppShell>
   );
 }
