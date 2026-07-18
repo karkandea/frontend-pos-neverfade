@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AppShell from "../components/layout/AppShell";
 import DashboardChart from "./DashboardChart";
 import api from "../lib/api";
+import { SkeletonCards, Skeleton } from "../components/common/Skeleton";
 
 type Summary = {
   omzet: number;
@@ -97,73 +98,77 @@ export default function DashboardPage() {
 
         </div>
 
-        <div className="stats-grid">
+        {loading ? (
+          <SkeletonCards />
+        ) : (
+          <div className="stats-grid">
 
-          <div className="stat-card">
-            <div className="stat-body">
-              <div className="stat-label">
-                Omzet
-              </div>
+            <div className="stat-card">
+              <div className="stat-body">
+                <div className="stat-label">
+                  Omzet
+                </div>
 
-              <div className="stat-value">
-                {rupiah(summary.omzet)}
-              </div>
+                <div className="stat-value">
+                  {rupiah(summary.omzet)}
+                </div>
 
-              <div className="stat-delta">
-                Hari ini
-              </div>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-body">
-              <div className="stat-label">
-                Transaksi
-              </div>
-
-              <div className="stat-value">
-                {summary.transaksi}
-              </div>
-
-              <div className="stat-delta">
-                Hari ini
+                <div className="stat-delta">
+                  Hari ini
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="stat-card">
-            <div className="stat-body">
-              <div className="stat-label">
-                Avg Transaksi
-              </div>
+            <div className="stat-card">
+              <div className="stat-body">
+                <div className="stat-label">
+                  Transaksi
+                </div>
 
-              <div className="stat-value">
-                {rupiah(summary.avg)}
-              </div>
+                <div className="stat-value">
+                  {summary.transaksi}
+                </div>
 
-              <div className="stat-delta">
-                Per transaksi
-              </div>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-body">
-              <div className="stat-label">
-                Pelanggan
-              </div>
-
-              <div className="stat-value">
-                {summary.pelanggan}
-              </div>
-
-              <div className="stat-delta">
-                Hari ini
+                <div className="stat-delta">
+                  Hari ini
+                </div>
               </div>
             </div>
-          </div>
 
-        </div>
+            <div className="stat-card">
+              <div className="stat-body">
+                <div className="stat-label">
+                  Avg Transaksi
+                </div>
+
+                <div className="stat-value">
+                  {rupiah(summary.avg)}
+                </div>
+
+                <div className="stat-delta">
+                  Per transaksi
+                </div>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-body">
+                <div className="stat-label">
+                  Pelanggan
+                </div>
+
+                <div className="stat-value">
+                  {summary.pelanggan}
+                </div>
+
+                <div className="stat-delta">
+                  Hari ini
+                </div>
+              </div>
+            </div>
+
+          </div>
+        )}
 
         <div className="dashboard-bottom">
 
@@ -195,10 +200,13 @@ export default function DashboardPage() {
 
               <div className="top-list">
                 {loading ? (
-                  <div className="empty-state-sm">
-                    Loading...
-                  </div>
-                ) : topProducts.length === 0 ? (
+                <>
+                  <Skeleton className="skeleton-table-row" />
+                  <Skeleton className="skeleton-table-row" />
+                  <Skeleton className="skeleton-table-row" />
+                  <Skeleton className="skeleton-table-row" />
+                </>
+              ) : topProducts.length === 0 ? (
                   <div className="empty-state-sm">
                     Belum ada data
                   </div>

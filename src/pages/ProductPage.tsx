@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
+import { SkeletonTable } from "../components/common/Skeleton";
 
 type Product = {
   id: string;
@@ -181,7 +182,7 @@ export default function ProductPage() {
         {/* TABLE */}
         <div className="table-card">
           {loading ? (
-            <p>Loading...</p>
+            <SkeletonTable rows={8} />
           ) : (
             <table className="data-table">
               <thead>
