@@ -1,40 +1,173 @@
+import { useEffect, useState } from "react";
 import AppShell from "../components/layout/AppShell";
+import api from "../lib/api";
+
+type Customer = {
+  id: string;
+  nama: string;
+  hp: string;
+  email: string;
+  alamat: string;
+  poin: number;
+  totalTransaksi: number;
+};
+
+type Form = {
+  nama: string;
+  hp: string;
+  email: string;
+  alamat: string;
+  poin: number;
+};
+
+const emptyForm: Form = {
+  nama: "",
+  hp: "",
+  email: "",
+  alamat: "",
+  poin: 0,
+};
 
 export default function PelangganPage() {
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [search, setSearch] = useState("");
+
+  const [open, setOpen] = useState(false);
+
+  const [editingId, setEditingId] =
+    useState<string | null>(null);
+
+  const [form, setForm] =
+    useState<Form>(emptyForm);
+
+  useEffect(() => {
+    load();
+  }, [search]);
+
+  async function load() {
+    setLoading(true);
+
+    try {
+      const { data } = await api.get(
+        "/api/customers",
+        {
+          params: {
+            search:
+              search || undefined,
+          },
+        }
+      );
+
+      setCustomers(data);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function openCreate() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setOpen(true);
+  }
+
+  function openEdit(c: Customer) {
+    setEditingId(c.id);
+
+    setForm({
+      nama: c.nama,
+      hp: c.hp ?? "",
+      email: c.email ?? "",
+      alamat: c.alamat ?? "",
+      poin: c.poin,
+    });
+
+    setOpen(true);
+  }
+
+  function closeModal() {
+    setOpen(false);
+  }
+
+  async function remove(id: string) {
+    if (
+      !confirm(
+        "Hapus pelanggan ini?"
+      )
+    )
+      return;
+
+    await api.delete(
+      `/api/customers/${id}`
+    );
+
+    await load();
+  }
+
+  function onChange(
+    e: React.ChangeEvent<
+      | HTMLInputElement
+      | HTMLTextAreaElement
+    >
+  ) {
+    setForm({
+      ...form,
+      [e.target.name]:
+        e.target.name === "poin"
+          ? Number(e.target.value)
+          : e.target.value,
+    });
+  }
+
+  async function save() {
+    const payload = {
+      ...form,
+      poin: Number(form.poin),
+    };
+
+    if (editingId) {
+      await api.put(
+        `/api/customers/${editingId}`,
+        payload
+      );
+    } else {
+      await api.post(
+        "/api/customers",
+        payload
+      );
+    }
+
+    closeModal();
+    await load();
+  }
+
   return (
     <AppShell>
-      <section
-        id="sec-pelanggan"
-        className="content-section"
-      >
+      <section className="content-section active">
         <div className="section-header">
           <div>
-            <h2 className="section-title">
-              Pelanggan
-            </h2>
-
-            <p className="section-sub">
+            <h2>Pelanggan</h2>
+            <p>
               Kelola data pelanggan
             </p>
           </div>
 
           <div className="section-actions">
-            <div className="search-bar">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-
-              <input
-                type="text"
-                id="pelanggan-search"
-                placeholder="Cari pelanggan..."
-              />
-            </div>
+            <input
+              type="text"
+              placeholder="Cari pelanggan..."
+              value={search}
+              onChange={(e) =>
+                setSearch(
+                  e.target.value
+                )
+              }
+            />
 
             <button
               className="btn-primary"
-              id="btn-add-pelanggan"
+              onClick={openCreate}
             >
               Tambah
             </button>
@@ -42,30 +175,178 @@ export default function PelangganPage() {
         </div>
 
         <div className="table-card">
-          <div className="table-scroll">
+          {loading ? (
+            <p>Loading...</p>
+          ) : (
             <table className="data-table">
               <thead>
                 <tr>
                   <th>Nama</th>
-                  <th>Telepon</th>
+                  <th>HP</th>
                   <th>Email</th>
+                  <th>Alamat</th>
                   <th>Poin</th>
-                  <th>Total Belanja</th>
+                  <th>Total</th>
                   <th>Aksi</th>
                 </tr>
               </thead>
 
-              <tbody id="pelanggan-tbody">
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="text-center"
-                  >
-                    Belum ada data.
-                  </td>
-                </tr>
+              <tbody>
+                {customers.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="text-center"
+                    >
+                      Belum ada data.
+                    </td>
+                  </tr>
+                ) : (
+                  customers.map((c) => (
+                    <tr key={c.id}>
+                      <td>{c.nama}</td>
+                      <td>{c.hp}</td>
+                      <td>
+                        {c.email || "-"}
+                      </td>
+                      <td>
+                        {c.alamat || "-"}
+                      </td>
+                      <td>{c.poin}</td>
+                      <td>
+                        {
+                          c.totalTransaksi
+                        }
+                      </td>
+
+                      <td
+                        style={{
+                          display:
+                            "flex",
+                          gap: 8,
+                        }}
+                      >
+                        <button
+                          className="btn-secondary"
+                          onClick={() =>
+                            openEdit(c)
+                          }
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          className="btn-secondary"
+                          onClick={() =>
+                            remove(c.id)
+                          }
+                        >
+                          Hapus
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
+          )}
+        </div>
+
+        <div
+          className={
+            "modal-overlay" +
+            (open ? " open" : "")
+          }
+        >
+          <div className="modal modal-wide">
+            <div className="modal-header">
+              <h3>
+                {editingId
+                  ? "Edit Pelanggan"
+                  : "Tambah Pelanggan"}
+              </h3>
+
+              <button
+                className="modal-close"
+                onClick={closeModal}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="form-grid-2">
+                <div className="form-group">
+                  <label>Nama</label>
+
+                  <input
+                    name="nama"
+                    value={form.nama}
+                    onChange={onChange}
+                    type="text"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>No. HP</label>
+
+                  <input
+                    name="hp"
+                    value={form.hp}
+                    onChange={onChange}
+                    type="text"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Email</label>
+
+                  <input
+                    name="email"
+                    value={form.email}
+                    onChange={onChange}
+                    type="email"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Poin</label>
+
+                  <input
+                    name="poin"
+                    type="number"
+                    value={form.poin}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className="form-group span-2">
+                  <label>Alamat</label>
+
+                  <textarea
+                    name="alamat"
+                    value={form.alamat}
+                    onChange={onChange}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn-secondary"
+                onClick={closeModal}
+              >
+                Batal
+              </button>
+
+              <button
+                className="btn-primary"
+                onClick={save}
+              >
+                Simpan
+              </button>
+            </div>
           </div>
         </div>
       </section>

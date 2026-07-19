@@ -9,7 +9,7 @@ type Props = {
 
 export default function AppShell({ children }: Props) {
   return (
-    <div id="page-app" className="page">
+    <div id="page-app" className="page page-active" style={{display:"flex"}}>
       <div
         className="sidebar-overlay"
         id="sidebar-overlay"

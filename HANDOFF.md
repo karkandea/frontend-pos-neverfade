@@ -1,71 +1,119 @@
-# HANDOFF — FE v1 → FE v2
+# HANDOFF — FE v6 → v7
 
 ## DONE
 
-- Vite + TypeScript + Zustand
-- Vanilla style.css di-import global
-- API client
-  - Bearer token otomatis
-  - base URL dari VITE_API_URL
-  - 401 handling
-- Auth store
-  - login
-  - restore session via GET /api/auth/me
-  - logout
-- Login → backend terbukti jalan
-- owner/owner123 berhasil login
-- JWT tersimpan
-- GET /api/products berhasil (200)
-- AppShell dibuat
-- Login UI mendekati vanilla (belum pixel-perfect)
+Semua page berikut sudah selesai, build hijau, dan di-commit:
 
-## NEXT
+- Product
+  - CRUD
+  - Search
+  - Filter kategori
+  - Modal vanilla (.open)
+  - DELETE 409 handling
+- Pelanggan
+  - CRUD
+  - Search
+- Karyawan
+  - CRUD
+  - Search
+  - Filter status
+- Inventaris
+  - Master stok (/api/products)
+  - Stock adjustment (/api/stock-history)
+  - Riwayat mutasi
+- Pengaturan
+  - GET /api/settings
+  - PUT /api/settings
+- Absensi
+  - GET list
+  - Check In
+  - Check Out
+- Dashboard
+  - Summary
+  - Chart (canvas salvage)
+  - Top Products
+  - Activity placeholder
+  - Tanpa Chart.js/Recharts
 
-1. PIXEL PASS shell
-   - Sidebar 100% (seluruh SVG + markup)
-   - Topbar 100%
-   - Responsive sidebar
-   - Role gating mengikuti DOM vanilla
+Semua page:
+- Wire API selesai
+- Build hijau
+- Commit per halaman
+- Mengikuti layout vanilla semampunya
 
-2. Dashboard
+## NEXT (v7)
 
-3. Produk (markup vanilla + API)
+TINGGAL SATU PAGE:
 
-4. Kasir
+### TransactionPage
 
-5. Inventaris
+WAJIB rewrite TOTAL.
 
-6. Pelanggan
+File lama (`src/pages/TransactionPage.tsx`, ±333 baris) adalah prototype lama dan HARUS dibuang seluruhnya.
 
-7. Transaksi
+JANGAN dipatch.
 
-8. Karyawan
+Isinya mengandung:
+- ledger
+- event sourcing
+- idempotencyKey
+- version
+- tenantId
+- profit
+- payload berbeda dari CONTRACT
 
-9. Absensi
+Rewrite dari nol mengikuti:
 
-10. Laporan
+- CONTRACT backend
+- API-CONTRACT.md
+- vanilla/index.html (Kasir/POS)
 
-11. Pengaturan
+Payload checkout wajib:
+
+{
+  customerId,
+  items,
+  subtotal,
+  disc,
+  tax,
+  discAmt,
+  taxAmt,
+  total,
+  metodePembayaran,
+  dibayar,
+  kembalian
+}
+
+Response:
+
+{
+  id,
+  noTrx,
+  total
+}
 
 ## GOTCHAS
 
-- Sidebar dan Login masih kompromi.
-- Masih ada SVG, markup, dan id yang belum 1:1 dengan vanilla/index.html.
-- Target berikutnya adalah preserve UI 100%.
-- Markup berasal dari proyek user; lakukan konversi HTML → JSX tanpa redesign.
-- Backend boleh dimatikan saat migrasi UI murni.
-- Backend harus dijalankan di http://localhost:5012 saat menguji endpoint.
+- Edit file hanya via full rewrite:
+  - cat >
+  - cat >>
+- DILARANG:
+  - perl
+  - sed -i
+  - regex patch
+- Modal menggunakan toggle class `.open`
+- Jangan install library baru
+- Jangan tambah fitur di luar vanilla
+- Jangan buat:
+  - hold
+  - shift
+  - ledger
+  - event sourcing
+  - idempotency
+- TransactionPage adalah page terakhir dan paling sensitif.
 
-## VERIFY
+## STATUS
 
-npm run dev
+FE v6 selesai.
 
-Login:
-
-owner / owner123
-
-Expected:
-
-- Login berhasil
-- Restore session via /auth/me
-- Produk tampil dari backend
+Yang tersisa hanya TransactionPage.

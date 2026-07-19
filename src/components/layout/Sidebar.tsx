@@ -1,4 +1,5 @@
 import { useAuthStore } from "../../stores/auth";
+import { NavLink } from "react-router-dom";
 
 export default function Sidebar() {
   const user = useAuthStore((s) => s.user);
@@ -45,7 +46,12 @@ export default function Sidebar() {
           UTAMA
         </div>
 
-        <a className="nav-item" data-page="dashboard">
+        <NavLink
+          to="/kasir"
+          className={({ isActive }) =>
+            isActive ? "nav-item active" : "nav-item"
+          }
+        >
           <svg
             width="18"
             height="18"
@@ -60,10 +66,15 @@ export default function Sidebar() {
             <rect x="14" y="14" width="7" height="7" rx="1" />
           </svg>
 
-          <span>Dashboard</span>
-        </a>
+          <span>Kasir</span>
+        </NavLink>
 
-        <a className="nav-item" data-page="kasir">
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) =>
+            isActive ? "nav-item active" : "nav-item"
+          }
+        >
           <svg
             width="18"
             height="18"
@@ -77,7 +88,7 @@ export default function Sidebar() {
             <path d="M7 8h2M11 8h6M7 12h2M11 12h2" />
           </svg>
 
-          <span>Kasir</span>
+          <span>Dashboard</span>
 
           <span
             className="nav-badge"
@@ -86,12 +97,17 @@ export default function Sidebar() {
           >
             0
           </span>
-        </a>
+        </NavLink>
 
         <div className="nav-section-label">
           MANAJEMEN
         </div>
-        <a className="nav-item" data-page="produk">
+        <NavLink
+          to="/produk"
+          className={({ isActive }) =>
+            isActive ? "nav-item active" : "nav-item"
+          }
+        >
           <svg
             width="18"
             height="18"
@@ -105,9 +121,14 @@ export default function Sidebar() {
           </svg>
 
           <span>Produk</span>
-        </a>
+        </NavLink>
 
-        <a className="nav-item" data-page="inventaris">
+        <NavLink
+          to="/inventaris"
+          className={({ isActive }) =>
+            isActive ? "nav-item active" : "nav-item"
+          }
+        >
           <svg
             width="18"
             height="18"
@@ -122,9 +143,14 @@ export default function Sidebar() {
           </svg>
 
           <span>Inventaris</span>
-        </a>
+        </NavLink>
 
-        <a className="nav-item" data-page="pelanggan">
+        <NavLink
+          to="/pelanggan"
+          className={({ isActive }) =>
+            isActive ? "nav-item active" : "nav-item"
+          }
+        >
           <svg
             width="18"
             height="18"
@@ -139,13 +165,18 @@ export default function Sidebar() {
           </svg>
 
           <span>Pelanggan</span>
-        </a>
+        </NavLink>
 
         <div className="nav-section-label">
           ANALITIK
         </div>
 
-        <a className="nav-item" data-page="transaksi">
+        <NavLink
+          to="/transaksi"
+          className={({ isActive }) =>
+            isActive ? "nav-item active" : "nav-item"
+          }
+        >
           <svg
             width="18"
             height="18"
@@ -161,9 +192,14 @@ export default function Sidebar() {
           </svg>
 
           <span>Transaksi</span>
-        </a>
+        </NavLink>
 
-        <a className="nav-item" data-page="laporan">
+        <NavLink
+          to="/laporan"
+          className={({ isActive }) =>
+            isActive ? "nav-item active" : "nav-item"
+          }
+        >
           <svg
             width="18"
             height="18"
@@ -178,14 +214,19 @@ export default function Sidebar() {
           </svg>
 
           <span>Laporan</span>
-        </a>
+        </NavLink>
         {isAdmin && (
           <>
             <div className="nav-section-label nav-admin-section">
               SDM
             </div>
 
-            <a className="nav-item nav-admin-only" data-page="karyawan">
+            <NavLink
+              to="/karyawan"
+              className={({ isActive }) =>
+                isActive ? "nav-item nav-admin-only active" : "nav-item nav-admin-only"
+              }
+            >
               <svg
                 width="18"
                 height="18"
@@ -201,9 +242,14 @@ export default function Sidebar() {
               </svg>
 
               <span>Karyawan</span>
-            </a>
+            </NavLink>
 
-            <a className="nav-item nav-admin-only" data-page="absensi">
+            <NavLink
+              to="/absensi"
+              className={({ isActive }) =>
+                isActive ? "nav-item nav-admin-only active" : "nav-item nav-admin-only"
+              }
+            >
               <svg
                 width="18"
                 height="18"
@@ -220,13 +266,18 @@ export default function Sidebar() {
               </svg>
 
               <span>Absensi</span>
-            </a>
+            </NavLink>
 
             <div className="nav-section-label nav-admin-section">
               SISTEM
             </div>
 
-            <a className="nav-item nav-admin-only" data-page="pengguna">
+            <NavLink
+              to="/pengguna"
+              className={({ isActive }) =>
+                isActive ? "nav-item nav-admin-only active" : "nav-item nav-admin-only"
+              }
+            >
               <svg
                 width="18"
                 height="18"
@@ -240,9 +291,14 @@ export default function Sidebar() {
               </svg>
 
               <span>Pengguna</span>
-            </a>
+            </NavLink>
 
-            <a className="nav-item nav-admin-only" data-page="pengaturan">
+            <NavLink
+              to="/pengaturan"
+              className={({ isActive }) =>
+                isActive ? "nav-item nav-admin-only active" : "nav-item nav-admin-only"
+              }
+            >
               <svg
                 width="18"
                 height="18"
@@ -256,7 +312,7 @@ export default function Sidebar() {
               </svg>
 
               <span>Pengaturan</span>
-            </a>
+            </NavLink>
           </>
         )}
       </nav>

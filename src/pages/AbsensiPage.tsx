@@ -1,73 +1,192 @@
+import { useEffect, useState } from "react";
 import AppShell from "../components/layout/AppShell";
+import api from "../lib/api";
+
+type Attendance = {
+  id: string;
+  tanggal: string;
+  namaKaryawan: string;
+  checkIn: string | null;
+  checkOut: string | null;
+  status: string;
+  keterangan: string;
+};
 
 export default function AbsensiPage() {
+  const [items, setItems] =
+    useState<Attendance[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [search, setSearch] =
+    useState("");
+
+  useEffect(() => {
+    load();
+  }, [search]);
+
+  async function load() {
+    setLoading(true);
+
+    try {
+      const { data } = await api.get(
+        "/api/absensi",
+        {
+          params: {
+            search:
+              search || undefined,
+          },
+        }
+      );
+
+      setItems(data);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function checkIn() {
+    await api.post(
+      "/api/absensi/checkin"
+    );
+
+    await load();
+  }
+
+  async function checkOut() {
+    await api.post(
+      "/api/absensi/checkout"
+    );
+
+    await load();
+  }
+
   return (
     <AppShell>
-      <section
-        id="sec-absensi"
-        className="content-section"
-      >
-        <div className="section-header">
-          <div>
-            <h2 className="section-title">
-              Absensi
-            </h2>
+      <section className="content-section active">
 
-            <p className="section-sub">
-              Kehadiran karyawan
+        <div className="section-header">
+
+          <div>
+            <h2>Absensi</h2>
+
+            <p>
+              Kehadiran
+              karyawan
             </p>
           </div>
 
           <div className="section-actions">
-            <div className="search-bar">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
 
-              <input
-                type="text"
-                id="absensi-search"
-                placeholder="Cari karyawan..."
-              />
-            </div>
+            <input
+              type="text"
+              placeholder="Cari karyawan..."
+              value={search}
+              onChange={(e) =>
+                setSearch(
+                  e.target.value
+                )
+              }
+            />
+
+            <button
+              className="btn-secondary"
+              onClick={checkIn}
+            >
+              Check In
+            </button>
 
             <button
               className="btn-primary"
-              id="btn-absensi"
+              onClick={checkOut}
             >
-              Catat Absensi
+              Check Out
             </button>
+
           </div>
         </div>
 
         <div className="table-card">
-          <div className="table-scroll">
+
+          {loading ? (
+            <p>Loading...</p>
+          ) : (
             <table className="data-table">
+
               <thead>
                 <tr>
-                  <th>Tanggal</th>
-                  <th>Karyawan</th>
-                  <th>Masuk</th>
-                  <th>Pulang</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
+                  <th>
+                    Tanggal
+                  </th>
+
+                  <th>
+                    Karyawan
+                  </th>
+
+                  <th>
+                    Check In
+                  </th>
+
+                  <th>
+                    Check Out
+                  </th>
+
+                  <th>
+                    Status
+                  </th>
+
+                  <th>
+                    Keterangan
+                  </th>
                 </tr>
               </thead>
 
-              <tbody id="absensi-tbody">
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="text-center"
-                  >
-                    Belum ada data.
-                  </td>
-                </tr>
+              <tbody>
+                {items.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="text-center"
+                    >
+                      Belum ada data.
+                    </td>
+                  </tr>
+                ) : (
+                  items.map((item) => (
+                    <tr key={item.id}>
+                      <td>{item.tanggal}</td>
+
+                      <td>
+                        {item.namaKaryawan}
+                      </td>
+
+                      <td>
+                        {item.checkIn ?? "-"}
+                      </td>
+
+                      <td>
+                        {item.checkOut ?? "-"}
+                      </td>
+
+                      <td>
+                        {item.status}
+                      </td>
+
+                      <td>
+                        {item.keterangan ||
+                          "-"}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
+
             </table>
-          </div>
+          )}
+
         </div>
+
       </section>
     </AppShell>
   );

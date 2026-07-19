@@ -1,164 +1,352 @@
 import { useEffect, useState } from "react";
-
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
+import { SkeletonTable } from "../components/common/Skeleton";
 
 type Product = {
   id: string;
   kode: string;
+  barcode?: string;
   nama: string;
   kategori: string;
-  hargaModal?: number;
+  hargaModal: number;
   hargaJual: number;
   stok: number;
   supplier?: string;
+  satuan?: string;
+  deskripsi?: string;
+};
+
+type Form = {
+  kode: string;
+  barcode: string;
+  nama: string;
+  kategori: string;
+  hargaModal: number;
+  hargaJual: number;
+  stok: number;
+  supplier: string;
+  satuan: string;
+  deskripsi: string;
+};
+
+const emptyForm: Form = {
+  kode: "",
+  barcode: "",
+  nama: "",
+  kategori: "",
+  hargaModal: 0,
+  hargaJual: 0,
+  stok: 0,
+  supplier: "",
+  satuan: "",
+  deskripsi: "",
 };
 
 export default function ProductPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [kategori, setKategori] = useState("");
+  const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<Form>(emptyForm);
+  
 
   useEffect(() => {
-    async function load() {
-      try {
-        const { data } = await api.get("/api/products");
-        setProducts(data);
-      } catch (e: any) {
-        setError(
-          e?.response?.data?.error ??
-            e?.message ??
-            "Gagal memuat produk."
-        );
-      } finally {
-        setLoading(false);
-      }
+  load();
+}, [search, kategori]);
+
+  async function load() {
+    setLoading(true);
+
+    try {
+      const { data } = await api.get("/api/products", {
+        params: {
+  search: search || undefined,
+  kategori: kategori || undefined,
+},
+      });
+
+      setProducts(data);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function openCreate() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setOpen(true);
+  }
+
+  function openEdit(product: Product) {
+    setEditingId(product.id);
+
+    setForm({
+      kode: product.kode,
+      barcode: product.barcode ?? "",
+      nama: product.nama,
+      kategori: product.kategori,
+      hargaModal: product.hargaModal,
+      hargaJual: product.hargaJual,
+      stok: product.stok,
+      supplier: product.supplier ?? "",
+      satuan: product.satuan ?? "",
+      deskripsi: product.deskripsi ?? "",
+    });
+
+    setOpen(true);
+  }
+
+  function closeModal() {
+    setOpen(false);
+  }
+
+  async function remove(id: string) {
+  if (!confirm("Hapus produk ini?")) return;
+
+  try {
+    await api.delete(`/api/products/${id}`);
+    await load();
+  } catch (err: any) {
+    alert(
+      err?.response?.data?.message ??
+      "Terjadi kesalahan saat menghapus produk."
+    );
+  }
+}
+
+  function onChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  }
+
+  async function save() {
+    const payload = {
+      ...form,
+      hargaModal: Number(form.hargaModal),
+      hargaJual: Number(form.hargaJual),
+      stok: Number(form.stok),
+    };
+
+    if (editingId) {
+      await api.put(`/api/products/${editingId}`, payload);
+    } else {
+      await api.post("/api/products", payload);
     }
 
-    load();
-  }, []);
+    setOpen(false);
+    setEditingId(null);
+    await load();
+  }
 
   return (
     <AppShell>
-      <section
-        id="sec-produk"
-        className="content-section"
-      >
+      <section className="content-section active">
+        {/* HEADER */}
         <div className="section-header">
           <div>
-            <h2 className="section-title">
-              Produk
-            </h2>
-
-            <p className="section-sub">
-              Kelola katalog produk
-            </p>
+            <h2>Produk</h2>
+            <p>Kelola produk</p>
           </div>
 
           <div className="section-actions">
-            <div className="search-bar">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+  <input
+    type="text"
+    placeholder="Cari produk..."
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+  />
 
-              <input
-                type="text"
-                id="produk-search"
-                placeholder="Cari produk..."
-              />
-            </div>
+  <select
+    value={kategori}
+    onChange={(e) => setKategori(e.target.value)}
+  >
+    <option value="">Semua Kategori</option>
+    <option value="Makanan">Makanan</option>
+    <option value="Minuman">Minuman</option>
+    <option value="Snack">Snack</option>
+  </select>
 
-            <select
-              className="select-sm"
-              id="produk-filter-cat"
-            >
-              <option value="">
-                Semua Kategori
-              </option>
-            </select>
-
-            <button
-              className="btn-primary"
-              id="btn-add-produk"
-            >
-              Tambah
-            </button>
-          </div>
+  <button className="btn-primary" onClick={openCreate}>
+    Tambah
+  </button>
+</div>
         </div>
+
+        {/* TABLE */}
         <div className="table-card">
           {loading ? (
-            <div className="table-empty">
-              <p>Memuat produk...</p>
-            </div>
-          ) : error ? (
-            <div className="table-empty">
-              <p>{error}</p>
-            </div>
+            <SkeletonTable rows={8} />
           ) : (
-            <>
-              <div className="table-scroll">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Kode</th>
-                      <th>Nama Produk</th>
-                      <th>Kategori</th>
-                      <th>Harga Modal</th>
-                      <th>Harga Jual</th>
-                      <th>Stok</th>
-                      <th>Supplier</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Kode</th>
+                  <th>Barcode</th>
+                  <th>Nama</th>
+                  <th>Kategori</th>
+                  <th>Harga Modal</th>
+                  <th>Harga Jual</th>
+                  <th>Stok</th>
+                  <th>Satuan</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
 
-                  <tbody id="produk-tbody">
-                    {products.map((p) => (
-                      <tr key={p.id}>
-                        <td>{p.kode}</td>
-                        <td>{p.nama}</td>
-                        <td>{p.kategori}</td>
-                        <td>
-                          Rp{" "}
-                          {(p.hargaModal ?? 0).toLocaleString("id-ID")}
-                        </td>
-                        <td>
-                          Rp{" "}
-                          {p.hargaJual.toLocaleString("id-ID")}
-                        </td>
-                        <td>{p.stok}</td>
-                        <td>{p.supplier ?? "-"}</td>
-                        <td>
-                          <button className="btn-secondary">
-                            Edit
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {products.length === 0 && (
-                <div
-                  id="produk-empty"
-                  className="table-empty"
-                >
-                  <svg
-                    width="40"
-                    height="40"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1"
-                  >
-                    <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
-                  </svg>
+              <tbody>
+                {products.map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.kode}</td>
+                    <td>{p.barcode ?? "-"}</td>
+                    <td>{p.nama}</td>
+                    <td>{p.kategori}</td>
+                    <td>{p.hargaModal}</td>
+                    <td>{p.hargaJual}</td>
+                    <td>{p.stok}</td>
+                    <td>{p.satuan ?? "-"}</td>
+                    <td style={{ display: "flex", gap: 8 }}>
+                      <button
+                        className="btn-secondary"
+                        onClick={() => openEdit(p)}
+                      >
+                        Edit
+                      </button>
 
-                  <p>Belum ada produk.</p>
-                </div>
-              )}
-            </>
+                      <button
+                        className="btn-secondary"
+                        onClick={() => remove(p.id)}
+                      >
+                        Hapus
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
+        </div>
+
+        {/* MODAL — VANILLA STYLE (FIX .open pattern) */}
+        <div className={"modal-overlay" + (open ? " open" : "")}>
+          <div className="modal modal-wide">
+            {/* HEADER */}
+            <div className="modal-header">
+              <h3>{editingId ? "Edit Produk" : "Tambah Produk"}</h3>
+              <button className="modal-close" onClick={closeModal}>
+                ×
+              </button>
+            </div>
+
+            {/* BODY */}
+            <div className="modal-body">
+              <div className="form-grid-2">
+                <div className="form-group">
+                  <label>Kode</label>
+                  <input
+                    name="kode"
+                    value={form.kode}
+                    onChange={onChange}
+                    type="text"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Barcode</label>
+                  <input
+                    name="barcode"
+                    value={form.barcode}
+                    onChange={onChange}
+                    type="text"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Nama</label>
+                  <input
+                    name="nama"
+                    value={form.nama}
+                    onChange={onChange}
+                    type="text"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Kategori</label>
+                  <input
+                    name="kategori"
+                    value={form.kategori}
+                    onChange={onChange}
+                    type="text"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Harga Modal</label>
+                  <input
+                    name="hargaModal"
+                    type="number"
+                    value={form.hargaModal}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Harga Jual</label>
+                  <input
+                    name="hargaJual"
+                    type="number"
+                    value={form.hargaJual}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Stok</label>
+                  <input
+                    name="stok"
+                    type="number"
+                    value={form.stok}
+                    onChange={onChange}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Satuan</label>
+                  <input
+                    name="satuan"
+                    value={form.satuan}
+                    onChange={onChange}
+                    type="text"
+                  />
+                </div>
+
+                <div className="form-group span-2">
+                  <label>Deskripsi</label>
+                  <textarea
+                    name="deskripsi"
+                    value={form.deskripsi}
+                    onChange={onChange}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* FOOTER */}
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={closeModal}>
+                Batal
+              </button>
+              <button className="btn-primary" onClick={save}>
+                Simpan
+              </button>
+            </div>
+          </div>
         </div>
       </section>
     </AppShell>
