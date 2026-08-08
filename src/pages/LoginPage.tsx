@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
@@ -24,11 +25,23 @@ export default function LoginPage() {
     try {
       await login(username, password);
       navigate("/produk", { replace: true });
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const apiMessage =
+        axios.isAxiosError<{
+          error?: string;
+        }>(error)
+          ? error.response?.data?.error
+          : undefined;
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : undefined;
+
       setError(
-        err?.response?.data?.error ??
-        err?.message ??
-        "Login gagal."
+        apiMessage ??
+          message ??
+          "Login gagal."
       );
     } finally {
       setLoading(false);

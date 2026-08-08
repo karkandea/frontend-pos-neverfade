@@ -1,3 +1,4 @@
+import axios from "axios";
 import { create } from "zustand";
 import api, { TOKEN_KEY } from "../lib/api";
 
@@ -68,8 +69,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         user: data,
         loading: false,
       });
-    } catch (error: any) {
-      if (error?.response?.status === 401) {
+    } catch (error: unknown) {
+      if (
+        axios.isAxiosError(error) &&
+        error.response?.status === 401
+      ) {
         localStorage.removeItem(TOKEN_KEY);
 
         set({

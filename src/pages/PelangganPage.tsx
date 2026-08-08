@@ -43,22 +43,56 @@ export default function PelangganPage() {
     useState<Form>(emptyForm);
 
   useEffect(() => {
-    load();
+    let active = true;
+
+    async function loadInitial() {
+      setLoading(true);
+
+      try {
+        const { data } =
+          await api.get<Customer[]>(
+            "/api/customers",
+            {
+              params: {
+                search:
+                  search || undefined,
+              },
+            }
+          );
+
+        if (!active) {
+          return;
+        }
+
+        setCustomers(data);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadInitial();
+
+    return () => {
+      active = false;
+    };
   }, [search]);
 
   async function load() {
     setLoading(true);
 
     try {
-      const { data } = await api.get(
-        "/api/customers",
-        {
-          params: {
-            search:
-              search || undefined,
-          },
-        }
-      );
+      const { data } =
+        await api.get<Customer[]>(
+          "/api/customers",
+          {
+            params: {
+              search:
+                search || undefined,
+            },
+          }
+        );
 
       setCustomers(data);
     } finally {

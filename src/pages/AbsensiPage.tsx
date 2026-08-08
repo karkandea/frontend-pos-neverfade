@@ -23,22 +23,56 @@ export default function AbsensiPage() {
     useState("");
 
   useEffect(() => {
-    load();
+    let active = true;
+
+    async function loadInitial() {
+      setLoading(true);
+
+      try {
+        const { data } =
+          await api.get<Attendance[]>(
+            "/api/absensi",
+            {
+              params: {
+                search:
+                  search || undefined,
+              },
+            }
+          );
+
+        if (!active) {
+          return;
+        }
+
+        setItems(data);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadInitial();
+
+    return () => {
+      active = false;
+    };
   }, [search]);
 
   async function load() {
     setLoading(true);
 
     try {
-      const { data } = await api.get(
-        "/api/absensi",
-        {
-          params: {
-            search:
-              search || undefined,
-          },
-        }
-      );
+      const { data } =
+        await api.get<Attendance[]>(
+          "/api/absensi",
+          {
+            params: {
+              search:
+                search || undefined,
+            },
+          }
+        );
 
       setItems(data);
     } finally {

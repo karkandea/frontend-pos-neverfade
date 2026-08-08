@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  useEffect,
+  useState,
+} from "react";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
 import { SkeletonTable } from "../components/common/Skeleton";
@@ -54,19 +58,60 @@ export default function ProductPage() {
   
 
   useEffect(() => {
-  load();
-}, [search, kategori]);
+    let active = true;
+
+    async function loadInitial() {
+      setLoading(true);
+
+      try {
+        const { data } =
+          await api.get<Product[]>(
+            "/api/products",
+            {
+              params: {
+                search:
+                  search || undefined,
+                kategori:
+                  kategori || undefined,
+              },
+            }
+          );
+
+        if (!active) {
+          return;
+        }
+
+        setProducts(data);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadInitial();
+
+    return () => {
+      active = false;
+    };
+  }, [search, kategori]);
 
   async function load() {
     setLoading(true);
 
     try {
-      const { data } = await api.get("/api/products", {
-        params: {
-  search: search || undefined,
-  kategori: kategori || undefined,
-},
-      });
+      const { data } =
+        await api.get<Product[]>(
+          "/api/products",
+          {
+            params: {
+              search:
+                search || undefined,
+              kategori:
+                kategori || undefined,
+            },
+          }
+        );
 
       setProducts(data);
     } finally {
@@ -104,18 +149,31 @@ export default function ProductPage() {
   }
 
   async function remove(id: string) {
-  if (!confirm("Hapus produk ini?")) return;
+    if (!confirm("Hapus produk ini?")) {
+      return;
+    }
 
-  try {
-    await api.delete(`/api/products/${id}`);
-    await load();
-  } catch (err: any) {
-    alert(
-      err?.response?.data?.message ??
-      "Terjadi kesalahan saat menghapus produk."
-    );
+    try {
+      await api.delete(
+        `/api/products/${id}`
+      );
+
+      await load();
+    } catch (error: unknown) {
+      const message =
+        axios.isAxiosError<{
+          message?: string;
+        }>(error)
+          ? error.response?.data
+              ?.message
+          : undefined;
+
+      alert(
+        message ??
+          "Terjadi kesalahan saat menghapus produk."
+      );
+    }
   }
-}
 
   function onChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

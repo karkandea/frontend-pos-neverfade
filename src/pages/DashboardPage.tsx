@@ -41,39 +41,51 @@ export default function DashboardPage() {
     useState(true);
 
   useEffect(() => {
-    load();
-  }, []);
+    let active = true;
 
-  async function load() {
-    setLoading(true);
+    async function load() {
+      setLoading(true);
 
-    try {
-      const [summaryRes, topRes] =
-        await Promise.all([
-          api.get(
-            "/api/laporan/summary",
-            {
-              params: {
-                period: "harian",
-              },
-            }
-          ),
-          api.get(
-            "/api/laporan/top-products",
-            {
-              params: {
-                period: "harian",
-              },
-            }
-          ),
-        ]);
+      try {
+        const [summaryRes, topRes] =
+          await Promise.all([
+            api.get<Summary>(
+              "/api/laporan/summary",
+              {
+                params: {
+                  period: "harian",
+                },
+              }
+            ),
+            api.get<TopProduct[]>(
+              "/api/laporan/top-products",
+              {
+                params: {
+                  period: "harian",
+                },
+              }
+            ),
+          ]);
 
-      setSummary(summaryRes.data);
-      setTopProducts(topRes.data);
-    } finally {
-      setLoading(false);
+        if (!active) {
+          return;
+        }
+
+        setSummary(summaryRes.data);
+        setTopProducts(topRes.data);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
     }
-  }
+
+    void load();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <AppShell>

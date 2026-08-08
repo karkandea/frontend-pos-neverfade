@@ -59,24 +59,60 @@ export default function KaryawanPage() {
     useState<Form>(emptyForm);
 
   useEffect(() => {
-    load();
+    let active = true;
+
+    async function loadInitial() {
+      setLoading(true);
+
+      try {
+        const { data } =
+          await api.get<Employee[]>(
+            "/api/karyawan",
+            {
+              params: {
+                search:
+                  search || undefined,
+                status:
+                  status || undefined,
+              },
+            }
+          );
+
+        if (!active) {
+          return;
+        }
+
+        setEmployees(data);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadInitial();
+
+    return () => {
+      active = false;
+    };
   }, [search, status]);
 
   async function load() {
     setLoading(true);
 
     try {
-      const { data } = await api.get(
-        "/api/karyawan",
-        {
-          params: {
-            search:
-              search || undefined,
-            status:
-              status || undefined,
-          },
-        }
-      );
+      const { data } =
+        await api.get<Employee[]>(
+          "/api/karyawan",
+          {
+            params: {
+              search:
+                search || undefined,
+              status:
+                status || undefined,
+            },
+          }
+        );
 
       setEmployees(data);
     } finally {
