@@ -44,22 +44,13 @@ qa_start_backend || exit 1
 echo
 echo "===== OWNER CREDENTIAL ====="
 
-printf "Username owner [owner]: "
-IFS= read -r QA_OWNER_USERNAME
-
-QA_OWNER_USERNAME="$(
-  printf "%s" \
-    "${QA_OWNER_USERNAME:-owner}"
-)"
-
-printf "Password owner: "
-stty -echo
-IFS= read -r QA_OWNER_PASSWORD
-stty echo
-printf "\n"
+QA_OWNER_USERNAME="owner"
+QA_OWNER_PASSWORD="owner123"
 
 export QA_OWNER_USERNAME
 export QA_OWNER_PASSWORD
+
+echo "[PASS] Using dummy testing owner automatically."
 
 LOGIN_STATUS="$(
   curl \
