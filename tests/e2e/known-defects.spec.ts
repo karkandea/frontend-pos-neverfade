@@ -23,11 +23,6 @@ test.beforeEach(
 test(
   "users API is available for Pengguna page",
   async ({ page }) => {
-    test.fail(
-      true,
-      "BUG-001: Backend /api/users route is missing and returns HTTP 404."
-    );
-
     const responsePromise =
       page.waitForResponse(
         (response) =>
@@ -52,11 +47,6 @@ test(
 test(
   "transaction history displays backend transactions",
   async ({ page }) => {
-    test.fail(
-      true,
-      "BUG-007: TransaksiPage is static and never loads /api/transactions."
-    );
-
     expect(
       knownTransactionNumber,
       "Known transaction number is required."
@@ -77,11 +67,6 @@ test(
 test(
   "laporan page displays real report totals",
   async ({ page }) => {
-    test.fail(
-      true,
-      "BUG-008: LaporanPage is static and does not call report APIs."
-    );
-
     const summary =
       await page.evaluate(
         async () => {
