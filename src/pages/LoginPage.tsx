@@ -202,9 +202,11 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <div className="login-footer">
-          Demo: owner/owner123 · admin/admin123 · kasir/kasir123
-        </div>
+        {!import.meta.env.PROD && (
+          <div className="login-footer">
+            Demo: owner/owner123 · admin/admin123 · kasir/kasir123
+          </div>
+        )}
       </div>
     </div>
   );
