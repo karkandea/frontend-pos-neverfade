@@ -303,11 +303,37 @@ export default function TransactionPage() {
     setPaymentMethod("tunai");
   }
 
+  function requestClearCart() {
+    const unitCount = cart.reduce(
+      (sum, item) => sum + item.qty,
+      0
+    );
+
+    if (
+      unitCount > 0 &&
+      !window.confirm(
+        `Kosongkan ${unitCount} item dari keranjang?`
+      )
+    ) {
+      return;
+    }
+
+    clearCart();
+  }
+
   const subtotal = useMemo(
     () =>
       cart.reduce(
         (sum, item) => sum + item.subtotal,
         0
+      ),
+    [cart]
+  );
+
+  const cartQuantityById = useMemo(
+    () =>
+      new Map(
+        cart.map((item) => [item.id, item.qty])
       ),
     [cart]
   );
@@ -445,7 +471,7 @@ export default function TransactionPage() {
 
   return (
     <AppShell>
-      <section className="content-section active">
+      <section className="content-section active transaction-section">
         <div className="section-header">
           <div>
             <h2 className="section-title">
@@ -457,14 +483,6 @@ export default function TransactionPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={clearCart}
-            disabled={submitting}
-          >
-            Kosongkan
-          </button>
         </div>
 
         {loading ? (
@@ -493,6 +511,9 @@ export default function TransactionPage() {
               onSearchChange={setSearch}
               onCategoryChange={setKategori}
               onAdd={addToCart}
+              onIncrease={increase}
+              onDecrease={decrease}
+              quantityById={cartQuantityById}
             />
 
             <CartPanel
@@ -517,7 +538,7 @@ export default function TransactionPage() {
               onIncrease={increase}
               onDecrease={decrease}
               onRemove={remove}
-              onClear={clearCart}
+              onClear={requestClearCart}
               onCheckout={() => void checkout()}
             />
           </div>

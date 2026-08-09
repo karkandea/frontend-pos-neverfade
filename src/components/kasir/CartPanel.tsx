@@ -78,6 +78,15 @@ export default function CartPanel({
   onClear,
   onCheckout,
 }: Props) {
+  const unitCount = items.reduce(
+    (sum, item) => sum + item.qty,
+    0
+  );
+  const checkoutDisabled =
+    items.length === 0 ||
+    submitting ||
+    (paymentMethod === "tunai" && paid < total);
+
   return (
     <div className="pos-right">
       <div className="pos-cart">
@@ -85,19 +94,22 @@ export default function CartPanel({
           <h3>Keranjang</h3>
 
           <div className="cart-count">
-            {items.length} item
+            {items.length} produk · {unitCount} item
           </div>
         </div>
 
-        <div className="cart-customer-select">
+        <div className="cart-scroll-area">
+          <div className="cart-customer-select">
+          <label htmlFor="pos-customer">Pelanggan</label>
           <select
+            id="pos-customer"
             value={customerId}
             onChange={(e) =>
               onCustomerChange(e.target.value)
             }
           >
             <option value="">
-              — Pilih Pelanggan (Opsional) —
+              Pelanggan Umum
             </option>
 
             {customers.map((customer) => (
@@ -109,9 +121,11 @@ export default function CartPanel({
               </option>
             ))}
           </select>
-        </div>
+          </div>
 
-        <div className="cart-items">
+          <div className="cart-section-label">Produk</div>
+
+          <div className="cart-items">
           {items.length === 0 ? (
             <div className="cart-empty">
               <p>Keranjang kosong</p>
@@ -123,53 +137,54 @@ export default function CartPanel({
                 className="cart-item"
               >
                 <div className="cart-item-info">
-                  <strong>{item.nama}</strong>
+                  <strong className="cart-item-name">{item.nama}</strong>
 
-                  <small>
+                  <small className="cart-item-price">
                     {rupiah(item.hargaJual)}
                   </small>
+
+                  <div className="cart-item-controls">
+                    <button
+                      type="button"
+                      className="qty-btn"
+                      aria-label={`Kurangi ${item.nama}`}
+                      onClick={() => onDecrease(item.id)}
+                    >
+                      −
+                    </button>
+
+                    <span className="qty-display" aria-live="polite">{item.qty}</span>
+
+                    <button
+                      type="button"
+                      className="qty-btn"
+                      aria-label={`Tambah ${item.nama}`}
+                      onClick={() => onIncrease(item.id)}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
 
-                <div className="cart-item-actions">
+                <div className="cart-item-end">
+                  <div className="cart-item-total">
+                    {rupiah(item.subtotal)}
+                  </div>
                   <button
                     type="button"
-                    onClick={() =>
-                      onDecrease(item.id)
-                    }
-                  >
-                    −
-                  </button>
-
-                  <span>{item.qty}</span>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onIncrease(item.id)
-                    }
-                  >
-                    +
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onRemove(item.id)
-                    }
+                    className="btn-remove-item"
+                    aria-label={`Hapus ${item.nama} dari keranjang`}
+                    onClick={() => onRemove(item.id)}
                   >
                     ×
                   </button>
                 </div>
-
-                <div className="cart-item-subtotal">
-                  {rupiah(item.subtotal)}
-                </div>
               </div>
             ))
           )}
-        </div>
+          </div>
 
-        <div className="cart-summary">
+          <div className="cart-summary">
           <div className="summary-row">
             <span>Subtotal</span>
             <span>{rupiah(subtotal)}</span>
@@ -220,9 +235,9 @@ export default function CartPanel({
 
             <span>{rupiah(total)}</span>
           </div>
-        </div>
+          </div>
 
-        <div className="payment-method">
+          <div className="payment-method">
           <div className="payment-label">
             Metode Pembayaran
           </div>
@@ -247,10 +262,10 @@ export default function CartPanel({
               )
             )}
           </div>
-        </div>
+          </div>
 
-        {paymentMethod === "tunai" && (
-          <div className="cash-input-wrap">
+          {paymentMethod === "tunai" && (
+            <div className="cash-input-wrap">
             <label>Uang Diterima</label>
 
             <input
@@ -270,20 +285,16 @@ export default function CartPanel({
                 {rupiah(change)}
               </span>
             </div>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            marginTop: 16,
-          }}
-        >
+        <div className="cart-checkout-actions">
           <button
             type="button"
             className="btn-secondary"
             onClick={onClear}
+            disabled={items.length === 0 || submitting}
           >
             Kosongkan
           </button>
@@ -291,9 +302,8 @@ export default function CartPanel({
           <button
             type="button"
             className="btn-checkout"
-            disabled={items.length === 0 || submitting}
+            disabled={checkoutDisabled}
             onClick={onCheckout}
-            style={{ flex: 1 }}
           >
             Proses Transaksi
           </button>

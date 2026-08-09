@@ -18,6 +18,9 @@ type Props = {
   onSearchChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
   onAdd: (product: Product) => void;
+  onIncrease: (id: string) => void;
+  onDecrease: (id: string) => void;
+  quantityById: Map<string, number>;
 };
 
 const formatCurrency = (value: number) =>
@@ -35,6 +38,9 @@ export default function ProductGrid({
   onSearchChange,
   onCategoryChange,
   onAdd,
+  onIncrease,
+  onDecrease,
+  quantityById,
 }: Props) {
   const chips = useMemo(
     () => ["Semua", ...categories.filter(Boolean)],
@@ -57,6 +63,7 @@ export default function ProductGrid({
         </svg>
 
         <input
+          autoFocus
           value={search}
           placeholder="Cari produk atau scan barcode..."
           onChange={(e) => onSearchChange(e.target.value)}
@@ -93,21 +100,21 @@ export default function ProductGrid({
         ) : (
           products.map((product) => {
             const outOfStock = product.stok <= 0;
+            const quantity = quantityById.get(product.id) ?? 0;
 
             return (
-              <button
+              <article
                 key={product.id}
-                type="button"
-                className="pos-product-card"
-                disabled={outOfStock}
-                onClick={() => onAdd(product)}
+                className={`pos-product-card${
+                  quantity > 0 ? " selected" : ""
+                }${outOfStock ? " out-of-stock" : ""}`}
               >
                 <div className="pos-product-top">
                   <div className="pos-product-name">
                     {product.nama}
                   </div>
 
-                  <div className="pos-product-category">
+                  <div className="pos-product-cat">
                     {product.kategori}
                   </div>
                 </div>
@@ -117,19 +124,49 @@ export default function ProductGrid({
                     {formatCurrency(product.hargaJual)}
                   </div>
 
-                  <div
-                    className={
-                      outOfStock
-                        ? "stock-badge danger"
-                        : "stock-badge"
-                    }
-                  >
-                    {outOfStock
-                      ? "Habis"
-                      : `Stok ${product.stok}`}
+                  <div className={`pos-product-stock${
+                    outOfStock || product.stok <= 5
+                      ? " low"
+                      : ""
+                  }`}>
+                    {outOfStock ? "Habis" : product.stok <= 5 ? `Sisa ${product.stok}` : `Stok ${product.stok}`}
                   </div>
                 </div>
-              </button>
+
+                <div className="pos-product-action">
+                  {quantity > 0 ? (
+                    <div className="product-qty-control" aria-label={`Jumlah ${product.nama}`}>
+                      <button
+                        type="button"
+                        aria-label={`Kurangi ${product.nama}`}
+                        onClick={() => onDecrease(product.id)}
+                      >
+                        −
+                      </button>
+                      <span aria-live="polite">{quantity}</span>
+                      <button
+                        type="button"
+                        aria-label={`Tambah ${product.nama}`}
+                        disabled={quantity >= product.stok}
+                        onClick={() => onIncrease(product.id)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="product-add-btn"
+                      aria-label={`Tambah ${product.nama} ke keranjang`}
+                      disabled={outOfStock}
+                      onClick={() => onAdd(product)}
+                    >
+                      <span aria-hidden="true">+</span>
+                      Tambah
+                    </button>
+                  )}
+                </div>
+              </article>
             );
           })
         )}
