@@ -102,3 +102,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
   },
 }));
+
+window.addEventListener("tenant-session-invalidated", () => {
+  useAuthStore.getState().logout();
+});

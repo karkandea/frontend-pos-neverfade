@@ -2,11 +2,13 @@ import axios from "axios";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import { useAuthStore } from "../stores/auth";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const login = useAuthStore((s) => s.login);
 
   const [username, setUsername] = useState("");
@@ -14,7 +16,11 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    searchParams.get("reason") === "suspended"
+      ? "Tenant sedang ditangguhkan. Hubungi administrator platform."
+      : ""
+  );
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -29,8 +35,10 @@ export default function LoginPage() {
       const apiMessage =
         axios.isAxiosError<{
           error?: string;
+          message?: string;
         }>(error)
-          ? error.response?.data?.error
+          ? error.response?.data?.message ??
+            error.response?.data?.error
           : undefined;
 
       const message =

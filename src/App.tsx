@@ -7,6 +7,7 @@ import {
   Navigate,
   Route,
   Routes,
+  useLocation,
 } from "react-router-dom";
 
 import AbsensiPage from "./pages/AbsensiPage";
@@ -21,7 +22,12 @@ import PengaturanPage from "./pages/PengaturanPage";
 import PenggunaPage from "./pages/PenggunaPage";
 import ProductPage from "./pages/ProductPage";
 import TransaksiPage from "./pages/TransaksiPage";
+import PlatformLoginPage from "./pages/platform/PlatformLoginPage";
+import PlatformTenantCreatePage from "./pages/platform/PlatformTenantCreatePage";
+import PlatformTenantDetailPage from "./pages/platform/PlatformTenantDetailPage";
+import PlatformTenantListPage from "./pages/platform/PlatformTenantListPage";
 import { useAuthStore } from "./stores/auth";
+import { usePlatformAuthStore } from "./stores/platformAuth";
 
 function LoadingPage() {
   return (
@@ -38,18 +44,23 @@ function LoadingPage() {
 }
 
 export default function App() {
+  const location = useLocation();
   const {
     token,
     user,
     loading,
     restore,
   } = useAuthStore();
+  const platformToken = usePlatformAuthStore((state) => state.token);
+  const platformLoading = usePlatformAuthStore((state) => state.loading);
+  const restorePlatform = usePlatformAuthStore((state) => state.restore);
 
   useEffect(() => {
     void restore();
-  }, [restore]);
+    void restorePlatform();
+  }, [restore, restorePlatform]);
 
-  if (loading) {
+  if (loading || platformLoading) {
     return <LoadingPage />;
   }
 
@@ -82,6 +93,14 @@ export default function App() {
     return page;
   }
 
+  function platformProtectedPage(page: ReactNode) {
+    return platformToken ? (
+      page
+    ) : (
+      <Navigate replace to="/platform/login" />
+    );
+  }
+
   return (
     <Routes>
       <Route
@@ -96,6 +115,32 @@ export default function App() {
             <LoginPage />
           )
         }
+      />
+
+      <Route
+        path="/platform/login"
+        element={
+          platformToken ? (
+            <Navigate replace to="/platform/tenants" />
+          ) : (
+            <PlatformLoginPage />
+          )
+        }
+      />
+
+      <Route
+        path="/platform/tenants"
+        element={platformProtectedPage(<PlatformTenantListPage />)}
+      />
+
+      <Route
+        path="/platform/tenants/new"
+        element={platformProtectedPage(<PlatformTenantCreatePage />)}
+      />
+
+      <Route
+        path="/platform/tenants/:tenantId"
+        element={platformProtectedPage(<PlatformTenantDetailPage />)}
       />
 
       <Route
@@ -185,7 +230,11 @@ export default function App() {
           <Navigate
             replace
             to={
-              token
+              location.pathname.startsWith("/platform")
+                ? platformToken
+                  ? "/platform/tenants"
+                  : "/platform/login"
+                : token
                 ? "/dashboard"
                 : "/login"
             }

@@ -55,7 +55,11 @@ test(
       productCard
     ).toBeVisible();
 
-    await productCard.click();
+    await productCard
+      .getByRole("button", {
+        name: `Tambah ${e2eProductName} ke keranjang`,
+      })
+      .click();
 
     await expect(
       page.locator(".cart-item")

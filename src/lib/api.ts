@@ -30,6 +30,15 @@ api.interceptors.response.use(
       window.location.replace("/login");
     }
 
+    if (
+      status === 403 &&
+      error?.response?.data?.code === "TENANT_SUSPENDED"
+    ) {
+      localStorage.removeItem(TOKEN_KEY);
+      window.dispatchEvent(new Event("tenant-session-invalidated"));
+      window.location.replace("/login?reason=suspended");
+    }
+
     if (!error.response) {
       return Promise.reject(
         new Error("Gagal terhubung ke server. Coba lagi.")
