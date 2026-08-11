@@ -1,10 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import CartPanel from "../components/kasir/CartPanel";
 import ProductGrid from "../components/kasir/ProductGrid";
+import QrisPaymentModal from "../components/kasir/QrisPaymentModal";
 import ReceiptModal from "../components/kasir/ReceiptModal";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
+import type {
+  PaymentStatus,
+  QrisPayment,
+} from "../types/payment";
 
 type Product = {
   id: string;
@@ -48,6 +53,65 @@ type ReceiptData = {
 };
 
 type PaymentMethod = "tunai" | "transfer" | "qris";
+
+type TransactionResponse = ReceiptData & {
+  id: string;
+};
+
+const PAYMENT_POLL_INTERVAL_MS = 1000;
+
+function wait(milliseconds: number, signal: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    const timer = window.setTimeout(resolve, milliseconds);
+
+    signal.addEventListener(
+      "abort",
+      () => {
+        window.clearTimeout(timer);
+        reject(new DOMException("Aborted", "AbortError"));
+      },
+      { once: true }
+    );
+  });
+}
+
+async function waitForPaymentStatus(
+  paymentId: string,
+  signal: AbortSignal,
+  onRetry: (message: string) => void
+) {
+  while (!signal.aborted) {
+    await wait(PAYMENT_POLL_INTERVAL_MS, signal);
+
+    try {
+      const response = await api.get<PaymentStatus>(
+        `/api/payments/${paymentId}`,
+        { signal }
+      );
+      const status = response.data.status;
+
+      onRetry("");
+
+      if (status === "paid" || status === "failed") {
+        return status;
+      }
+
+      if (status !== "pending" && status !== "creating") {
+        throw new Error(`Status pembayaran tidak dikenali: ${status}`);
+      }
+    } catch (error) {
+      if (signal.aborted) {
+        throw error;
+      }
+
+      onRetry(
+        "Status belum dapat diperbarui. Sistem akan mencoba lagi."
+      );
+    }
+  }
+
+  throw new DOMException("Aborted", "AbortError");
+}
 
 function getErrorMessage(error: unknown) {
   if (typeof error !== "object" || error === null) {
@@ -106,6 +170,16 @@ export default function TransactionPage() {
   const [submitting, setSubmitting] =
     useState(false);
 
+  const [qrisPayment, setQrisPayment] =
+    useState<QrisPayment | null>(null);
+  const [qrisStatus, setQrisStatus] =
+    useState<string | null>(null);
+  const [qrisStatusError, setQrisStatusError] =
+    useState("");
+
+  const submissionLock = useRef(false);
+  const checkoutAbort = useRef<AbortController | null>(null);
+
   const categories = useMemo(
     () => [
       ...new Set(
@@ -141,6 +215,13 @@ export default function TransactionPage() {
   useEffect(() => {
     void loadInitial();
   }, []);
+
+  useEffect(
+    () => () => {
+      checkoutAbort.current?.abort();
+    },
+    []
+  );
 
   async function loadInitial() {
     setLoading(true);
@@ -379,7 +460,11 @@ export default function TransactionPage() {
   }
 
   async function checkout() {
-    if (submitting || cart.length === 0) {
+    if (
+      submissionLock.current ||
+      submitting ||
+      cart.length === 0
+    ) {
       return;
     }
 
@@ -412,6 +497,7 @@ export default function TransactionPage() {
       (item) => ({ ...item })
     );
 
+    submissionLock.current = true;
     setSubmitting(true);
 
     try {
@@ -435,7 +521,68 @@ export default function TransactionPage() {
         kembalian: changeAmount,
       };
 
-      const response = await api.post(
+      if (paymentMethod === "qris") {
+        const abortController = new AbortController();
+        checkoutAbort.current = abortController;
+
+        const paymentResponse = await api.post<QrisPayment>(
+          "/api/payments/qris",
+          {
+            ...payload,
+            metodePembayaran: "QRIS",
+            dibayar: 0,
+            kembalian: 0,
+          },
+          { signal: abortController.signal }
+        );
+        const payment = paymentResponse.data;
+
+        setQrisPayment(payment);
+        setQrisStatus(payment.status);
+        setQrisStatusError("");
+
+        const finalStatus =
+          payment.status === "paid" || payment.status === "failed"
+            ? payment.status
+            : await waitForPaymentStatus(
+                payment.id,
+                abortController.signal,
+                setQrisStatusError
+              );
+
+        setQrisStatus(finalStatus);
+
+        if (finalStatus === "failed") {
+          return;
+        }
+
+        const transactionResponse =
+          await api.get<TransactionResponse>(
+            `/api/transactions/${payment.transactionId}`,
+            { signal: abortController.signal }
+          );
+        const completed = transactionResponse.data;
+
+        setReceipt({
+          noTrx: completed.noTrx,
+          subtotal: completed.subtotal,
+          discAmt: completed.discAmt,
+          taxAmt: completed.taxAmt,
+          total: completed.total,
+          dibayar: completed.dibayar,
+          kembalian: completed.kembalian,
+          metodePembayaran: completed.metodePembayaran,
+          items: completed.items,
+        });
+        setQrisPayment(null);
+        setQrisStatus(null);
+        setReceiptOpen(true);
+        clearCart();
+        await reloadProducts();
+        return;
+      }
+
+      const response = await api.post<TransactionResponse>(
         "/api/transactions",
         payload
       );
@@ -457,6 +604,10 @@ export default function TransactionPage() {
 
       await reloadProducts();
     } catch (error) {
+      if (checkoutAbort.current?.signal.aborted) {
+        return;
+      }
+
       window.alert(getErrorMessage(error));
 
       try {
@@ -465,8 +616,16 @@ export default function TransactionPage() {
         // Error checkout utama sudah ditampilkan.
       }
     } finally {
+      checkoutAbort.current = null;
+      submissionLock.current = false;
       setSubmitting(false);
     }
+  }
+
+  function closeFailedQris() {
+    setQrisPayment(null);
+    setQrisStatus(null);
+    setQrisStatusError("");
   }
 
   return (
@@ -517,7 +676,9 @@ export default function TransactionPage() {
             />
 
             <CartPanel
-              submitting={submitting}
+              submitting={
+                submitting || qrisStatus === "pending"
+              }
               items={cart}
               customers={customers}
               customerId={customerId}
@@ -552,6 +713,13 @@ export default function TransactionPage() {
           onClose={() =>
             setReceiptOpen(false)
           }
+        />
+
+        <QrisPaymentModal
+          payment={qrisPayment}
+          status={qrisStatus}
+          statusError={qrisStatusError}
+          onCloseFailed={closeFailedQris}
         />
       </section>
     </AppShell>

@@ -21,7 +21,7 @@ test.beforeEach(
 );
 
 test(
-  "owner can complete a QRIS checkout",
+  "owner can complete a cash checkout",
   async ({ page }) => {
     expect(
       e2eProductName,
@@ -65,12 +65,19 @@ test(
       page.locator(".cart-item")
     ).toContainText(e2eProductName);
 
+    const totalText = await page
+      .locator(".total-row")
+      .last()
+      .textContent();
+    const total = Number(
+      totalText?.replace(/\D/g, "") ?? 0
+    );
+
     await page
-      .locator(".payment-options")
-      .getByRole("button", {
-        name: "QRIS",
-      })
-      .click();
+      .getByText("Uang Diterima")
+      .locator("..")
+      .getByRole("spinbutton")
+      .fill(String(total));
 
     const checkoutResponse =
       page.waitForResponse(
