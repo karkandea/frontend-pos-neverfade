@@ -16,6 +16,7 @@ import InventarisPage from "./pages/InventarisPage";
 import KasirPage from "./pages/KasirPage";
 import KaryawanPage from "./pages/KaryawanPage";
 import LaporanPage from "./pages/LaporanPage";
+import FinancePage from "./pages/FinancePage";
 import LoginPage from "./pages/LoginPage";
 import PelangganPage from "./pages/PelangganPage";
 import PengaturanPage from "./pages/PengaturanPage";
@@ -26,6 +27,7 @@ import PlatformLoginPage from "./pages/platform/PlatformLoginPage";
 import PlatformTenantCreatePage from "./pages/platform/PlatformTenantCreatePage";
 import PlatformTenantDetailPage from "./pages/platform/PlatformTenantDetailPage";
 import PlatformTenantListPage from "./pages/platform/PlatformTenantListPage";
+import PlatformWithdrawalPage from "./pages/platform/PlatformWithdrawalPage";
 import { useAuthStore } from "./stores/auth";
 import { usePlatformAuthStore } from "./stores/platformAuth";
 
@@ -70,7 +72,8 @@ export default function App() {
 
   function protectedPage(
     page: ReactNode,
-    adminOnly = false
+    adminOnly = false,
+    ownerOnly = false
   ) {
     if (!token) {
       return (
@@ -88,6 +91,10 @@ export default function App() {
           to="/dashboard"
         />
       );
+    }
+
+    if (ownerOnly && user?.role !== "owner") {
+      return <Navigate replace to="/dashboard" />;
     }
 
     return page;
@@ -144,6 +151,11 @@ export default function App() {
       />
 
       <Route
+        path="/platform/withdrawals"
+        element={platformProtectedPage(<PlatformWithdrawalPage />)}
+      />
+
+      <Route
         path="/dashboard"
         element={protectedPage(
           <DashboardPage />
@@ -190,6 +202,11 @@ export default function App() {
         element={protectedPage(
           <LaporanPage />
         )}
+      />
+
+      <Route
+        path="/keuangan"
+        element={protectedPage(<FinancePage />, false, true)}
       />
 
       <Route

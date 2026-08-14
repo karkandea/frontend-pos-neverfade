@@ -49,6 +49,17 @@ export default function PlatformShell({ children }: Props) {
             </svg>
             <span>Tenant</span>
           </NavLink>
+          <NavLink
+            to="/platform/withdrawals"
+            className={({ isActive }) =>
+              `platform-nav-link${isActive ? " active" : ""}`
+            }
+          >
+            <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M3 7h18M5 7V5h14v2M5 7v12h14V7M9 11h6M9 15h4" />
+            </svg>
+            <span>Pencairan</span>
+          </NavLink>
         </nav>
 
         <div className="platform-sidebar-footer">

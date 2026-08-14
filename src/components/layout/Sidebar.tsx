@@ -215,6 +215,20 @@ export default function Sidebar() {
 
           <span>Laporan</span>
         </NavLink>
+        {user?.role === "owner" && (
+          <NavLink
+            to="/keuangan"
+            className={({ isActive }) =>
+              isActive ? "nav-item active" : "nav-item"
+            }
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="M3 9h18M16 14h2" />
+            </svg>
+            <span>Keuangan</span>
+          </NavLink>
+        )}
         {isAdmin && (
           <>
             <div className="nav-section-label nav-admin-section">
