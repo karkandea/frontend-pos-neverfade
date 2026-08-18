@@ -29,6 +29,8 @@ const payment = {
 type SetupOptions = {
   statuses?: string[];
   createDelay?: number;
+  qrisEnabled?: boolean;
+  paymentMode?: "disabled" | "sandbox" | "live";
 };
 
 function json(route: Route, body: unknown, status = 200) {
@@ -49,6 +51,8 @@ async function setupCheckout(
     statusCount: 0,
   };
   const statuses = options.statuses ?? ["pending"];
+  const qrisEnabled = options.qrisEnabled ?? true;
+  const paymentMode = options.paymentMode ?? "sandbox";
 
   await page.addInitScript(() => {
     localStorage.setItem("nfpos_token", "tenant-owner-token");
@@ -80,6 +84,14 @@ async function setupCheckout(
         defaultTax: 0,
         headerStruk: "NeverFade QA",
         footerStruk: "Terima kasih",
+      });
+    }
+
+    if (path === "/api/payments/capabilities") {
+      return json(route, {
+        qrisEnabled,
+        mode: paymentMode,
+        isSandbox: paymentMode === "sandbox",
       });
     }
 
@@ -153,10 +165,12 @@ async function setupCheckout(
       name: `Tambah ${product.nama} ke keranjang`,
     })
     .click();
-  await page
-    .locator(".payment-options")
-    .getByRole("button", { name: "QRIS" })
-    .click();
+  if (qrisEnabled) {
+    await page
+      .locator(".payment-options")
+      .getByRole("button", { name: "QRIS" })
+      .click();
+  }
 
   return state;
 }
@@ -196,6 +210,39 @@ test("creates QRIS payment through NeverFade backend", async ({ page }) => {
     "src",
     /^data:image\/png;base64,/
   );
+});
+
+test("hides QRIS when backend capabilities disable it", async ({ page }) => {
+  const state = await setupCheckout(page, {
+    qrisEnabled: false,
+    paymentMode: "disabled",
+  });
+
+  await expect(
+    page
+      .locator(".payment-options")
+      .getByRole("button", { name: "QRIS", exact: true })
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("SANDBOX — TIDAK ADA DANA NYATA")
+  ).toHaveCount(0);
+  expect(state.createCount).toBe(0);
+});
+
+test("shows an unmistakable warning in Sandbox mode", async ({ page }) => {
+  await setupCheckout(page);
+
+  await expect(
+    page.getByText("SANDBOX — TIDAK ADA DANA NYATA")
+  ).toBeVisible();
+
+  await submitCheckout(page);
+
+  await expect(
+    page
+      .getByRole("dialog", { name: "Pembayaran QRIS" })
+      .getByText("SANDBOX — TIDAK ADA DANA NYATA")
+  ).toBeVisible();
 });
 
 test("shows pending payment instructions from backend response", async ({

@@ -7,6 +7,7 @@ import ReceiptModal from "../components/kasir/ReceiptModal";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
 import type {
+  PaymentCapabilities,
   PaymentStatus,
   QrisPayment,
 } from "../types/payment";
@@ -153,6 +154,13 @@ export default function TransactionPage() {
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>("tunai");
 
+  const [paymentCapabilities, setPaymentCapabilities] =
+    useState<PaymentCapabilities>({
+      qrisEnabled: false,
+      mode: "disabled",
+      isSandbox: false,
+    });
+
   const [paid, setPaid] = useState(0);
 
   const [settings, setSettings] = useState<Settings>({
@@ -232,15 +240,26 @@ export default function TransactionPage() {
         productResponse,
         customerResponse,
         settingsResponse,
+        capabilitiesResponse,
       ] = await Promise.all([
         api.get<Product[]>("/api/products"),
         api.get<Customer[]>("/api/customers"),
         api.get<Settings>("/api/settings"),
+        api.get<PaymentCapabilities>(
+          "/api/payments/capabilities"
+        ),
       ]);
 
       setAllProducts(productResponse.data);
       setCustomers(customerResponse.data);
       setSettings(settingsResponse.data);
+      setPaymentCapabilities(capabilitiesResponse.data);
+      setPaymentMethod((current) =>
+        current === "qris" &&
+        !capabilitiesResponse.data.qrisEnabled
+          ? "tunai"
+          : current
+      );
       setTax(
         Number(
           settingsResponse.data.defaultTax ?? 0
@@ -522,6 +541,10 @@ export default function TransactionPage() {
       };
 
       if (paymentMethod === "qris") {
+        if (!paymentCapabilities.qrisEnabled) {
+          throw new Error("Pembayaran QRIS sedang tidak tersedia.");
+        }
+
         const abortController = new AbortController();
         checkoutAbort.current = abortController;
 
@@ -687,6 +710,8 @@ export default function TransactionPage() {
               subtotal={subtotal}
               total={total}
               paymentMethod={paymentMethod}
+              qrisEnabled={paymentCapabilities.qrisEnabled}
+              qrisSandbox={paymentCapabilities.isSandbox}
               paid={paid}
               change={change}
               onCustomerChange={setCustomerId}
@@ -719,6 +744,7 @@ export default function TransactionPage() {
           payment={qrisPayment}
           status={qrisStatus}
           statusError={qrisStatusError}
+          sandbox={paymentCapabilities.isSandbox}
           onCloseFailed={closeFailedQris}
         />
       </section>

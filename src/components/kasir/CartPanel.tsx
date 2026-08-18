@@ -25,6 +25,8 @@ type Props = {
   total: number;
 
   paymentMethod: "tunai" | "transfer" | "qris";
+  qrisEnabled: boolean;
+  qrisSandbox: boolean;
   paid: number;
   change: number;
 
@@ -63,6 +65,8 @@ export default function CartPanel({
   total,
 
   paymentMethod,
+  qrisEnabled,
+  qrisSandbox,
   paid,
   change,
 
@@ -243,7 +247,7 @@ export default function CartPanel({
           </div>
 
           <div className="payment-options">
-            {(["tunai", "transfer", "qris"] as const).map(
+            {(["tunai", "transfer"] as const).map(
               (method) => (
                 <button
                   key={method}
@@ -261,7 +265,29 @@ export default function CartPanel({
                 </button>
               )
             )}
+
+            {qrisEnabled ? (
+              <button
+                type="button"
+                className={
+                  paymentMethod === "qris"
+                    ? "pay-btn active"
+                    : "pay-btn"
+                }
+                onClick={() =>
+                  onPaymentMethodChange("qris")
+                }
+              >
+                QRIS
+              </button>
+            ) : null}
           </div>
+
+          {qrisEnabled && qrisSandbox ? (
+            <div className="payment-sandbox-warning" role="alert">
+              SANDBOX — TIDAK ADA DANA NYATA
+            </div>
+          ) : null}
           </div>
 
           {paymentMethod === "tunai" && (

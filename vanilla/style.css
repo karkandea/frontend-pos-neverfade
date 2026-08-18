@@ -426,6 +426,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-we
 .payment-options{display:flex;gap:5px}
 .pay-btn{flex:1;padding:7px 4px;background:var(--surface-3);border:1px solid var(--border);color:var(--text-2);border-radius:var(--radius-sm);font-size:11px;font-family:var(--font-body);cursor:pointer;transition:all .15s;text-align:center}
 .pay-btn.active{background:var(--text);color:white;border-color:var(--text);font-weight:600}
+.payment-sandbox-warning{width:100%;box-sizing:border-box;margin-top:8px;padding:9px 10px;border:2px solid #b45309;border-radius:var(--radius-sm);background:#fff7ed;color:#9a3412;font-family:var(--font-head);font-size:11px;font-weight:800;letter-spacing:.035em;text-align:center}
+.qris-payment-body>.payment-sandbox-warning{margin-top:0}
 
 .cash-input-wrap{padding:8px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:7px;flex-shrink:0;background:var(--surface)}
 .cash-input-wrap label{font-size:11px;color:var(--text-2)}

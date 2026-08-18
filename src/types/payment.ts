@@ -14,3 +14,9 @@ export type PaymentStatus = {
   transactionId: string;
   status: string;
 };
+
+export type PaymentCapabilities = {
+  qrisEnabled: boolean;
+  mode: "disabled" | "sandbox" | "live";
+  isSandbox: boolean;
+};

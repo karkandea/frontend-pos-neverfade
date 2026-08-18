@@ -7,6 +7,7 @@ type Props = {
   payment: QrisPayment | null;
   status: string | null;
   statusError: string;
+  sandbox: boolean;
   onCloseFailed: () => void;
 };
 
@@ -21,6 +22,7 @@ export default function QrisPaymentModal({
   payment,
   status,
   statusError,
+  sandbox,
   onCloseFailed,
 }: Props) {
   const [qrImage, setQrImage] = useState<{
@@ -83,6 +85,12 @@ export default function QrisPaymentModal({
         </div>
 
         <div className="modal-body qris-payment-body">
+          {sandbox ? (
+            <div className="payment-sandbox-warning" role="alert">
+              SANDBOX — TIDAK ADA DANA NYATA
+            </div>
+          ) : null}
+
           {failed ? (
             <div className="qris-failure" role="alert">
               <strong>Transaksi belum diselesaikan</strong>
