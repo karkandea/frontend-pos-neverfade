@@ -1,3 +1,6 @@
+import { useRef } from "react";
+import { useDialogFocus } from "./useDialogFocus";
+
 type ReceiptItem = {
   id: string;
   nama: string;
@@ -7,6 +10,7 @@ type ReceiptItem = {
 };
 
 type ReceiptData = {
+  transactionId: string;
   transactionDate: string;
   noTrx: string;
   total: number;
@@ -41,11 +45,15 @@ export default function ReceiptModal({
   footer,
   onClose,
 }: Props) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(open, dialogRef, onClose);
   if (!open || !receipt) return null;
 
   return (
     <div className="modal-overlay open">
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="modal modal-struk"
         role="dialog"
         aria-modal="true"

@@ -14,6 +14,9 @@ const rupiah = new Intl.NumberFormat("id-ID", {
   maximumFractionDigits: 0,
 });
 
+import { useRef } from "react";
+import { useDialogFocus } from "./useDialogFocus";
+
 export default function PaymentSuccessModal({
   open,
   method,
@@ -23,11 +26,15 @@ export default function PaymentSuccessModal({
   onViewReceipt,
   onNewTransaction,
 }: Props) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(open, dialogRef);
   if (!open) return null;
 
   return (
     <div className="modal-overlay open">
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="modal payment-result-modal"
         role="dialog"
         aria-modal="true"

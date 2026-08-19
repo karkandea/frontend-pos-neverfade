@@ -24,17 +24,15 @@ async function login(
     .fill(password);
 
   await Promise.all([
-    page.waitForURL("**/produk"),
+    page.waitForURL(username === "kasir" ? "**/kasir" : "**/produk"),
 
     page.locator("#btn-login").click(),
   ]);
 
-  await expect(
-    page.getByRole("heading", {
-      name: "Produk",
-      exact: true,
-    })
-  ).toBeVisible();
+  await expect(page.getByRole("heading", {
+    name: username === "kasir" ? "Kasir" : "Produk",
+    exact: true,
+  })).toBeVisible();
 }
 
 test(

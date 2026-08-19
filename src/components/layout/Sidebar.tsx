@@ -87,6 +87,7 @@ export default function Sidebar({ open, onClose }: Props) {
           <span>Kasir</span>
         </NavLink>
 
+        {user?.role !== "kasir" && <>
         <NavLink
           to="/dashboard"
           className={({ isActive }) =>
@@ -184,6 +185,7 @@ export default function Sidebar({ open, onClose }: Props) {
 
           <span>Pelanggan</span>
         </NavLink>
+        </>}
 
         <div className="nav-section-label">
           ANALITIK
@@ -212,7 +214,7 @@ export default function Sidebar({ open, onClose }: Props) {
           <span>Transaksi</span>
         </NavLink>
 
-        <NavLink
+        {user?.role !== "kasir" && <NavLink
           to="/laporan"
           className={({ isActive }) =>
             isActive ? "nav-item active" : "nav-item"
@@ -232,7 +234,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </svg>
 
           <span>Laporan</span>
-        </NavLink>
+        </NavLink>}
         {user?.role === "owner" && (
           <NavLink
             to="/keuangan"

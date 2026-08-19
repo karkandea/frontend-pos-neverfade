@@ -54,6 +54,28 @@ test("Ingat saya controls persistent versus terminal-only session", async ({ pag
   expect(await page.evaluate(() => sessionStorage.getItem("nfpos_token"))).toBeNull();
 });
 
+test("kasir login lands directly on Kasir with focused navigation", async ({ page }) => {
+  await page.route("**/api/**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    const user = { id: "kasir", nama: "Kasir QA", username: "kasir", role: "kasir" };
+    if (path === "/api/auth/login") return json(route, { token: "kasir-token", user });
+    if (path === "/api/auth/me") return json(route, user);
+    if (path === "/api/products" || path === "/api/customers") return json(route, []);
+    if (path === "/api/settings") return json(route, { defaultTax: 0, headerStruk: "", footerStruk: "" });
+    if (path === "/api/payments/capabilities") return json(route, { qrisEnabled: false, mode: "disabled", isSandbox: false });
+    return json(route, []);
+  });
+  await page.goto("/login");
+  await page.getByLabel("Username").fill("kasir");
+  await page.getByLabel("Password", { exact: true }).fill("password");
+  await page.getByRole("button", { name: "Masuk" }).click();
+  await expect(page).toHaveURL(/\/kasir$/);
+  await expect(page.getByRole("link", { name: "Kasir" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Transaksi" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Produk" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Laporan" })).toHaveCount(0);
+});
+
 test(
   "unauthenticated user is redirected to login",
   async ({ page }) => {

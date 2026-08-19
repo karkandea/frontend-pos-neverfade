@@ -43,6 +43,7 @@ type Settings = {
 };
 
 type ReceiptData = {
+  transactionId: string;
   transactionDate: string;
   noTrx: string;
   subtotal: number;
@@ -219,6 +220,7 @@ export default function TransactionPage() {
     useState<string | null>(null);
   const [qrisStatusError, setQrisStatusError] =
     useState("");
+  const [qrisCancelling, setQrisCancelling] = useState(false);
 
   const submissionLock = useRef(false);
   const checkoutAbort = useRef<AbortController | null>(null);
@@ -354,6 +356,8 @@ export default function TransactionPage() {
       persistPayment(payment);
       setQrisPayment(payment);
       setQrisStatus(status.status);
+      setQrisStatusError("");
+      await restoreSaleContext(payment.transactionId);
 
       if (status.status === "paid") {
         clearCart();
@@ -374,7 +378,21 @@ export default function TransactionPage() {
     }
   }
 
+  async function restoreSaleContext(transactionId: string) {
+    const { data } = await api.get<TransactionResponse & {
+      customerId: string | null;
+      disc: number;
+      tax: number;
+    }>(`/api/transactions/${transactionId}`);
+    setCart(data.items.map((item) => ({ ...item })));
+    setCustomerId(data.customerId ?? "");
+    setDiscount(clampPercent(data.disc));
+    setTax(clampPercent(data.tax));
+    setPaymentMethod("qris");
+  }
+
   async function loadReceipt(transactionId: string) {
+    setReceipt(null);
     setReceiptLoading(true);
     setReceiptError("");
     try {
@@ -382,6 +400,7 @@ export default function TransactionPage() {
         `/api/transactions/${transactionId}`
       );
       setReceipt({
+        transactionId: data.id,
         transactionDate: data.createdAt ?? new Date().toISOString(),
         noTrx: data.noTrx,
         subtotal: data.subtotal,
@@ -415,6 +434,34 @@ export default function TransactionPage() {
         loadReceipt(payment.transactionId),
         reloadProducts(),
       ]);
+    }
+  }
+
+  async function cancelQrisPayment() {
+    if (!qrisPayment || qrisCancelling) return;
+    if (!window.confirm(
+      `Batalkan QRIS ${qrisPayment.providerPaymentRequestId}? Kode ini tidak dapat dipakai lagi.`
+    )) return;
+
+    setQrisCancelling(true);
+    setQrisStatusError("");
+    try {
+      checkoutAbort.current?.abort();
+      const { data } = await api.post<PaymentStatus>(
+        `/api/payments/${qrisPayment.id}/cancel`
+      );
+      const restored = paymentFromStatus(data);
+      setQrisPayment(restored);
+      setQrisStatus(data.status);
+      persistPayment(restored);
+      await restoreSaleContext(restored.transactionId);
+    } catch (error) {
+      setQrisStatusError(
+        `Pembatalan belum terkonfirmasi. Jangan buat pembayaran baru. ${getErrorMessage(error)}`
+      );
+      await refreshPaymentStatus();
+    } finally {
+      setQrisCancelling(false);
     }
   }
 
@@ -712,6 +759,8 @@ export default function TransactionPage() {
 
     submissionLock.current = true;
     setSubmitting(true);
+    setReceipt(null);
+    setReceiptError("");
 
     try {
       const payload = {
@@ -764,6 +813,7 @@ export default function TransactionPage() {
       );
 
       setReceipt({
+        transactionId: response.data.id,
         transactionDate: response.data.createdAt ?? new Date().toISOString(),
         noTrx: response.data.noTrx,
         subtotal: response.data.subtotal,
@@ -837,6 +887,16 @@ export default function TransactionPage() {
           </div>
 
         </div>
+
+        {qrisStatusError && !qrisPayment ? (
+          <div className="payment-recovery-banner" role="alert">
+            <strong>Pembayaran sebelumnya belum dapat diperiksa.</strong>
+            <span>{qrisStatusError}</span>
+            <button type="button" className="btn-secondary" onClick={() => void restoreQrisPayment()}>
+              Coba Lagi
+            </button>
+          </div>
+        ) : null}
 
         {loading ? (
           <div className="table-card">
@@ -934,7 +994,12 @@ export default function TransactionPage() {
           onRetryStatus={() => void refreshPaymentStatus()}
           receiptLoading={receiptLoading}
           receiptError={receiptError}
-          receiptReady={receipt !== null}
+          receiptReady={
+            receipt?.transactionId === qrisPayment?.transactionId &&
+            !receiptLoading && !receiptError
+          }
+          cancelling={qrisCancelling}
+          onCancel={() => void cancelQrisPayment()}
           onRetryReceipt={() => {
             if (qrisPayment) {
               void loadReceipt(qrisPayment.transactionId);

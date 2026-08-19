@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 
 import type { QrisPayment } from "../../types/payment";
+import { useDialogFocus } from "./useDialogFocus";
 
 type Props = {
   payment: QrisPayment | null;
@@ -13,6 +14,8 @@ type Props = {
   receiptLoading: boolean;
   receiptError: string;
   receiptReady: boolean;
+  cancelling: boolean;
+  onCancel: () => void;
   onRetryReceipt: () => void;
   onViewReceipt: () => void;
   onNewTransaction: () => void;
@@ -35,6 +38,8 @@ export default function QrisPaymentModal({
   receiptLoading,
   receiptError,
   receiptReady,
+  cancelling,
+  onCancel,
   onRetryReceipt,
   onViewReceipt,
   onNewTransaction,
@@ -43,6 +48,13 @@ export default function QrisPaymentModal({
     source: string;
     value: string;
   } | null>(null);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -71,15 +83,14 @@ export default function QrisPaymentModal({
     };
   }, [payment?.qrString]);
 
-  if (!payment || !status) {
-    return null;
-  }
-
   const paid = status === "paid";
   const expired = status === "expired";
   const failed = status === "failed" || expired;
   const pending = status === "pending" || status === "creating";
-  const expiresAt = payment.expiresAt
+  const displayExpired = pending && Boolean(
+    payment?.expiresAt && new Date(payment.expiresAt).getTime() <= currentTime
+  );
+  const expiresAt = payment?.expiresAt
     ? new Intl.DateTimeFormat("id-ID", {
         dateStyle: "medium",
         timeStyle: "short",
@@ -87,13 +98,20 @@ export default function QrisPaymentModal({
       }).format(new Date(payment.expiresAt))
     : null;
   const currentQrImage =
-    qrImage?.source === payment.qrString
-      ? qrImage.value
+    qrImage?.source === payment?.qrString
+      ? qrImage?.value ?? ""
       : "";
+  useDialogFocus(Boolean(payment && status), dialogRef, failed ? onCloseFailed : undefined);
+
+  if (!payment || !status) {
+    return null;
+  }
 
   return (
     <div className="modal-overlay open">
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="modal qris-payment-modal"
         role="dialog"
         aria-modal="true"
@@ -111,6 +129,8 @@ export default function QrisPaymentModal({
                 ? "Pembayaran berhasil"
                 : expired
                   ? "Pembayaran kedaluwarsa"
+                  : displayExpired
+                    ? "Menunggu kepastian pembayaran"
                   : failed
                     ? "Pembayaran gagal"
                     : "Menunggu pembayaran"}
@@ -168,7 +188,7 @@ export default function QrisPaymentModal({
                 <strong>{rupiah(payment.amount)}</strong>
               </div>
 
-              <div className="qris-code-frame">
+              {!displayExpired ? <div className="qris-code-frame">
                 {currentQrImage ? (
                   <img
                     src={currentQrImage}
@@ -177,15 +197,20 @@ export default function QrisPaymentModal({
                 ) : (
                 <div className="qris-code-loading">Menyiapkan QRIS…</div>
                 )}
-              </div>
+              </div> : null}
 
-              <ol className="qris-instructions">
+              {displayExpired ? (
+                <div className="qris-status-error" role="alert">
+                  <strong>Waktu scan telah berakhir</strong>
+                  <p>Jangan meminta pelanggan membayar ulang. Konfirmasi provider dapat datang terlambat; periksa status atau batalkan kode ini secara aman.</p>
+                </div>
+              ) : <ol className="qris-instructions">
                 <li>Buka aplikasi pembayaran yang mendukung QRIS.</li>
                 <li>Scan kode QR dan pastikan nominalnya sesuai.</li>
                 <li>
                   Selesaikan pembayaran. Status akan diperbarui otomatis.
                 </li>
-              </ol>
+              </ol>}
 
               <div className="qris-waiting" aria-live="polite">
                 <span className="qris-spinner" aria-hidden="true" />
@@ -200,6 +225,14 @@ export default function QrisPaymentModal({
                   </button>
                 </div>
               ) : null}
+              <div className="qris-pending-actions">
+                <button type="button" className="btn-secondary" onClick={onRetryStatus} disabled={cancelling}>
+                  Periksa Status
+                </button>
+                <button type="button" className="btn-danger" onClick={onCancel} disabled={cancelling}>
+                  {cancelling ? "Membatalkan…" : "Customer Batal"}
+                </button>
+              </div>
             </>
           ) : null}
         </div>

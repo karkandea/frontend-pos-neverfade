@@ -32,7 +32,18 @@ type Transaction = {
   metodePembayaran: string;
   dibayar: number;
   kembalian: number;
+  status: "pending_payment" | "paid" | "failed";
+  paymentStatus: string | null;
+  paymentFailureCode: string | null;
 };
+
+function transactionStatus(transaction: Transaction) {
+  if (transaction.status === "paid") return { label: "Selesai", tone: "success" };
+  if (transaction.status === "pending_payment") return { label: "Pending pembayaran", tone: "pending" };
+  if (transaction.paymentFailureCode === "PAYMENT_REQUEST_EXPIRED") return { label: "Kedaluwarsa", tone: "failed" };
+  if (transaction.paymentFailureCode === "PAYMENT_REQUEST_CANCELED") return { label: "Dibatalkan", tone: "failed" };
+  return { label: "Gagal", tone: "failed" };
+}
 
 function getErrorMessage(error: unknown) {
   if (
@@ -415,8 +426,8 @@ export default function TransaksiPage() {
                           </td>
 
                           <td>
-                            <span className="status-badge">
-                              Selesai
+                            <span className={`status-badge ${transactionStatus(transaction).tone}`}>
+                              {transactionStatus(transaction).label}
                             </span>
                           </td>
 

@@ -30,7 +30,8 @@ export default function LoginPage() {
 
     try {
       await login(username, password, rememberMe);
-      navigate("/produk", { replace: true });
+      const user = useAuthStore.getState().user;
+      navigate(user?.role === "kasir" ? "/kasir" : "/produk", { replace: true });
     } catch (error: unknown) {
       const apiMessage =
         axios.isAxiosError<{

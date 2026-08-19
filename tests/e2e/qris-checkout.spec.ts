@@ -24,7 +24,7 @@ const payment = {
   currency: "IDR",
   status: "pending",
   qrString: "00020101021226670016COM.NOBUBANK.WWW01189360050300000879140214123456789012340303UMI51440014ID.CO.QRIS.WWW0215ID10200211800100303UMI5204581253033605405250005802ID5915NEVERFADE QA6007JAKARTA6105123406304ABCD",
-  expiresAt: "2026-08-11T18:00:00Z",
+  expiresAt: "2099-08-11T18:00:00Z",
 };
 
 type SetupOptions = {
@@ -33,6 +33,8 @@ type SetupOptions = {
   qrisEnabled?: boolean;
   paymentMode?: "disabled" | "sandbox" | "live";
   receiptFailures?: number;
+  receiptFailureAt?: number[];
+  currentFailure?: boolean;
 };
 
 function json(route: Route, body: unknown, status = 200) {
@@ -52,6 +54,7 @@ async function setupCheckout(
     createPayload: null as Record<string, unknown> | null,
     statusCount: 0,
     receiptCount: 0,
+    cancelCount: 0,
   };
   const statuses = options.statuses ?? ["pending"];
   const qrisEnabled = options.qrisEnabled ?? true;
@@ -99,6 +102,9 @@ async function setupCheckout(
     }
 
     if (path === "/api/payments/current") {
+      if (options.currentFailure) {
+        return json(route, { message: "Provider belum dapat diperiksa." }, 503);
+      }
       return route.fulfill({ status: 204, body: "" });
     }
 
@@ -122,6 +128,9 @@ async function setupCheckout(
     }
 
     if (path === `/api/payments/${payment.id}`) {
+      if (request.method() === "POST" && path.endsWith("/cancel")) {
+        state.cancelCount += 1;
+      }
       const index = Math.min(
         state.statusCount,
         statuses.length - 1
@@ -137,13 +146,29 @@ async function setupCheckout(
       });
     }
 
+    if (path === `/api/payments/${payment.id}/cancel`) {
+      state.cancelCount += 1;
+      return json(route, {
+        ...payment,
+        status: "failed",
+        failureCode: "PAYMENT_REQUEST_CANCELED",
+        updatedAt: "2026-08-11T17:45:00Z",
+      });
+    }
+
     if (path === `/api/transactions/${payment.transactionId}`) {
       state.receiptCount += 1;
-      if (state.receiptCount <= (options.receiptFailures ?? 0)) {
+      if (
+        state.receiptCount <= (options.receiptFailures ?? 0) ||
+        options.receiptFailureAt?.includes(state.receiptCount)
+      ) {
         return json(route, { message: "Detail transaksi belum tersedia." }, 503);
       }
       return json(route, {
         id: payment.transactionId,
+        customerId: null,
+        disc: 0,
+        tax: 0,
         noTrx: "TRX-20260811-0099",
         subtotal: 25000,
         discAmt: 0,
@@ -320,12 +345,65 @@ test("paid state remains successful when receipt needs retry", async ({ page }) 
   await expect(page.getByRole("button", { name: "Lihat Struk" })).toBeEnabled();
 });
 
+test("previous receipt never becomes ready for the next paid transaction", async ({ page }) => {
+  const originalId = payment.id;
+  const originalTransactionId = payment.transactionId;
+  const originalRequestId = payment.providerPaymentRequestId;
+  try {
+    await setupCheckout(page, { statuses: ["paid"], receiptFailureAt: [2] });
+    await submitCheckout(page);
+    await page.getByRole("button", { name: "Lihat Struk" }).click();
+    await expect(page.locator(".struk-container")).toContainText("TRX-20260811-0099");
+    await page.getByRole("button", { name: "Tutup", exact: true }).click();
+
+    payment.id = "44444444-4444-4444-4444-444444444444";
+    payment.transactionId = "55555555-5555-5555-5555-555555555555";
+    payment.providerPaymentRequestId = "pr-qa-qris-second";
+
+    await page.getByRole("button", { name: `Tambah ${product.nama} ke keranjang` }).click();
+    await page.locator(".payment-options").getByRole("button", { name: "QRIS" }).click();
+    await submitCheckout(page);
+    await expect(page.getByText("QRIS berhasil dibayar")).toBeVisible();
+    await expect(page.getByText(/detail struk belum dapat dimuat/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Lihat Struk" })).toBeDisabled();
+  } finally {
+    payment.id = originalId;
+    payment.transactionId = originalTransactionId;
+    payment.providerPaymentRequestId = originalRequestId;
+  }
+});
+
 test("expired payment is explicit and never completes checkout", async ({ page }) => {
   await setupCheckout(page, { statuses: ["expired"] });
   await submitCheckout(page);
   await expect(page.getByText("Pembayaran kedaluwarsa")).toBeVisible();
   await expect(page.getByText(/Waktu pembayaran telah habis/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "Preview Struk" })).toHaveCount(0);
+});
+
+test("elapsed display expiry remains non-terminal until provider confirms", async ({ page }) => {
+  const originalExpiry = payment.expiresAt;
+  payment.expiresAt = "2020-08-11T18:00:00Z";
+  try {
+    await setupCheckout(page, { statuses: ["pending"] });
+    await submitCheckout(page);
+    await expect(page.getByText("Menunggu kepastian pembayaran")).toBeVisible();
+    await expect(page.getByText(/Jangan meminta pelanggan membayar ulang/)).toBeVisible();
+    await expect(page.getByText("Pembayaran kedaluwarsa")).toHaveCount(0);
+  } finally {
+    payment.expiresAt = originalExpiry;
+  }
+});
+
+test("cashier can cancel a pending QRIS through the backend and recover the cart", async ({ page }) => {
+  const state = await setupCheckout(page, { statuses: ["pending"] });
+  await submitCheckout(page);
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Customer Batal" }).click();
+  await expect.poll(() => state.cancelCount).toBe(1);
+  await expect(page.getByText("Pembayaran gagal")).toBeVisible();
+  await page.getByRole("button", { name: "Kembali ke Keranjang" }).click();
+  await expect(page.locator(".cart-item")).toContainText(product.nama);
 });
 
 test("pending QRIS survives refresh without creating another payment", async ({ page }) => {
@@ -336,6 +414,12 @@ test("pending QRIS survives refresh without creating another payment", async ({ 
   await expect(page.getByText("Menunggu pembayaran")).toBeVisible();
   await expect(page.getByText("pr-qa-qris")).toBeVisible();
   expect(state.createCount).toBe(1);
+});
+
+test("payment recovery failure is visible and retryable", async ({ page }) => {
+  await setupCheckout(page, { currentFailure: true });
+  await expect(page.getByText("Pembayaran sebelumnya belum dapat diperiksa.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Coba Lagi" })).toBeVisible();
 });
 
 test("TRANSFER is not offered without an approved verification flow", async ({ page }) => {
