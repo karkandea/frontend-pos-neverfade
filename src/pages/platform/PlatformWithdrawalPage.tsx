@@ -46,8 +46,17 @@ export default function PlatformWithdrawalPage() {
   }, []);
 
   async function changeStatus(item: PlatformWithdrawal, target: "mark-paid" | "reject") {
+    if (actionId) return;
     const action = target === "mark-paid" ? "menandai pencairan sebagai dibayar" : "menolak pencairan";
-    if (!window.confirm(`Yakin ingin ${action} untuk ${item.tenantName}?`)) return;
+    if (!window.confirm(
+      `Konfirmasi ${action}\n\n` +
+      `Tenant: ${item.tenantName}\n` +
+      `Jumlah: ${currency.format(item.amount)}\n` +
+      `Referensi: ${item.id}\n\n` +
+      (target === "mark-paid"
+        ? "Pastikan transfer manual sudah benar-benar selesai."
+        : "Dana yang ditahan akan kembali tersedia untuk tenant.")
+    )) return;
 
     setActionId(item.id);
     setActionError("");
@@ -86,7 +95,7 @@ export default function PlatformWithdrawalPage() {
         ) : withdrawals.length === 0 ? (
           <div className="platform-empty-state"><strong>Belum ada permintaan pencairan</strong><p>Permintaan tenant akan muncul dalam antrean ini.</p></div>
         ) : (
-          <div className="platform-table-wrap"><table className="platform-table"><thead><tr><th>Tenant</th><th>Diminta oleh</th><th>Jumlah</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>{withdrawals.map((item) => <tr key={item.id}><td><strong>{item.tenantName}</strong><small>{item.tenantId}</small></td><td><span>{item.requestedByName}</span><small>{item.requestedByUsername}</small></td><td><strong>{currency.format(item.amount)}</strong></td><td>{dateTime.format(new Date(item.requestedAt))}</td><td>{statusBadge(item.status)}</td><td>{item.status === "requested" ? <div className="platform-table-actions"><button type="button" className="platform-button platform-button-primary" disabled={actionId === item.id} onClick={() => void changeStatus(item, "mark-paid")}>Tandai Dibayar</button><button type="button" className="platform-button platform-button-danger" disabled={actionId === item.id} onClick={() => void changeStatus(item, "reject")}>Tolak</button></div> : <span>Sudah diproses</span>}</td></tr>)}</tbody></table></div>
+                  <div className="platform-table-wrap"><table className="platform-table"><thead><tr><th>Tenant</th><th>Diminta oleh</th><th>Jumlah</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>{withdrawals.map((item) => <tr key={item.id}><td><strong>{item.tenantName}</strong><small>{item.tenantId}</small></td><td><span>{item.requestedByName}</span><small>{item.requestedByUsername}</small></td><td><strong>{currency.format(item.amount)}</strong><small>{item.id}</small></td><td>{dateTime.format(new Date(item.requestedAt))}</td><td>{statusBadge(item.status)}</td><td>{item.status === "requested" ? <div className="platform-table-actions"><button type="button" className="platform-button platform-button-primary" disabled={Boolean(actionId)} onClick={() => void changeStatus(item, "mark-paid")}>{actionId === item.id ? "Memproses…" : "Tandai Dibayar"}</button><button type="button" className="platform-button platform-button-danger" disabled={Boolean(actionId)} onClick={() => void changeStatus(item, "reject")}>{actionId === item.id ? "Memproses…" : "Tolak"}</button></div> : <span>Sudah diproses</span>}</td></tr>)}</tbody></table></div>
         )}
       </section>
     </PlatformShell>

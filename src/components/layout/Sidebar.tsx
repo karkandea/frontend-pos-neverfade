@@ -1,7 +1,12 @@
 import { useAuthStore } from "../../stores/auth";
 import { NavLink } from "react-router-dom";
 
-export default function Sidebar() {
+type Props = {
+  open: boolean;
+  onClose: () => void;
+};
+
+export default function Sidebar({ open, onClose }: Props) {
   const user = useAuthStore((s) => s.user);
 
   const isAdmin =
@@ -9,7 +14,11 @@ export default function Sidebar() {
     user?.role === "admin";
 
   return (
-    <aside className="sidebar" id="sidebar">
+    <aside
+      className={open ? "sidebar mobile-open" : "sidebar"}
+      id="sidebar"
+      aria-label="Navigasi utama"
+    >
       <div className="sidebar-brand">
         <div className="sidebar-logo-wrap">
           <div className="logo-text-wrap logo-text-sm">
@@ -26,6 +35,8 @@ export default function Sidebar() {
           type="button"
           className="sidebar-close-btn"
           id="sidebar-close"
+          aria-label="Tutup navigasi"
+          onClick={onClose}
         >
           <svg
             width="16"
@@ -41,7 +52,14 @@ export default function Sidebar() {
         </button>
       </div>
 
-      <nav className="sidebar-nav">
+      <nav
+        className="sidebar-nav"
+        onClick={(event) => {
+          if ((event.target as HTMLElement).closest("a")) {
+            onClose();
+          }
+        }}
+      >
         <div className="nav-section-label">
           UTAMA
         </div>

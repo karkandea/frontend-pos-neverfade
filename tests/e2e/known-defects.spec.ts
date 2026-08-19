@@ -73,6 +73,8 @@ test(
           const token =
             localStorage.getItem(
               "nfpos_token"
+            ) ?? sessionStorage.getItem(
+              "nfpos_token"
             );
 
           const response =

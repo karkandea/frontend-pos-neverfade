@@ -19,6 +19,7 @@ const payment = {
   id: "22222222-2222-2222-2222-222222222222",
   transactionId: "33333333-3333-3333-3333-333333333333",
   providerPaymentRequestId: "pr-qa-qris",
+  providerReferenceId: "nf-qa-qris",
   amount: 25000,
   currency: "IDR",
   status: "pending",
@@ -31,6 +32,7 @@ type SetupOptions = {
   createDelay?: number;
   qrisEnabled?: boolean;
   paymentMode?: "disabled" | "sandbox" | "live";
+  receiptFailures?: number;
 };
 
 function json(route: Route, body: unknown, status = 200) {
@@ -49,6 +51,7 @@ async function setupCheckout(
     createCount: 0,
     createPayload: null as Record<string, unknown> | null,
     statusCount: 0,
+    receiptCount: 0,
   };
   const statuses = options.statuses ?? ["pending"];
   const qrisEnabled = options.qrisEnabled ?? true;
@@ -95,6 +98,10 @@ async function setupCheckout(
       });
     }
 
+    if (path === "/api/payments/current") {
+      return route.fulfill({ status: 204, body: "" });
+    }
+
     if (
       path === "/api/payments/qris" &&
       request.method() === "POST"
@@ -123,13 +130,18 @@ async function setupCheckout(
       state.statusCount += 1;
 
       return json(route, {
-        id: payment.id,
-        transactionId: payment.transactionId,
+        ...payment,
         status,
+        failureCode: status === "expired" ? "PAYMENT_REQUEST_EXPIRED" : null,
+        updatedAt: "2026-08-11T17:45:00Z",
       });
     }
 
     if (path === `/api/transactions/${payment.transactionId}`) {
+      state.receiptCount += 1;
+      if (state.receiptCount <= (options.receiptFailures ?? 0)) {
+        return json(route, { message: "Detail transaksi belum tersedia." }, 503);
+      }
       return json(route, {
         id: payment.transactionId,
         noTrx: "TRX-20260811-0099",
@@ -274,16 +286,83 @@ test("successful backend payment status completes checkout", async ({
 
   await submitCheckout(page);
 
+  await expect(page.getByText("QRIS berhasil dibayar")).toBeVisible({
+    timeout: 8000,
+  });
   await expect(
-    page.getByRole("heading", { name: "Preview Struk" })
-  ).toBeVisible({ timeout: 8000 });
+    page.getByRole("dialog", { name: "Pembayaran QRIS" })
+      .getByText(/Rp\s*25\.000/)
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Lihat Struk" }).click();
+  await expect(page.getByRole("heading", { name: "Preview Struk" })).toBeVisible();
   await expect(page.locator(".struk-container")).toContainText(
     "TRX-20260811-0099"
   );
   await expect(page.locator(".struk-container")).toContainText("QRIS");
 
-  await page.getByRole("button", { name: "Tutup" }).click();
+  await page.getByRole("button", { name: "Tutup", exact: true }).click();
   await expect(page.getByText("Keranjang kosong")).toBeVisible();
+});
+
+test("paid state remains successful when receipt needs retry", async ({ page }) => {
+  const state = await setupCheckout(page, {
+    statuses: ["paid"],
+    receiptFailures: 1,
+  });
+
+  await submitCheckout(page);
+
+  await expect(page.getByText("QRIS berhasil dibayar")).toBeVisible();
+  await expect(page.getByText(/detail struk belum dapat dimuat/i)).toBeVisible();
+  await expect(page.getByText("Menunggu pembayaran")).toHaveCount(0);
+  await page.getByRole("button", { name: "Coba Muat Struk Lagi" }).click();
+  await expect.poll(() => state.receiptCount).toBe(2);
+  await expect(page.getByRole("button", { name: "Lihat Struk" })).toBeEnabled();
+});
+
+test("expired payment is explicit and never completes checkout", async ({ page }) => {
+  await setupCheckout(page, { statuses: ["expired"] });
+  await submitCheckout(page);
+  await expect(page.getByText("Pembayaran kedaluwarsa")).toBeVisible();
+  await expect(page.getByText(/Waktu pembayaran telah habis/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Preview Struk" })).toHaveCount(0);
+});
+
+test("pending QRIS survives refresh without creating another payment", async ({ page }) => {
+  const state = await setupCheckout(page, { statuses: ["pending"] });
+  await submitCheckout(page);
+  await expect(page.getByText("Menunggu pembayaran")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Menunggu pembayaran")).toBeVisible();
+  await expect(page.getByText("pr-qa-qris")).toBeVisible();
+  expect(state.createCount).toBe(1);
+});
+
+test("TRANSFER is not offered without an approved verification flow", async ({ page }) => {
+  await setupCheckout(page);
+  await expect(page.getByRole("button", { name: "TRANSFER" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "TUNAI" })).toBeVisible();
+});
+
+test("discount and tax inputs stay inside safe ranges", async ({ page }) => {
+  await setupCheckout(page);
+  await page.getByLabel("Diskon persen").fill("150");
+  await page.getByLabel("Pajak persen").fill("-5");
+  await expect(page.getByLabel("Diskon persen")).toHaveValue("100");
+  await expect(page.getByLabel("Pajak persen")).toHaveValue("0");
+});
+
+test("QRIS dialog fits a narrow viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 640 });
+  await setupCheckout(page);
+  await submitCheckout(page);
+  const dialog = page.getByRole("dialog", { name: "Pembayaran QRIS" });
+  await expect(dialog).toBeVisible();
+  const box = await dialog.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.width).toBeLessThanOrEqual(360);
+  expect(box!.height).toBeLessThanOrEqual(640);
 });
 
 test("failed backend payment does not complete checkout", async ({ page }) => {

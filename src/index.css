@@ -587,6 +587,7 @@ body {
 .finance-success, .platform-success-banner { padding: 10px 12px; border-radius: 8px; background: #e7f8ee; color: #167745; font-size: 13px; }
 .finance-empty, .finance-state { text-align: center; padding-block: 42px; color: var(--text-muted); }
 .finance-empty strong, .finance-state strong { color: var(--text-h); }
+.finance-movements code { display: inline-block; max-width: 220px; overflow-wrap: anywhere; color: var(--text-muted); font-size: 11px; }
 .platform-success-banner, .platform-error-banner { margin-bottom: 16px; }
 .platform-table-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .platform-table-actions .platform-button { padding: 8px 10px; font-size: 12px; white-space: nowrap; }

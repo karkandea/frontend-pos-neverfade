@@ -4,6 +4,7 @@ import CartPanel from "../components/kasir/CartPanel";
 import ProductGrid from "../components/kasir/ProductGrid";
 import QrisPaymentModal from "../components/kasir/QrisPaymentModal";
 import ReceiptModal from "../components/kasir/ReceiptModal";
+import PaymentSuccessModal from "../components/kasir/PaymentSuccessModal";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
 import type {
@@ -42,6 +43,7 @@ type Settings = {
 };
 
 type ReceiptData = {
+  transactionDate: string;
   noTrx: string;
   subtotal: number;
   discAmt: number;
@@ -53,13 +55,15 @@ type ReceiptData = {
   items: CartItem[];
 };
 
-type PaymentMethod = "tunai" | "transfer" | "qris";
+type PaymentMethod = "tunai" | "qris";
 
 type TransactionResponse = ReceiptData & {
   id: string;
+  createdAt?: string;
 };
 
 const PAYMENT_POLL_INTERVAL_MS = 1000;
+const ACTIVE_QRIS_KEY = "nfpos_active_qris";
 
 function wait(milliseconds: number, signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
@@ -93,7 +97,11 @@ async function waitForPaymentStatus(
 
       onRetry("");
 
-      if (status === "paid" || status === "failed") {
+      if (
+        status === "paid" ||
+        status === "failed" ||
+        status === "expired"
+      ) {
         return status;
       }
 
@@ -112,6 +120,25 @@ async function waitForPaymentStatus(
   }
 
   throw new DOMException("Aborted", "AbortError");
+}
+
+function clampPercent(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(100, Math.max(0, value));
+}
+
+function paymentFromStatus(status: PaymentStatus): QrisPayment {
+  return {
+    id: status.id,
+    transactionId: status.transactionId,
+    providerPaymentRequestId: status.providerPaymentRequestId,
+    providerReferenceId: status.providerReferenceId,
+    amount: status.amount,
+    currency: status.currency,
+    status: status.status,
+    qrString: status.qrString,
+    expiresAt: status.expiresAt,
+  };
 }
 
 function getErrorMessage(error: unknown) {
@@ -174,6 +201,14 @@ export default function TransactionPage() {
 
   const [receiptOpen, setReceiptOpen] =
     useState(false);
+  const [cashSuccess, setCashSuccess] = useState<{
+    transactionId: string;
+    transactionNumber: string;
+    amount: number;
+    method: string;
+  } | null>(null);
+  const [receiptLoading, setReceiptLoading] = useState(false);
+  const [receiptError, setReceiptError] = useState("");
 
   const [submitting, setSubmitting] =
     useState(false);
@@ -222,6 +257,8 @@ export default function TransactionPage() {
 
   useEffect(() => {
     void loadInitial();
+    // Initial data and payment recovery are intentionally run once per mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(
@@ -261,10 +298,14 @@ export default function TransactionPage() {
           : current
       );
       setTax(
-        Number(
+        clampPercent(Number(
           settingsResponse.data.defaultTax ?? 0
-        )
+        ))
       );
+
+      if (capabilitiesResponse.data.qrisEnabled) {
+        await restoreQrisPayment();
+      }
     } catch (error) {
       setLoadError(getErrorMessage(error));
     } finally {
@@ -277,6 +318,148 @@ export default function TransactionPage() {
       await api.get<Product[]>("/api/products");
 
     setAllProducts(response.data);
+  }
+
+  function persistPayment(payment: QrisPayment) {
+    localStorage.setItem(ACTIVE_QRIS_KEY, JSON.stringify(payment));
+  }
+
+  function removePersistedPayment() {
+    localStorage.removeItem(ACTIVE_QRIS_KEY);
+  }
+
+  async function restoreQrisPayment() {
+    try {
+      const saved = localStorage.getItem(ACTIVE_QRIS_KEY);
+      let status: PaymentStatus | null = null;
+
+      if (saved) {
+        const parsed = JSON.parse(saved) as QrisPayment;
+        const response = await api.get<PaymentStatus>(
+          `/api/payments/${parsed.id}`
+        );
+        status = response.data;
+      } else {
+        const response = await api.get<PaymentStatus | "">(
+          "/api/payments/current"
+        );
+        status = response.status === 204 || !response.data
+          ? null
+          : response.data as PaymentStatus;
+      }
+
+      if (!status) return;
+
+      const payment = paymentFromStatus(status);
+      persistPayment(payment);
+      setQrisPayment(payment);
+      setQrisStatus(status.status);
+
+      if (status.status === "paid") {
+        clearCart();
+        await Promise.all([
+          loadReceipt(payment.transactionId),
+          reloadProducts(),
+        ]);
+      } else if (
+        status.status === "pending" ||
+        status.status === "creating"
+      ) {
+        void monitorPayment(payment);
+      }
+    } catch (error) {
+      setQrisStatusError(
+        `Pembayaran sebelumnya belum dapat dipulihkan. ${getErrorMessage(error)}`
+      );
+    }
+  }
+
+  async function loadReceipt(transactionId: string) {
+    setReceiptLoading(true);
+    setReceiptError("");
+    try {
+      const { data } = await api.get<TransactionResponse>(
+        `/api/transactions/${transactionId}`
+      );
+      setReceipt({
+        transactionDate: data.createdAt ?? new Date().toISOString(),
+        noTrx: data.noTrx,
+        subtotal: data.subtotal,
+        discAmt: data.discAmt,
+        taxAmt: data.taxAmt,
+        total: data.total,
+        dibayar: data.dibayar,
+        kembalian: data.kembalian,
+        metodePembayaran: data.metodePembayaran,
+        items: data.items,
+      });
+    } catch (error) {
+      setReceiptError(
+        `Pembayaran sudah berhasil, tetapi detail struk belum dapat dimuat. ${getErrorMessage(error)}`
+      );
+    } finally {
+      setReceiptLoading(false);
+    }
+  }
+
+  async function applyFinalPaymentStatus(
+    payment: QrisPayment,
+    status: string
+  ) {
+    setQrisStatus((current) => current === "paid" ? current : status);
+    persistPayment({ ...payment, status });
+
+    if (status === "paid") {
+      clearCart();
+      await Promise.all([
+        loadReceipt(payment.transactionId),
+        reloadProducts(),
+      ]);
+    }
+  }
+
+  async function monitorPayment(payment: QrisPayment) {
+    checkoutAbort.current?.abort();
+    const abortController = new AbortController();
+    checkoutAbort.current = abortController;
+    submissionLock.current = true;
+    setSubmitting(true);
+    try {
+      const status = await waitForPaymentStatus(
+        payment.id,
+        abortController.signal,
+        setQrisStatusError
+      );
+      await applyFinalPaymentStatus(payment, status);
+    } catch (error) {
+      if (!abortController.signal.aborted) {
+        setQrisStatusError(getErrorMessage(error));
+      }
+    } finally {
+      if (checkoutAbort.current === abortController) {
+        checkoutAbort.current = null;
+        submissionLock.current = false;
+        setSubmitting(false);
+      }
+    }
+  }
+
+  async function refreshPaymentStatus() {
+    if (!qrisPayment) return;
+    setQrisStatusError("");
+    try {
+      const { data } = await api.get<PaymentStatus>(
+        `/api/payments/${qrisPayment.id}`
+      );
+      const restored = paymentFromStatus(data);
+      setQrisPayment(restored);
+      await applyFinalPaymentStatus(restored, data.status);
+      if (data.status === "pending" || data.status === "creating") {
+        void monitorPayment(restored);
+      }
+    } catch (error) {
+      setQrisStatusError(getErrorMessage(error));
+    }
   }
 
   function getProduct(productId: string) {
@@ -453,6 +636,12 @@ export default function TransactionPage() {
     () => subtotal - discAmt + taxAmt,
     [subtotal, discAmt, taxAmt]
   );
+  const totalsValid =
+    Number.isFinite(discount) &&
+    Number.isFinite(tax) &&
+    discount >= 0 && discount <= 100 &&
+    tax >= 0 && tax <= 100 &&
+    Number.isFinite(total) && total >= 0;
 
   const change = useMemo(() => {
     if (paymentMethod !== "tunai") {
@@ -491,6 +680,11 @@ export default function TransactionPage() {
 
     if (stockError) {
       window.alert(stockError);
+      return;
+    }
+
+    if (!totalsValid) {
+      window.alert("Diskon, pajak, atau total transaksi tidak valid.");
       return;
     }
 
@@ -545,9 +739,6 @@ export default function TransactionPage() {
           throw new Error("Pembayaran QRIS sedang tidak tersedia.");
         }
 
-        const abortController = new AbortController();
-        checkoutAbort.current = abortController;
-
         const paymentResponse = await api.post<QrisPayment>(
           "/api/payments/qris",
           {
@@ -555,53 +746,15 @@ export default function TransactionPage() {
             metodePembayaran: "QRIS",
             dibayar: 0,
             kembalian: 0,
-          },
-          { signal: abortController.signal }
+          }
         );
         const payment = paymentResponse.data;
 
+        persistPayment(payment);
         setQrisPayment(payment);
         setQrisStatus(payment.status);
         setQrisStatusError("");
-
-        const finalStatus =
-          payment.status === "paid" || payment.status === "failed"
-            ? payment.status
-            : await waitForPaymentStatus(
-                payment.id,
-                abortController.signal,
-                setQrisStatusError
-              );
-
-        setQrisStatus(finalStatus);
-
-        if (finalStatus === "failed") {
-          return;
-        }
-
-        const transactionResponse =
-          await api.get<TransactionResponse>(
-            `/api/transactions/${payment.transactionId}`,
-            { signal: abortController.signal }
-          );
-        const completed = transactionResponse.data;
-
-        setReceipt({
-          noTrx: completed.noTrx,
-          subtotal: completed.subtotal,
-          discAmt: completed.discAmt,
-          taxAmt: completed.taxAmt,
-          total: completed.total,
-          dibayar: completed.dibayar,
-          kembalian: completed.kembalian,
-          metodePembayaran: completed.metodePembayaran,
-          items: completed.items,
-        });
-        setQrisPayment(null);
-        setQrisStatus(null);
-        setReceiptOpen(true);
-        clearCart();
-        await reloadProducts();
+        await monitorPayment(payment);
         return;
       }
 
@@ -611,18 +764,24 @@ export default function TransactionPage() {
       );
 
       setReceipt({
+        transactionDate: response.data.createdAt ?? new Date().toISOString(),
         noTrx: response.data.noTrx,
-        subtotal,
-        discAmt,
-        taxAmt,
-        total,
-        dibayar: paidAmount,
-        kembalian: changeAmount,
-        metodePembayaran: paymentMethod,
-        items: receiptItems,
+        subtotal: response.data.subtotal,
+        discAmt: response.data.discAmt,
+        taxAmt: response.data.taxAmt,
+        total: response.data.total,
+        dibayar: response.data.dibayar,
+        kembalian: response.data.kembalian,
+        metodePembayaran: response.data.metodePembayaran,
+        items: response.data.items ?? receiptItems,
       });
 
-      setReceiptOpen(true);
+      setCashSuccess({
+        transactionId: response.data.id,
+        transactionNumber: response.data.noTrx,
+        amount: response.data.total,
+        method: response.data.metodePembayaran,
+      });
       clearCart();
 
       await reloadProducts();
@@ -646,9 +805,21 @@ export default function TransactionPage() {
   }
 
   function closeFailedQris() {
+    removePersistedPayment();
     setQrisPayment(null);
     setQrisStatus(null);
     setQrisStatusError("");
+  }
+
+  function startNewTransaction() {
+    removePersistedPayment();
+    setQrisPayment(null);
+    setQrisStatus(null);
+    setQrisStatusError("");
+    setReceipt(null);
+    setReceiptError("");
+    setCashSuccess(null);
+    setReceiptOpen(false);
   }
 
   return (
@@ -714,9 +885,10 @@ export default function TransactionPage() {
               qrisSandbox={paymentCapabilities.isSandbox}
               paid={paid}
               change={change}
+              totalsValid={totalsValid}
               onCustomerChange={setCustomerId}
-              onDiscountChange={setDiscount}
-              onTaxChange={setTax}
+              onDiscountChange={(value) => setDiscount(clampPercent(value))}
+              onTaxChange={(value) => setTax(clampPercent(value))}
               onPaymentMethodChange={
                 setPaymentMethod
               }
@@ -740,12 +912,41 @@ export default function TransactionPage() {
           }
         />
 
+        <PaymentSuccessModal
+          open={cashSuccess !== null}
+          method={cashSuccess?.method ?? "tunai"}
+          amount={cashSuccess?.amount ?? 0}
+          transactionNumber={cashSuccess?.transactionNumber ?? ""}
+          transactionId={cashSuccess?.transactionId ?? ""}
+          onViewReceipt={() => {
+            setCashSuccess(null);
+            setReceiptOpen(true);
+          }}
+          onNewTransaction={startNewTransaction}
+        />
+
         <QrisPaymentModal
           payment={qrisPayment}
           status={qrisStatus}
           statusError={qrisStatusError}
           sandbox={paymentCapabilities.isSandbox}
           onCloseFailed={closeFailedQris}
+          onRetryStatus={() => void refreshPaymentStatus()}
+          receiptLoading={receiptLoading}
+          receiptError={receiptError}
+          receiptReady={receipt !== null}
+          onRetryReceipt={() => {
+            if (qrisPayment) {
+              void loadReceipt(qrisPayment.transactionId);
+            }
+          }}
+          onViewReceipt={() => {
+            removePersistedPayment();
+            setQrisPayment(null);
+            setQrisStatus(null);
+            setReceiptOpen(true);
+          }}
+          onNewTransaction={startNewTransaction}
         />
       </section>
     </AppShell>

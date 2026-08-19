@@ -1,11 +1,58 @@
 import {
   expect,
   test,
+  type Route,
 } from "@playwright/test";
 
 import {
   loginAsOwner,
 } from "./helpers";
+
+function json(route: Route, body: unknown) {
+  return route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify(body),
+  });
+}
+
+test("Ingat saya controls persistent versus terminal-only session", async ({ page }) => {
+  await page.route("**/api/**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/auth/login") {
+      return json(route, {
+        token: "remember-token",
+        user: { id: "user", nama: "Owner", username: "owner", role: "owner" },
+      });
+    }
+    if (path === "/api/auth/me") {
+      return json(route, { id: "user", nama: "Owner", username: "owner", role: "owner" });
+    }
+    return json(route, []);
+  });
+
+  await page.goto("/login");
+  await page.getByLabel("Username").fill("owner");
+  await page.getByLabel("Password", { exact: true }).fill("password");
+  await page.getByRole("button", { name: "Masuk" }).click();
+  await expect(page).toHaveURL(/\/produk$/);
+  expect(await page.evaluate(() => localStorage.getItem("nfpos_token"))).toBeNull();
+  expect(await page.evaluate(() => sessionStorage.getItem("nfpos_token"))).toBe("remember-token");
+
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+  await page.goto("/login");
+  await page.getByLabel("Username").fill("owner");
+  await page.getByLabel("Password", { exact: true }).fill("password");
+  await page.locator("label.checkbox-label").click();
+  await expect(page.getByLabel("Ingat saya")).toBeChecked();
+  await page.getByRole("button", { name: "Masuk" }).click();
+  await expect(page).toHaveURL(/\/produk$/);
+  expect(await page.evaluate(() => localStorage.getItem("nfpos_token"))).toBe("remember-token");
+  expect(await page.evaluate(() => sessionStorage.getItem("nfpos_token"))).toBeNull();
+});
 
 test(
   "unauthenticated user is redirected to login",
@@ -71,11 +118,19 @@ test(
   async ({ page }) => {
     await loginAsOwner(page);
 
+    await page.evaluate(() => {
+      localStorage.setItem("nfpos_active_qris", "tenant-payment");
+    });
+
     await page.locator("#btn-logout").click();
 
     await expect(page).toHaveURL(
       /\/login$/
     );
+
+    expect(
+      await page.evaluate(() => localStorage.getItem("nfpos_active_qris"))
+    ).toBeNull();
 
     await page.goto("/dashboard");
 

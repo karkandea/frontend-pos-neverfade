@@ -110,7 +110,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-we
    ═══════════════════════════════════════ */
 #page-app{flex-direction:row}
 
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:199;backdrop-filter:blur(2px)}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:199;backdrop-filter:blur(2px);border:0;padding:0}
 .sidebar-overlay.active{display:block}
 
 /* SIDEBAR */
@@ -565,9 +565,9 @@ textarea{resize:vertical;min-height:64px}
 /* ═══════════════════════════════════════
    MODALS
    ═══════════════════════════════════════ */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;overscroll-behavior:contain}
 .modal-overlay.open{display:flex;animation:fadeIn .15s ease}
-.modal{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:520px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.14);animation:modalIn .2s ease}
+.modal{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;min-width:0;max-width:520px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.14);animation:modalIn .2s ease}
 @keyframes modalIn{from{opacity:0;transform:scale(.97) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
 .modal-wide{max-width:680px}
 .modal-sm{max-width:380px}
@@ -584,6 +584,7 @@ textarea{resize:vertical;min-height:64px}
 .qris-payment-modal .modal-header h3{margin:0 0 5px}
 .qris-status{margin:0;font-size:11px;font-weight:600}
 .qris-status.pending{color:var(--warn)}
+.qris-status.paid{color:var(--success)}
 .qris-status.failed{color:var(--danger)}
 .qris-payment-body{display:flex;flex-direction:column;align-items:center;gap:16px}
 .qris-amount{width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;box-sizing:border-box;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-3)}
@@ -596,7 +597,23 @@ textarea{resize:vertical;min-height:64px}
 .qris-instructions li+li{margin-top:4px}
 .qris-waiting{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text-2);font-size:12px;font-weight:600}
 .qris-spinner{width:13px;height:13px;border:2px solid var(--border-2);border-top-color:var(--text);border-radius:50%;animation:qrisSpin .8s linear infinite}
-.qris-status-error{margin:0;color:var(--danger);font-size:11px;text-align:center}
+.qris-status-error{margin:0;color:var(--danger);font-size:11px;text-align:center;display:grid;gap:8px;justify-items:center}
+.qris-status-error p{margin:0}
+.qris-reference{width:100%;display:grid;gap:4px;padding:10px 12px;box-sizing:border-box;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-3);overflow-wrap:anywhere}
+.qris-reference span,.qris-reference small{font-size:10px;color:var(--text-3)}
+.qris-reference strong{font-size:11px;color:var(--text);font-variant-numeric:tabular-nums}
+.payment-success-state{display:flex;flex-direction:column;align-items:center;text-align:center;gap:9px;color:var(--text)}
+.payment-success-state h3,.payment-success-state p{margin:0}
+.payment-success-state>strong{font-family:var(--font-head);font-size:24px}
+.payment-success-state>small{max-width:100%;overflow-wrap:anywhere;color:var(--text-3)}
+.payment-success-icon{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:#e7f8ee;color:#167745;font-size:26px;font-weight:800}
+.receipt-recovery{display:grid;gap:10px;justify-items:center;padding:12px;border:1px solid #f1c5c0;border-radius:var(--radius-sm);background:#fff5f4;color:var(--danger)}
+.payment-result-modal{max-width:440px}
+.payment-success-details{width:100%;display:grid;gap:8px;margin:10px 0 0}
+.payment-success-details div{display:flex;justify-content:space-between;gap:12px;padding-top:8px;border-top:1px solid var(--border);text-align:left}
+.payment-success-details dt{color:var(--text-3);font-size:11px}
+.payment-success-details dd{margin:0;max-width:65%;overflow-wrap:anywhere;color:var(--text);font-size:11px;text-align:right}
+.financial-validation-error{margin:6px 0 0;color:var(--danger);font-size:11px;text-align:right}
 .qris-failure{width:100%;padding:18px;box-sizing:border-box;border:1px solid #f1c5c0;border-radius:var(--radius-md);background:#fff5f4;color:var(--danger)}
 .qris-failure strong{font-family:var(--font-head);font-size:14px}
 .qris-failure p{margin:8px 0 0;color:var(--text-2);font-size:12px;line-height:1.55}
@@ -706,6 +723,10 @@ body{overflow:hidden;height:100%}
   .period-btn{flex:1;border-right-width:1.5px;border-radius:var(--radius-sm) !important;margin:2px}
   .modal{max-width:100%;border-radius:var(--radius)}
   .modal-overlay{padding:12px}
+  .qris-payment-modal,.modal-struk,.payment-result-modal{max-height:calc(100dvh - 24px)}
+  .qris-payment-body{gap:12px;padding:14px}
+  .qris-code-frame{width:min(240px,72vw)}
+  .qris-success-actions{display:grid;grid-template-columns:1fr 1fr}
   .form-grid-2{grid-template-columns:1fr}
   .form-grid-2 .span-2{grid-column:span 1}
   .dashboard-bottom{grid-template-columns:1fr}

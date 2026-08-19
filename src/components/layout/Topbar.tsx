@@ -1,11 +1,36 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuthStore } from "../../stores/auth";
 
-export default function Topbar() {
+const routeTitles: Record<string, string> = {
+  "/dashboard": "Dashboard",
+  "/produk": "Produk",
+  "/kasir": "Kasir",
+  "/inventaris": "Inventaris",
+  "/pelanggan": "Pelanggan",
+  "/transaksi": "Transaksi",
+  "/laporan": "Laporan",
+  "/keuangan": "Keuangan",
+  "/karyawan": "Karyawan",
+  "/absensi": "Absensi",
+  "/pengguna": "Pengguna",
+  "/pengaturan": "Pengaturan",
+};
+
+type Props = {
+  onOpenNavigation: () => void;
+};
+
+export default function Topbar({ onOpenNavigation }: Props) {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const location = useLocation();
+  const [now, setNow] = useState(() => new Date());
 
-  const now = useMemo(() => new Date(), []);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const date = now.toLocaleDateString("id-ID", {
     weekday: "long",
@@ -26,6 +51,8 @@ export default function Topbar() {
           type="button"
           className="sidebar-toggle"
           id="sidebar-toggle"
+          aria-label="Buka navigasi"
+          onClick={onOpenNavigation}
         >
           <svg
             width="18"
@@ -45,7 +72,7 @@ export default function Topbar() {
           className="topbar-title"
           id="topbar-title"
         >
-          Dashboard
+          {routeTitles[location.pathname] ?? "NeverFade POS"}
         </div>
       </div>
 
@@ -98,6 +125,7 @@ export default function Topbar() {
           className="btn-logout"
           id="btn-logout"
           onClick={logout}
+          aria-label="Keluar dari NeverFade POS"
         >
           <svg
             width="15"

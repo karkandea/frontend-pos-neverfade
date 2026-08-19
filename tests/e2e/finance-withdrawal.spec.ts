@@ -37,6 +37,17 @@ test("owner sees authoritative finance summary, requests withdrawal, and sees hi
     requestedAt: "2026-08-14T04:00:00Z",
     processedAt: null,
   }];
+  const movements = [{
+    id: "movement-credit",
+    type: "qris_credit",
+    status: "paid",
+    amount: 1000000,
+    timestamp: "2026-08-14T03:00:00Z",
+    reference: "py-xendit-qa",
+    paymentId: "payment-qa",
+    transactionId: "transaction-qa",
+    withdrawalId: null,
+  }];
 
   await page.route("**/api/**", async (route) => {
     const request = route.request();
@@ -44,6 +55,7 @@ test("owner sees authoritative finance summary, requests withdrawal, and sees hi
     if (path === "/api/auth/me") return json(route, owner);
     if (path === "/api/finance/summary") return json(route, summary);
     if (path === "/api/finance/withdrawals" && request.method() === "GET") return json(route, withdrawals);
+    if (path === "/api/finance/movements") return json(route, movements);
     if (path === "/api/finance/withdrawals" && request.method() === "POST") {
       const payload = request.postDataJSON() as { amount: number };
       const created = { id: "33333333-3333-3333-3333-333333333333", amount: payload.amount, status: "requested", requestedAt: "2026-08-14T05:00:00Z", processedAt: null };
@@ -57,16 +69,23 @@ test("owner sees authoritative finance summary, requests withdrawal, and sees hi
   await page.goto("/keuangan");
   await expect(page.getByRole("heading", { name: "Keuangan" })).toBeVisible();
   await expect(page.getByText(/Rp\s*750\.000/).first()).toBeVisible();
-  await expect(page.getByText(/Rp\s*1\.000\.000/)).toBeVisible();
+  await expect(page.getByText(/Rp\s*1\.000\.000/).first()).toBeVisible();
   await expect(page.getByText(/Rp\s*150\.000/)).toBeVisible();
   await expect(page.getByText(/Rp\s*100\.000/).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "Riwayat Pencairan" })).toBeVisible();
 
   await page.getByLabel("Jumlah pencairan").fill("250000");
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message().replace(/\s/g, "")).toContain("Rp250.000");
+    expect(dialog.message().replace(/\s/g, "")).toContain("Rp500.000");
+    await dialog.accept();
+  });
   await page.getByRole("button", { name: "Ajukan Pencairan" }).click();
   await expect(page.getByText("Permintaan pencairan berhasil dikirim.")).toBeVisible();
   await expect(page.getByText(/Rp\s*250\.000/)).toBeVisible();
   await expect(page.getByText(/Rp\s*500\.000/).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mutasi Saldo" })).toBeVisible();
+  await expect(page.getByText("py-xendit-qa")).toBeVisible();
 });
 
 test("owner sees insufficient balance error returned by backend", async ({ page }) => {
@@ -77,6 +96,7 @@ test("owner sees insufficient balance error returned by backend", async ({ page 
     if (path === "/api/auth/me") return json(route, owner);
     if (path === "/api/finance/summary") return json(route, { availableBalance: 50000, totalSuccessfulNonCashIncome: 50000, totalWithdrawn: 0, pendingWithdrawalAmount: 0 });
     if (path === "/api/finance/withdrawals" && request.method() === "GET") return json(route, []);
+    if (path === "/api/finance/movements") return json(route, []);
     if (path === "/api/finance/withdrawals" && request.method() === "POST") return json(route, { code: "WITHDRAWAL_INSUFFICIENT_BALANCE", message: "Saldo tersedia tidak mencukupi untuk pencairan ini." }, 409);
     return json(route, {});
   });
@@ -112,7 +132,12 @@ test("super admin marks one withdrawal paid and rejects another", async ({ page 
   await page.goto("/platform/withdrawals");
   await expect(page.getByRole("heading", { name: "Pencairan" })).toBeVisible();
   const kopiRow = page.getByRole("row").filter({ hasText: "Kopi Tenant" });
-  page.once("dialog", (dialog) => dialog.accept());
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain("Kopi Tenant");
+    expect(dialog.message().replace(/\s/g, "")).toContain("Rp300.000");
+    expect(dialog.message()).toContain("44444444-4444-4444-4444-444444444444");
+    await dialog.accept();
+  });
   await kopiRow.getByRole("button", { name: "Tandai Dibayar" }).click();
   await expect(page.getByText("Pencairan ditandai sudah dibayar.")).toBeVisible();
   await expect(kopiRow.getByText("Dibayar")).toBeVisible();

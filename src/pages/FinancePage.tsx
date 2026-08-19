@@ -3,7 +3,11 @@ import { type FormEvent, useCallback, useEffect, useState } from "react";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
 import { getApiError } from "../lib/apiError";
-import type { FinanceSummary, Withdrawal } from "../types/finance";
+import type {
+  FinanceMovement,
+  FinanceSummary,
+  Withdrawal,
+} from "../types/finance";
 
 const currency = new Intl.NumberFormat("id-ID", {
   style: "currency",
@@ -16,10 +20,16 @@ const dateTime = new Intl.DateTimeFormat("id-ID", {
   timeZone: "Asia/Jakarta",
 });
 const statusLabel = { requested: "Menunggu", paid: "Dibayar", rejected: "Ditolak" };
+const movementStatusLabel = {
+  requested: "Dana ditahan",
+  paid: "Selesai",
+  rejected: "Ditolak · Dana dilepas",
+};
 
 export default function FinancePage() {
   const [summary, setSummary] = useState<FinanceSummary | null>(null);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
+  const [movements, setMovements] = useState<FinanceMovement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [amount, setAmount] = useState("");
@@ -31,12 +41,14 @@ export default function FinancePage() {
     setLoading(true);
     setError("");
     try {
-      const [summaryResponse, withdrawalsResponse] = await Promise.all([
+      const [summaryResponse, withdrawalsResponse, movementsResponse] = await Promise.all([
         api.get<FinanceSummary>("/api/finance/summary", { signal }),
         api.get<Withdrawal[]>("/api/finance/withdrawals", { signal }),
+        api.get<FinanceMovement[]>("/api/finance/movements", { signal }),
       ]);
       setSummary(summaryResponse.data);
       setWithdrawals(withdrawalsResponse.data);
+      setMovements(movementsResponse.data);
     } catch (requestError: unknown) {
       if (!signal?.aborted) setError(getApiError(requestError).message);
     } finally {
@@ -47,13 +59,23 @@ export default function FinancePage() {
   useEffect(() => {
     const controller = new AbortController();
     Promise.all([
-      api.get<FinanceSummary>("/api/finance/summary", { signal: controller.signal }),
-      api.get<Withdrawal[]>("/api/finance/withdrawals", { signal: controller.signal }),
-    ]).then(([summaryResponse, withdrawalsResponse]) => {
+      api.get<FinanceSummary>("/api/finance/summary", {
+        signal: controller.signal,
+      }),
+      api.get<Withdrawal[]>("/api/finance/withdrawals", {
+        signal: controller.signal,
+      }),
+      api.get<FinanceMovement[]>("/api/finance/movements", {
+        signal: controller.signal,
+      }),
+    ]).then(([summaryResponse, withdrawalsResponse, movementsResponse]) => {
       setSummary(summaryResponse.data);
       setWithdrawals(withdrawalsResponse.data);
+      setMovements(movementsResponse.data);
     }).catch((requestError: unknown) => {
-      if (!controller.signal.aborted) setError(getApiError(requestError).message);
+      if (!controller.signal.aborted) {
+        setError(getApiError(requestError).message);
+      }
     }).finally(() => {
       if (!controller.signal.aborted) setLoading(false);
     });
@@ -67,6 +89,17 @@ export default function FinancePage() {
       setSubmitError("Masukkan jumlah pencairan yang valid.");
       return;
     }
+    if (!summary || parsedAmount > summary.availableBalance) {
+      setSubmitError("Saldo tersedia tidak mencukupi untuk pencairan ini.");
+      return;
+    }
+
+    const remaining = summary.availableBalance - parsedAmount;
+    if (!window.confirm(
+      `Ajukan pencairan ${currency.format(parsedAmount)}?\n\n` +
+      `Saldo tersedia setelah dana ditahan: ${currency.format(remaining)}.\n` +
+      "Permintaan akan diproses manual oleh Super Admin."
+    )) return;
 
     setSubmitting(true);
     setSubmitError("");
@@ -82,6 +115,10 @@ export default function FinancePage() {
         "/api/finance/summary"
       );
       setSummary(refreshedSummary);
+      const { data: refreshedMovements } = await api.get<FinanceMovement[]>(
+        "/api/finance/movements"
+      );
+      setMovements(refreshedMovements);
     } catch (requestError: unknown) {
       const apiError = getApiError(requestError);
       setSubmitError(
@@ -139,6 +176,38 @@ export default function FinancePage() {
                 </form>
               </section>
             </div>
+
+            <section className="finance-panel finance-movements">
+              <div className="finance-panel-heading">
+                <div>
+                  <h2>Mutasi Saldo</h2>
+                  <p>Kredit QRIS dan status pencairan dari ledger NeverFade.</p>
+                </div>
+              </div>
+              {movements.length === 0 ? (
+                <div className="finance-empty">
+                  <strong>Belum ada mutasi</strong>
+                  <p>Pembayaran QRIS dan pencairan akan muncul di sini.</p>
+                </div>
+              ) : (
+                <div className="finance-table-wrap">
+                  <table className="finance-table">
+                    <thead><tr><th>Waktu</th><th>Jenis</th><th>Jumlah</th><th>Status</th><th>Referensi</th></tr></thead>
+                    <tbody>
+                      {movements.map((movement) => (
+                        <tr key={`${movement.type}-${movement.id}`}>
+                          <td>{dateTime.format(new Date(movement.timestamp))}</td>
+                          <td>{movement.type === "qris_credit" ? "Kredit QRIS" : "Pencairan"}</td>
+                          <td><strong>{movement.type === "qris_credit" ? "+" : movement.status === "paid" ? "−" : ""}{currency.format(movement.amount)}</strong></td>
+                          <td><span className={`finance-status finance-status-${movement.status}`}>{movementStatusLabel[movement.status]}</span></td>
+                          <td><code>{movement.reference}</code></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
           </>
         ) : null}
       </div>

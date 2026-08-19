@@ -191,7 +191,9 @@ test("super admin provisions and controls tenant lifecycle with isolated session
   await expect(page.getByText("Existing Tenant")).toBeVisible();
   await expect.poll(() =>
     page.evaluate(() => ({
-      tenant: localStorage.getItem("nfpos_token"),
+      tenant:
+        localStorage.getItem("nfpos_token") ??
+        sessionStorage.getItem("nfpos_token"),
       platform: localStorage.getItem("nfpos_platform_token"),
     }))
   ).toEqual({
@@ -237,7 +239,9 @@ test("super admin provisions and controls tenant lifecycle with isolated session
   await expect(page.getByRole("heading", { name: "Produk" })).toBeVisible();
   await expect.poll(() =>
     page.evaluate(() => ({
-      tenant: localStorage.getItem("nfpos_token"),
+      tenant:
+        localStorage.getItem("nfpos_token") ??
+        sessionStorage.getItem("nfpos_token"),
       platform: localStorage.getItem("nfpos_platform_token"),
     }))
   ).toEqual({

@@ -22,3 +22,15 @@ export type PlatformWithdrawal = Withdrawal & {
   requestedByName: string;
   requestedByUsername: string;
 };
+
+export type FinanceMovement = {
+  id: string;
+  type: "qris_credit" | "withdrawal";
+  status: "paid" | "requested" | "rejected";
+  amount: number;
+  timestamp: string;
+  reference: string;
+  paymentId: string | null;
+  transactionId: string | null;
+  withdrawalId: string | null;
+};

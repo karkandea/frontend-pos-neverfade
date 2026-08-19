@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(
     searchParams.get("reason") === "suspended"
@@ -29,7 +29,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      await login(username, password);
+      await login(username, password, rememberMe);
       navigate("/produk", { replace: true });
     } catch (error: unknown) {
       const apiMessage =
@@ -82,7 +82,7 @@ export default function LoginPage() {
 
           <form className="login-form" onSubmit={handleSubmit}>
             <div className="form-group">
-              <label>Username</label>
+              <label htmlFor="login-username">Username</label>
 
               <div className="input-wrapper">
                 <svg
@@ -102,6 +102,8 @@ export default function LoginPage() {
                   id="login-username"
                   type="text"
                   autoComplete="username"
+                  name="username"
+                  spellCheck={false}
                   placeholder="Masukkan username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -110,7 +112,7 @@ export default function LoginPage() {
             </div>
 
             <div className="form-group">
-              <label>Password</label>
+              <label htmlFor="login-password">Password</label>
 
               <div className="input-wrapper">
                 <svg
@@ -137,6 +139,7 @@ export default function LoginPage() {
                   id="login-password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
+                  name="password"
                   placeholder="Masukkan password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -146,6 +149,11 @@ export default function LoginPage() {
                   type="button"
                   className="toggle-password"
                   id="toggle-pw"
+                  aria-label={
+                    showPassword
+                      ? "Sembunyikan password"
+                      : "Tampilkan password"
+                  }
                   onClick={() => setShowPassword((v) => !v)}
                 >
                   <svg
@@ -185,7 +193,7 @@ export default function LoginPage() {
               disabled={loading}
             >
               <span>
-                {loading ? "Masuk..." : "Masuk"}
+                {loading ? "Masuk…" : "Masuk"}
               </span>
 
               <svg
@@ -204,6 +212,7 @@ export default function LoginPage() {
             <div
               id="login-error"
               className={`login-error ${error ? "" : "hidden"}`}
+              role="alert"
             >
               {error}
             </div>

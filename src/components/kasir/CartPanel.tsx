@@ -24,17 +24,18 @@ type Props = {
   subtotal: number;
   total: number;
 
-  paymentMethod: "tunai" | "transfer" | "qris";
+  paymentMethod: "tunai" | "qris";
   qrisEnabled: boolean;
   qrisSandbox: boolean;
   paid: number;
   change: number;
+  totalsValid: boolean;
 
   onCustomerChange: (value: string) => void;
   onDiscountChange: (value: number) => void;
   onTaxChange: (value: number) => void;
   onPaymentMethodChange: (
-    value: "tunai" | "transfer" | "qris"
+    value: "tunai" | "qris"
   ) => void;
   onPaidChange: (value: number) => void;
 
@@ -69,6 +70,7 @@ export default function CartPanel({
   qrisSandbox,
   paid,
   change,
+  totalsValid,
 
   onCustomerChange,
   onDiscountChange,
@@ -89,6 +91,7 @@ export default function CartPanel({
   const checkoutDisabled =
     items.length === 0 ||
     submitting ||
+    !totalsValid ||
     (paymentMethod === "tunai" && paid < total);
 
   return (
@@ -199,6 +202,7 @@ export default function CartPanel({
 
             <div className="discount-input-wrap">
               <input
+                aria-label="Diskon persen"
                 type="number"
                 min={0}
                 max={100}
@@ -219,6 +223,7 @@ export default function CartPanel({
 
             <div className="discount-input-wrap">
               <input
+                aria-label="Pajak persen"
                 type="number"
                 min={0}
                 max={100}
@@ -239,6 +244,11 @@ export default function CartPanel({
 
             <span>{rupiah(total)}</span>
           </div>
+          {!totalsValid ? (
+            <p className="financial-validation-error" role="alert">
+              Diskon dan pajak harus antara 0–100%.
+            </p>
+          ) : null}
           </div>
 
           <div className="payment-method">
@@ -247,7 +257,7 @@ export default function CartPanel({
           </div>
 
           <div className="payment-options">
-            {(["tunai", "transfer"] as const).map(
+            {(["tunai"] as const).map(
               (method) => (
                 <button
                   key={method}
@@ -292,10 +302,13 @@ export default function CartPanel({
 
           {paymentMethod === "tunai" && (
             <div className="cash-input-wrap">
-            <label>Uang Diterima</label>
+            <label htmlFor="cash-received">Uang Diterima</label>
 
             <input
+              id="cash-received"
               type="number"
+              min={0}
+              inputMode="numeric"
               value={paid}
               onChange={(e) =>
                 onPaidChange(

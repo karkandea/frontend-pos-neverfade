@@ -7,6 +7,7 @@ type ReceiptItem = {
 };
 
 type ReceiptData = {
+  transactionDate: string;
   noTrx: string;
   total: number;
   subtotal: number;
@@ -44,14 +45,20 @@ export default function ReceiptModal({
 
   return (
     <div className="modal-overlay open">
-      <div className="modal modal-struk">
+      <div
+        className="modal modal-struk"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="receipt-title"
+      >
         <div className="modal-header">
-          <h3>Preview Struk</h3>
+          <h3 id="receipt-title">Preview Struk</h3>
 
           <button
             type="button"
             className="modal-close"
             onClick={onClose}
+            aria-label="Tutup struk"
           >
             ×
           </button>
@@ -67,7 +74,9 @@ export default function ReceiptModal({
               </div>
 
               <div>
-                {new Date().toLocaleString("id-ID")}
+                {new Date(receipt.transactionDate).toLocaleString("id-ID", {
+                  timeZone: "Asia/Jakarta",
+                })}
               </div>
             </div>
 
@@ -158,7 +167,7 @@ export default function ReceiptModal({
             className="btn-primary"
             onClick={() => window.print()}
           >
-            Print
+            Cetak
           </button>
         </div>
       </div>

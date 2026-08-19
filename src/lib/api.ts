@@ -11,7 +11,9 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(TOKEN_KEY);
+  const token =
+    localStorage.getItem(TOKEN_KEY) ??
+    sessionStorage.getItem(TOKEN_KEY);
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -27,6 +29,7 @@ api.interceptors.response.use(
 
     if (status === 401) {
       localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
       window.location.replace("/login");
     }
 
@@ -35,6 +38,7 @@ api.interceptors.response.use(
       error?.response?.data?.code === "TENANT_SUSPENDED"
     ) {
       localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
       window.dispatchEvent(new Event("tenant-session-invalidated"));
       window.location.replace("/login?reason=suspended");
     }

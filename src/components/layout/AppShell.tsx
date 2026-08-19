@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
@@ -8,17 +8,29 @@ type Props = {
 };
 
 export default function AppShell({ children }: Props) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <div id="page-app" className="page page-active" style={{display:"flex"}}>
-      <div
-        className="sidebar-overlay"
+      <button
+        type="button"
+        aria-label="Tutup navigasi"
+        className={
+          sidebarOpen
+            ? "sidebar-overlay active"
+            : "sidebar-overlay"
+        }
         id="sidebar-overlay"
+        onClick={() => setSidebarOpen(false)}
       />
 
-      <Sidebar />
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       <div className="main-wrapper">
-        <Topbar />
+        <Topbar onOpenNavigation={() => setSidebarOpen(true)} />
 
         <main className="content-area">
           {children}

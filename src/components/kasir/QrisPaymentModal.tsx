@@ -9,6 +9,13 @@ type Props = {
   statusError: string;
   sandbox: boolean;
   onCloseFailed: () => void;
+  onRetryStatus: () => void;
+  receiptLoading: boolean;
+  receiptError: string;
+  receiptReady: boolean;
+  onRetryReceipt: () => void;
+  onViewReceipt: () => void;
+  onNewTransaction: () => void;
 };
 
 const rupiah = (value: number) =>
@@ -24,6 +31,13 @@ export default function QrisPaymentModal({
   statusError,
   sandbox,
   onCloseFailed,
+  onRetryStatus,
+  receiptLoading,
+  receiptError,
+  receiptReady,
+  onRetryReceipt,
+  onViewReceipt,
+  onNewTransaction,
 }: Props) {
   const [qrImage, setQrImage] = useState<{
     source: string;
@@ -61,7 +75,17 @@ export default function QrisPaymentModal({
     return null;
   }
 
-  const failed = status === "failed";
+  const paid = status === "paid";
+  const expired = status === "expired";
+  const failed = status === "failed" || expired;
+  const pending = status === "pending" || status === "creating";
+  const expiresAt = payment.expiresAt
+    ? new Intl.DateTimeFormat("id-ID", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: "Asia/Jakarta",
+      }).format(new Date(payment.expiresAt))
+    : null;
   const currentQrImage =
     qrImage?.source === payment.qrString
       ? qrImage.value
@@ -78,8 +102,18 @@ export default function QrisPaymentModal({
         <div className="modal-header">
           <div>
             <h3 id="qris-payment-title">Pembayaran QRIS</h3>
-            <p className={`qris-status ${failed ? "failed" : "pending"}`}>
-              {failed ? "Pembayaran gagal" : "Menunggu pembayaran"}
+            <p
+              className={`qris-status ${
+                paid ? "paid" : failed ? "failed" : "pending"
+              }`}
+            >
+              {paid
+                ? "Pembayaran berhasil"
+                : expired
+                  ? "Pembayaran kedaluwarsa"
+                  : failed
+                    ? "Pembayaran gagal"
+                    : "Menunggu pembayaran"}
             </p>
           </div>
         </div>
@@ -91,15 +125,43 @@ export default function QrisPaymentModal({
             </div>
           ) : null}
 
-          {failed ? (
+          <div className="qris-reference">
+            <span>Referensi pembayaran</span>
+            <strong>{payment.providerPaymentRequestId}</strong>
+            {expiresAt ? <small>Berlaku sampai {expiresAt} WIB</small> : null}
+          </div>
+
+          {paid ? (
+            <div className="payment-success-state" role="status">
+              <div className="payment-success-icon" aria-hidden="true">✓</div>
+              <strong>QRIS berhasil dibayar</strong>
+              <span>{rupiah(payment.amount)}</span>
+              <small>
+                Transaksi {payment.transactionId}
+              </small>
+              {receiptLoading ? (
+                <p aria-live="polite">Memuat detail struk…</p>
+              ) : receiptError ? (
+                <div className="receipt-recovery" role="alert">
+                  <p>{receiptError}</p>
+                  <button type="button" className="btn-secondary" onClick={onRetryReceipt}>
+                    Coba Muat Struk Lagi
+                  </button>
+                </div>
+              ) : receiptReady ? (
+                <p>Detail transaksi siap dilihat atau dicetak.</p>
+              ) : null}
+            </div>
+          ) : failed ? (
             <div className="qris-failure" role="alert">
               <strong>Transaksi belum diselesaikan</strong>
               <p>
-                Pembayaran tidak berhasil. Keranjang tetap tersimpan dan
-                belum ada transaksi yang diselesaikan.
+                {expired
+                  ? "Waktu pembayaran telah habis. Tidak ada transaksi yang diselesaikan."
+                  : "Pembayaran tidak berhasil. Tidak ada transaksi yang diselesaikan."}
               </p>
             </div>
-          ) : (
+          ) : pending ? (
             <>
               <div className="qris-amount">
                 <span>Total pembayaran</span>
@@ -113,7 +175,7 @@ export default function QrisPaymentModal({
                     alt="Kode QRIS pembayaran"
                   />
                 ) : (
-                  <div className="qris-code-loading">Menyiapkan QRIS...</div>
+                <div className="qris-code-loading">Menyiapkan QRIS…</div>
                 )}
               </div>
 
@@ -131,15 +193,27 @@ export default function QrisPaymentModal({
               </div>
 
               {statusError ? (
-                <p className="qris-status-error" role="status">
-                  {statusError}
-                </p>
+                <div className="qris-status-error" role="alert">
+                  <p>{statusError}</p>
+                  <button type="button" className="btn-secondary" onClick={onRetryStatus}>
+                    Periksa Status Sekarang
+                  </button>
+                </div>
               ) : null}
             </>
-          )}
+          ) : null}
         </div>
 
-        {failed ? (
+        {paid ? (
+          <div className="modal-footer qris-success-actions">
+            <button type="button" className="btn-secondary" onClick={onNewTransaction}>
+              Transaksi Baru
+            </button>
+            <button type="button" className="btn-primary" disabled={!receiptReady} onClick={onViewReceipt}>
+              Lihat Struk
+            </button>
+          </div>
+        ) : failed ? (
           <div className="modal-footer">
             <button
               type="button"

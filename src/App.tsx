@@ -45,6 +45,26 @@ function LoadingPage() {
   );
 }
 
+const pageTitles: Record<string, string> = {
+  "/login": "Masuk",
+  "/dashboard": "Dashboard",
+  "/produk": "Produk",
+  "/kasir": "Kasir",
+  "/inventaris": "Inventaris",
+  "/pelanggan": "Pelanggan",
+  "/transaksi": "Transaksi",
+  "/laporan": "Laporan",
+  "/keuangan": "Keuangan",
+  "/karyawan": "Karyawan",
+  "/absensi": "Absensi",
+  "/pengguna": "Pengguna",
+  "/pengaturan": "Pengaturan",
+  "/platform/login": "Platform Login",
+  "/platform/tenants": "Tenant Platform",
+  "/platform/tenants/new": "Buat Tenant",
+  "/platform/withdrawals": "Pencairan Platform",
+};
+
 export default function App() {
   const location = useLocation();
   const {
@@ -61,6 +81,16 @@ export default function App() {
     void restore();
     void restorePlatform();
   }, [restore, restorePlatform]);
+
+  useEffect(() => {
+    const exact = pageTitles[location.pathname];
+    const section = exact ?? (
+      location.pathname.startsWith("/platform/tenants/")
+        ? "Detail Tenant"
+        : "NeverFade POS"
+    );
+    document.title = `${section} · NeverFade POS`;
+  }, [location.pathname]);
 
   if (loading || platformLoading) {
     return <LoadingPage />;

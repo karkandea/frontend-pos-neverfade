@@ -2,6 +2,8 @@ import axios from "axios";
 import { create } from "zustand";
 import api, { TOKEN_KEY } from "../lib/api";
 
+const ACTIVE_QRIS_KEY = "nfpos_active_qris";
+
 export type User = {
   id: string;
   nama: string;
@@ -15,13 +17,19 @@ type AuthState = {
   loading: boolean;
 
   setToken: (token: string | null) => void;
-  login: (username: string, password: string) => Promise<void>;
+  login: (
+    username: string,
+    password: string,
+    remember: boolean
+  ) => Promise<void>;
   restore: () => Promise<void>;
   logout: () => void;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
-  token: localStorage.getItem(TOKEN_KEY),
+  token:
+    localStorage.getItem(TOKEN_KEY) ??
+    sessionStorage.getItem(TOKEN_KEY),
   user: null,
   loading: true,
 
@@ -35,13 +43,17 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ token });
   },
 
-  login: async (username, password) => {
+  login: async (username, password, remember) => {
     const { data } = await api.post("/api/auth/login", {
       username,
       password,
     });
 
-    localStorage.setItem(TOKEN_KEY, data.token);
+    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(ACTIVE_QRIS_KEY);
+    const storage = remember ? localStorage : sessionStorage;
+    storage.setItem(TOKEN_KEY, data.token);
 
     set({
       token: data.token,
@@ -50,7 +62,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   restore: async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token =
+      localStorage.getItem(TOKEN_KEY) ??
+      sessionStorage.getItem(TOKEN_KEY);
 
     if (!token) {
       set({
@@ -75,6 +89,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         error.response?.status === 401
       ) {
         localStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(ACTIVE_QRIS_KEY);
 
         set({
           token: null,
@@ -94,6 +110,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(ACTIVE_QRIS_KEY);
 
     set({
       token: null,

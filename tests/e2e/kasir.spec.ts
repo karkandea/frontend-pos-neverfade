@@ -103,8 +103,19 @@ test(
 
     await expect(
       page.getByRole("heading", {
-        name: "Preview Struk",
+        name: "Transaksi Berhasil",
       })
+    ).toBeVisible();
+
+    const successDialog = page.getByRole("dialog", {
+      name: "Transaksi Berhasil",
+    });
+    await expect(successDialog.getByText("TUNAI")).toBeVisible();
+    await expect(successDialog.getByText(/TRX-\d{8}-\d+/)).toBeVisible();
+    await page.getByRole("button", { name: "Lihat Struk" }).click();
+
+    await expect(
+      page.getByRole("heading", { name: "Preview Struk" })
     ).toBeVisible();
 
     await expect(
@@ -122,6 +133,7 @@ test(
     await page
       .getByRole("button", {
         name: "Tutup",
+        exact: true,
       })
       .click();
 
