@@ -9,7 +9,9 @@ export function useDialogFocus(
   onEscape?: () => void
 ) {
   const escapeHandler = useRef(onEscape);
-  escapeHandler.current = onEscape;
+  useEffect(() => {
+    escapeHandler.current = onEscape;
+  }, [onEscape]);
   useEffect(() => {
     if (!open || !dialogRef.current) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;

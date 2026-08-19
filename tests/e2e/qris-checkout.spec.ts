@@ -416,6 +416,23 @@ test("pending QRIS survives refresh without creating another payment", async ({ 
   expect(state.createCount).toBe(1);
 });
 
+test("status retry also restores sale context after a transient recovery failure", async ({ page }) => {
+  await setupCheckout(page, {
+    statuses: ["failed"],
+    receiptFailureAt: [1],
+  });
+  await submitCheckout(page);
+  await page.reload();
+
+  await expect(page.getByText(/Keranjang transaksi belum dapat dipulihkan/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Kembali ke Keranjang" })).toBeDisabled();
+
+  await page.getByRole("button", { name: "Pulihkan Keranjang" }).click();
+  await expect(page.getByRole("button", { name: "Kembali ke Keranjang" })).toBeEnabled();
+  await page.getByRole("button", { name: "Kembali ke Keranjang" }).click();
+  await expect(page.locator(".cart-item")).toContainText(product.nama);
+});
+
 test("payment recovery failure is visible and retryable", async ({ page }) => {
   await setupCheckout(page, { currentFailure: true });
   await expect(page.getByText("Pembayaran sebelumnya belum dapat diperiksa.")).toBeVisible();

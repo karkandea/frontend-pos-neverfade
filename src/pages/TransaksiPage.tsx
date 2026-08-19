@@ -1,10 +1,12 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import AppShell from "../components/layout/AppShell";
+import { useDialogFocus } from "../components/kasir/useDialogFocus";
 import api from "../lib/api";
 
 type TransactionItem = {
@@ -126,6 +128,8 @@ export default function TransaksiPage() {
 
   const [selected, setSelected] =
     useState<Transaction | null>(null);
+  const detailDialogRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(Boolean(selected), detailDialogRef, () => setSelected(null));
 
   useEffect(() => {
     const controller =
@@ -201,6 +205,7 @@ export default function TransaksiPage() {
             transaction.kasir,
             transaction.total,
             transaction.metodePembayaran,
+            transactionStatus(transaction).label,
           ]
         ),
       [transactions]
@@ -224,6 +229,7 @@ export default function TransaksiPage() {
         "Kasir",
         "Total",
         "Metode Pembayaran",
+        "Status",
       ],
       ...exportRows,
     ];
@@ -463,10 +469,17 @@ export default function TransaksiPage() {
           }
         >
           {selected && (
-            <div className="modal">
+            <div
+              ref={detailDialogRef}
+              tabIndex={-1}
+              className="modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="transaction-detail-title"
+            >
               <div className="modal-header">
                 <div>
-                  <h3>
+                  <h3 id="transaction-detail-title">
                     Detail Transaksi
                   </h3>
 
@@ -480,6 +493,7 @@ export default function TransaksiPage() {
                 <button
                   type="button"
                   className="modal-close"
+                  aria-label="Tutup detail transaksi"
                   onClick={() =>
                     setSelected(null)
                   }
@@ -499,6 +513,15 @@ export default function TransaksiPage() {
                       {formatTanggal(
                         selected.tanggal
                       )}
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Status</label>
+                    <div>
+                      <span className={`status-badge ${transactionStatus(selected).tone}`}>
+                        {transactionStatus(selected).label}
+                      </span>
                     </div>
                   </div>
 

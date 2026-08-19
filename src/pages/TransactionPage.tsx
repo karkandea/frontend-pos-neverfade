@@ -220,6 +220,8 @@ export default function TransactionPage() {
     useState<string | null>(null);
   const [qrisStatusError, setQrisStatusError] =
     useState("");
+  const [saleContextReady, setSaleContextReady] = useState(false);
+  const [saleContextError, setSaleContextError] = useState("");
   const [qrisCancelling, setQrisCancelling] = useState(false);
 
   const submissionLock = useRef(false);
@@ -379,16 +381,27 @@ export default function TransactionPage() {
   }
 
   async function restoreSaleContext(transactionId: string) {
-    const { data } = await api.get<TransactionResponse & {
-      customerId: string | null;
-      disc: number;
-      tax: number;
-    }>(`/api/transactions/${transactionId}`);
-    setCart(data.items.map((item) => ({ ...item })));
-    setCustomerId(data.customerId ?? "");
-    setDiscount(clampPercent(data.disc));
-    setTax(clampPercent(data.tax));
-    setPaymentMethod("qris");
+    setSaleContextReady(false);
+    setSaleContextError("");
+    try {
+      const { data } = await api.get<TransactionResponse & {
+        customerId: string | null;
+        disc: number;
+        tax: number;
+      }>(`/api/transactions/${transactionId}`);
+      setCart(data.items.map((item) => ({ ...item })));
+      setCustomerId(data.customerId ?? "");
+      setDiscount(clampPercent(data.disc));
+      setTax(clampPercent(data.tax));
+      setPaymentMethod("qris");
+      setSaleContextReady(true);
+      return true;
+    } catch (error) {
+      setSaleContextError(
+        `Keranjang transaksi belum dapat dipulihkan. ${getErrorMessage(error)}`
+      );
+      return false;
+    }
   }
 
   async function loadReceipt(transactionId: string) {
@@ -500,6 +513,9 @@ export default function TransactionPage() {
       );
       const restored = paymentFromStatus(data);
       setQrisPayment(restored);
+      if (data.status !== "paid") {
+        await restoreSaleContext(restored.transactionId);
+      }
       await applyFinalPaymentStatus(restored, data.status);
       if (data.status === "pending" || data.status === "creating") {
         void monitorPayment(restored);
@@ -803,6 +819,8 @@ export default function TransactionPage() {
         setQrisPayment(payment);
         setQrisStatus(payment.status);
         setQrisStatusError("");
+        setSaleContextReady(true);
+        setSaleContextError("");
         await monitorPayment(payment);
         return;
       }
@@ -859,6 +877,8 @@ export default function TransactionPage() {
     setQrisPayment(null);
     setQrisStatus(null);
     setQrisStatusError("");
+    setSaleContextReady(false);
+    setSaleContextError("");
   }
 
   function startNewTransaction() {
@@ -866,6 +886,8 @@ export default function TransactionPage() {
     setQrisPayment(null);
     setQrisStatus(null);
     setQrisStatusError("");
+    setSaleContextReady(false);
+    setSaleContextError("");
     setReceipt(null);
     setReceiptError("");
     setCashSuccess(null);
@@ -989,9 +1011,16 @@ export default function TransactionPage() {
           payment={qrisPayment}
           status={qrisStatus}
           statusError={qrisStatusError}
+          saleContextReady={saleContextReady}
+          saleContextError={saleContextError}
           sandbox={paymentCapabilities.isSandbox}
           onCloseFailed={closeFailedQris}
           onRetryStatus={() => void refreshPaymentStatus()}
+          onRetrySaleContext={() => {
+            if (qrisPayment) {
+              void restoreSaleContext(qrisPayment.transactionId);
+            }
+          }}
           receiptLoading={receiptLoading}
           receiptError={receiptError}
           receiptReady={

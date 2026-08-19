@@ -143,6 +143,7 @@ test("BUG-007 loads, searches, and shows transaction detail", async ({
   await modal
     .getByRole("button", {
       name: "Tutup",
+      exact: true,
     })
     .click();
 
@@ -188,4 +189,8 @@ test("BUG-007 exports transaction history as CSV", async ({
   expect(content).toContain("No Transaksi");
 
   expect(content).toContain("Metode Pembayaran");
+
+  expect(content).toContain("Status");
+
+  expect(content).toContain("Selesai");
 });

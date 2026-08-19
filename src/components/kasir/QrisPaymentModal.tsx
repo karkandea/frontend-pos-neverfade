@@ -8,9 +8,12 @@ type Props = {
   payment: QrisPayment | null;
   status: string | null;
   statusError: string;
+  saleContextReady: boolean;
+  saleContextError: string;
   sandbox: boolean;
   onCloseFailed: () => void;
   onRetryStatus: () => void;
+  onRetrySaleContext: () => void;
   receiptLoading: boolean;
   receiptError: string;
   receiptReady: boolean;
@@ -32,9 +35,12 @@ export default function QrisPaymentModal({
   payment,
   status,
   statusError,
+  saleContextReady,
+  saleContextError,
   sandbox,
   onCloseFailed,
   onRetryStatus,
+  onRetrySaleContext,
   receiptLoading,
   receiptError,
   receiptReady,
@@ -180,6 +186,14 @@ export default function QrisPaymentModal({
                   ? "Waktu pembayaran telah habis. Tidak ada transaksi yang diselesaikan."
                   : "Pembayaran tidak berhasil. Tidak ada transaksi yang diselesaikan."}
               </p>
+              {saleContextError ? (
+                <div className="receipt-recovery">
+                  <p>{saleContextError}</p>
+                  <button type="button" className="btn-secondary" onClick={onRetrySaleContext}>
+                    Pulihkan Keranjang
+                  </button>
+                </div>
+              ) : null}
             </div>
           ) : pending ? (
             <>
@@ -252,6 +266,7 @@ export default function QrisPaymentModal({
               type="button"
               className="btn-primary"
               onClick={onCloseFailed}
+              disabled={!saleContextReady || Boolean(saleContextError)}
             >
               Kembali ke Keranjang
             </button>
