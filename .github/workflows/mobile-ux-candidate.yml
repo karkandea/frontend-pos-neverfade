@@ -1,0 +1,82 @@
+name: Mobile UX Candidate
+
+on:
+  push:
+    branches:
+      - feat/mobile-ux-hardening
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start candidate frontend
+        env:
+          VITE_API_URL: http://127.0.0.1:9999
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 5273 --strictPort > /tmp/neverfade-mobile-vite.log 2>&1 &
+          echo $! > /tmp/neverfade-mobile-vite.pid
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:5273/login >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/neverfade-mobile-vite.log
+          exit 1
+
+      - name: Audit current production mobile baseline
+        env:
+          RUN_PRODUCTION_MOBILE_AUDIT: "1"
+        run: npx playwright test tests/e2e/mobile-production-audit.spec.ts --project="Desktop Chromium"
+
+      - name: Run mobile candidate acceptance
+        run: >-
+          npx playwright test
+          tests/e2e/navigation-responsive.spec.ts
+          tests/e2e/qris-checkout.spec.ts
+          tests/e2e/mobile-ux.spec.ts
+          tests/e2e/mobile-candidate-visual.spec.ts
+          --project="Desktop Chromium"
+          --project="Mobile Chromium"
+
+      - name: Upload mobile evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: neverfade-mobile-ux-evidence
+          if-no-files-found: warn
+          path: |
+            test-results/mobile-evidence
+            playwright-report
+            ../neverfade-pos-qa/playwright-result.json
+
+      - name: Show frontend log on failure
+        if: failure()
+        run: cat /tmp/neverfade-mobile-vite.log || true
