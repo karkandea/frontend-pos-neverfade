@@ -107,13 +107,7 @@ export default function CartPanel({
   );
 
   useEffect(() => {
-    if (items.length === 0) {
-      setMobileOpen(false);
-    }
-  }, [items.length]);
-
-  useEffect(() => {
-    if (!mobileOpen || !window.matchMedia("(max-width: 768px)").matches) {
+    if (!mobileOpen || !window.matchMedia("(max-width: 950px)").matches) {
       return;
     }
 
@@ -124,6 +118,31 @@ export default function CartPanel({
       document.documentElement.style.overflow = previousOverflow;
     };
   }, [mobileOpen]);
+
+  function decreaseItem(id: string) {
+    const item = items.find((entry) => entry.id === id);
+    if (items.length === 1 && item?.qty === 1) {
+      setMobileOpen(false);
+    }
+    onDecrease(id);
+  }
+
+  function removeItem(id: string) {
+    if (items.length === 1) {
+      setMobileOpen(false);
+    }
+    onRemove(id);
+  }
+
+  function clearItems() {
+    setMobileOpen(false);
+    onClear();
+  }
+
+  function checkoutItems() {
+    setMobileOpen(false);
+    onCheckout();
+  }
 
   return (
     <>
@@ -230,7 +249,7 @@ export default function CartPanel({
                           type="button"
                           className="qty-btn"
                           aria-label={`Kurangi ${item.nama}`}
-                          onClick={() => onDecrease(item.id)}
+                          onClick={() => decreaseItem(item.id)}
                         >
                           −
                         </button>
@@ -256,7 +275,7 @@ export default function CartPanel({
                         type="button"
                         className="btn-remove-item"
                         aria-label={`Hapus ${item.nama} dari keranjang`}
-                        onClick={() => onRemove(item.id)}
+                        onClick={() => removeItem(item.id)}
                       >
                         ×
                       </button>
@@ -418,7 +437,7 @@ export default function CartPanel({
             <button
               type="button"
               className="btn-secondary"
-              onClick={onClear}
+              onClick={clearItems}
               disabled={items.length === 0 || submitting}
             >
               Kosongkan
@@ -428,7 +447,7 @@ export default function CartPanel({
               type="button"
               className="btn-checkout"
               disabled={checkoutDisabled}
-              onClick={onCheckout}
+              onClick={checkoutItems}
             >
               <span>Proses Transaksi</span>
               <strong className="checkout-total">{rupiah(total)}</strong>
