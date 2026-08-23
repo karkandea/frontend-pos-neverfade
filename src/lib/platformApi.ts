@@ -2,8 +2,12 @@ import axios from "axios";
 
 export const PLATFORM_TOKEN_KEY = "nfpos_platform_token";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL?.trim() ||
+  "https://neverfade-api.103-175-207-127.nip.io";
+
 export const platformApi = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
