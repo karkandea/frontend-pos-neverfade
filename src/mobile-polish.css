@@ -1,3 +1,22 @@
+@media (min-width: 769px) and (max-width: 950px) {
+  /* Small tablets keep the cashier sequence product-first instead of inheriting the legacy cart-first stack. */
+  .pos-right {
+    order: initial;
+  }
+
+  .pos-left {
+    min-height: 0;
+  }
+
+  .pos-products-grid {
+    max-height: min(48vh, 460px);
+  }
+
+  .pos-cart {
+    max-height: none;
+  }
+}
+
 @media (max-width: 768px) {
   /* Drawer must sit above persistent mobile navigation/cart controls. */
   .sidebar-overlay.active {
