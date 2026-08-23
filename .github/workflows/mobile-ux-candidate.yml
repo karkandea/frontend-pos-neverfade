@@ -1,12 +1,6 @@
 name: Mobile UX Candidate
 
 on:
-  push:
-    branches:
-      - feat/mobile-ux-hardening
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
@@ -62,10 +56,16 @@ jobs:
       - name: Run mobile candidate acceptance
         run: >-
           npx playwright test
+          tests/e2e/mobile-login.spec.ts
+          tests/e2e/mobile-role-navigation.spec.ts
+          tests/e2e/mobile-landscape.spec.ts
           tests/e2e/navigation-responsive.spec.ts
           tests/e2e/qris-checkout.spec.ts
           tests/e2e/mobile-ux.spec.ts
           tests/e2e/mobile-candidate-visual.spec.ts
+          tests/e2e/finance-withdrawal.spec.ts
+          tests/e2e/platform-control-plane.spec.ts
+          tests/e2e/transaction-status-history.spec.ts
           --project="Desktop Chromium"
           --project="Mobile Chromium"
 
