@@ -16,8 +16,8 @@ npm run build
 echo "===== LINT ====="
 npm run lint
 
-echo "===== PLAYWRIGHT CHROMIUM ====="
-npx playwright install chromium
+echo "===== PLAYWRIGHT CHROMIUM + OS DEPS ====="
+npx playwright install --with-deps chromium
 
 echo "===== START CANDIDATE FRONTEND ====="
 VITE_API_URL="http://127.0.0.1:9999" \
