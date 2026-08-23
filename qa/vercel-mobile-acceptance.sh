@@ -39,6 +39,9 @@ done
 echo "===== MOBILE BROWSER ACCEPTANCE ====="
 RUN_PRODUCTION_MOBILE_AUDIT=1 npx playwright test \
   tests/e2e/mobile-production-audit.spec.ts \
+  tests/e2e/mobile-login.spec.ts \
+  tests/e2e/mobile-role-navigation.spec.ts \
+  tests/e2e/mobile-landscape.spec.ts \
   tests/e2e/navigation-responsive.spec.ts \
   tests/e2e/qris-checkout.spec.ts \
   tests/e2e/mobile-ux.spec.ts \

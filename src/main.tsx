@@ -6,6 +6,7 @@ import "./index.css";
 import "../vanilla/style.css";
 import "./mobile.css";
 import "./mobile-landscape.css";
+import "./mobile-polish.css";
 
 import App from "./App";
 
