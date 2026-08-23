@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 
+import MobileNav from "./MobileNav";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 
@@ -36,6 +37,8 @@ export default function AppShell({ children }: Props) {
           {children}
         </main>
       </div>
+
+      <MobileNav onOpenMenu={() => setSidebarOpen(true)} />
     </div>
   );
 }

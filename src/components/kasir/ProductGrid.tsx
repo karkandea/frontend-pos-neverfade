@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 type Product = {
   id: string;
@@ -42,10 +42,21 @@ export default function ProductGrid({
   onDecrease,
   quantityById,
 }: Props) {
+  const searchRef = useRef<HTMLInputElement>(null);
   const chips = useMemo(
     () => ["Semua", ...categories.filter(Boolean)],
     [categories]
   );
+
+  useEffect(() => {
+    const desktopKeyboard = window.matchMedia(
+      "(min-width: 769px) and (pointer: fine)"
+    );
+
+    if (desktopKeyboard.matches) {
+      searchRef.current?.focus();
+    }
+  }, []);
 
   return (
     <div className="pos-left">
@@ -57,20 +68,24 @@ export default function ProductGrid({
           fill="none"
           stroke="currentColor"
           strokeWidth="1.5"
+          aria-hidden="true"
         >
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
 
         <input
-          autoFocus
+          ref={searchRef}
           value={search}
+          inputMode="search"
+          enterKeyHint="search"
+          aria-label="Cari produk atau barcode"
           placeholder="Cari produk atau scan barcode..."
           onChange={(e) => onSearchChange(e.target.value)}
         />
       </div>
 
-      <div className="pos-filter-bar">
+      <div className="pos-filter-bar" aria-label="Kategori produk">
         {chips.map((chip) => {
           const active =
             chip === "Semua"
@@ -82,6 +97,7 @@ export default function ProductGrid({
               key={chip}
               type="button"
               className={active ? "filter-chip active" : "filter-chip"}
+              aria-pressed={active}
               onClick={() =>
                 onCategoryChange(chip === "Semua" ? "" : chip)
               }

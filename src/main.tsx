@@ -4,6 +4,8 @@ import { BrowserRouter } from "react-router-dom";
 
 import "./index.css";
 import "../vanilla/style.css";
+import "./mobile.css";
+import "./mobile-landscape.css";
 
 import App from "./App";
 
