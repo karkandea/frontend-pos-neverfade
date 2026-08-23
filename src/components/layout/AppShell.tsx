@@ -38,7 +38,9 @@ export default function AppShell({ children }: Props) {
         </main>
       </div>
 
-      <MobileNav onOpenMenu={() => setSidebarOpen(true)} />
+      {!sidebarOpen ? (
+        <MobileNav onOpenMenu={() => setSidebarOpen(true)} />
+      ) : null}
     </div>
   );
 }
