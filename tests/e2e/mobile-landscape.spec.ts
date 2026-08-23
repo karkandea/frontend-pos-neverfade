@@ -27,6 +27,19 @@ for (const viewport of [{ width: 667, height: 375 }, { width: 844, height: 390 }
     await setup(page);
     await page.goto("/kasir");
 
+    const sidebar = page.locator("#sidebar");
+    await expect(sidebar).not.toHaveClass(/mobile-open/);
+    await expect(sidebar).not.toBeInViewport();
+    await expect(page.getByRole("navigation", { name: "Navigasi cepat" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Buka menu lainnya" }).click();
+    await expect(sidebar).toHaveClass(/mobile-open/);
+    await expect(sidebar).toBeInViewport();
+    await expect(page.getByRole("navigation", { name: "Navigasi cepat" })).toHaveCount(0);
+    await sidebar.getByRole("button", { name: "Tutup navigasi" }).click();
+    await expect(sidebar).not.toHaveClass(/mobile-open/);
+    await expect(page.getByRole("navigation", { name: "Navigasi cepat" })).toBeVisible();
+
     await expect(page.getByRole("textbox", { name: "Cari produk atau barcode" })).toBeVisible();
     await page.getByRole("button", { name: `Tambah ${product.nama} ke keranjang` }).click();
     const dock = page.getByRole("button", { name: /Buka keranjang/ });
