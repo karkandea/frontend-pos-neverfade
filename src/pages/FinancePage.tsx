@@ -160,7 +160,7 @@ export default function FinancePage() {
                 {withdrawals.length === 0 ? (
                   <div className="finance-empty"><strong>Belum ada pencairan</strong><p>Permintaan yang dibuat akan muncul di sini.</p></div>
                 ) : (
-                  <div className="finance-table-wrap"><table className="finance-table"><thead><tr><th>Tanggal</th><th>Jumlah</th><th>Status</th><th>Diproses</th></tr></thead><tbody>{withdrawals.map((item) => <tr key={item.id}><td>{dateTime.format(new Date(item.requestedAt))}</td><td><strong>{currency.format(item.amount)}</strong></td><td><span className={`finance-status finance-status-${item.status}`}>{statusLabel[item.status]}</span></td><td>{item.processedAt ? dateTime.format(new Date(item.processedAt)) : "—"}</td></tr>)}</tbody></table></div>
+                  <div className="finance-table-wrap"><table className="finance-table finance-withdrawal-history-table"><thead><tr><th>Tanggal</th><th>Jumlah</th><th>Status</th><th>Diproses</th></tr></thead><tbody>{withdrawals.map((item) => <tr key={item.id}><td>{dateTime.format(new Date(item.requestedAt))}</td><td><strong>{currency.format(item.amount)}</strong></td><td><span className={`finance-status finance-status-${item.status}`}>{statusLabel[item.status]}</span></td><td>{item.processedAt ? dateTime.format(new Date(item.processedAt)) : "—"}</td></tr>)}</tbody></table></div>
                 )}
               </section>
 
@@ -191,7 +191,7 @@ export default function FinancePage() {
                 </div>
               ) : (
                 <div className="finance-table-wrap">
-                  <table className="finance-table">
+                  <table className="finance-table finance-movement-table">
                     <thead><tr><th>Waktu</th><th>Jenis</th><th>Jumlah</th><th>Status</th><th>Referensi</th></tr></thead>
                     <tbody>
                       {movements.map((movement) => (
