@@ -1,31 +1,40 @@
 @media (max-width: 768px) {
-  /* Financial tables keep labels semantically exact on phones. */
-  .finance-panel:not(.finance-movements) .finance-table td:nth-child(1)::before { content: "Tanggal"; }
-  .finance-panel:not(.finance-movements) .finance-table td:nth-child(2)::before { content: "Jumlah"; }
-  .finance-panel:not(.finance-movements) .finance-table td:nth-child(3)::before { content: "Status"; }
-  .finance-panel:not(.finance-movements) .finance-table td:nth-child(4)::before { content: "Diproses"; }
+  /* Drawer must sit above persistent mobile navigation/cart controls. */
+  .sidebar-overlay.active {
+    z-index: 1490;
+  }
 
-  .finance-movements .finance-table td:nth-child(1)::before { content: "Waktu"; }
-  .finance-movements .finance-table td:nth-child(2)::before { content: "Jenis"; }
-  .finance-movements .finance-table td:nth-child(3)::before { content: "Jumlah"; }
-  .finance-movements .finance-table td:nth-child(4)::before { content: "Status"; }
-  .finance-movements .finance-table td:nth-child(5)::before { content: "Referensi"; }
+  .sidebar.mobile-open {
+    z-index: 1500;
+  }
+
+  /* Financial tables keep labels semantically exact on phones. */
+  .finance-withdrawal-history-table td:nth-child(1)::before { content: "Tanggal"; }
+  .finance-withdrawal-history-table td:nth-child(2)::before { content: "Jumlah"; }
+  .finance-withdrawal-history-table td:nth-child(3)::before { content: "Status"; }
+  .finance-withdrawal-history-table td:nth-child(4)::before { content: "Diproses"; }
+
+  .finance-movement-table td:nth-child(1)::before { content: "Waktu"; }
+  .finance-movement-table td:nth-child(2)::before { content: "Jenis"; }
+  .finance-movement-table td:nth-child(3)::before { content: "Jumlah"; }
+  .finance-movement-table td:nth-child(4)::before { content: "Status"; }
+  .finance-movement-table td:nth-child(5)::before { content: "Referensi"; }
 
   /* Withdrawal control plane has six columns, unlike the five-column tenant list. */
-  .platform-table tr:has(td:nth-child(6)) td:nth-child(1)::before { content: "Tenant"; }
-  .platform-table tr:has(td:nth-child(6)) td:nth-child(2)::before { content: "Diminta oleh"; }
-  .platform-table tr:has(td:nth-child(6)) td:nth-child(3)::before { content: "Jumlah"; }
-  .platform-table tr:has(td:nth-child(6)) td:nth-child(4)::before { content: "Tanggal"; }
-  .platform-table tr:has(td:nth-child(6)) td:nth-child(5) { grid-column: auto; }
-  .platform-table tr:has(td:nth-child(6)) td:nth-child(5)::before { content: "Status"; }
-  .platform-table tr:has(td:nth-child(6)) td:nth-child(6) { grid-column: 1 / -1; }
-  .platform-table tr:has(td:nth-child(6)) td:nth-child(6)::before { content: "Aksi"; }
-  .platform-table tr:has(td:nth-child(6)) td:nth-child(6) .platform-table-actions {
+  .platform-withdrawal-table td:nth-child(1)::before { content: "Tenant"; }
+  .platform-withdrawal-table td:nth-child(2)::before { content: "Diminta oleh"; }
+  .platform-withdrawal-table td:nth-child(3)::before { content: "Jumlah"; }
+  .platform-withdrawal-table td:nth-child(4)::before { content: "Tanggal"; }
+  .platform-withdrawal-table td:nth-child(5) { grid-column: auto; }
+  .platform-withdrawal-table td:nth-child(5)::before { content: "Status"; }
+  .platform-withdrawal-table td:nth-child(6) { grid-column: 1 / -1; }
+  .platform-withdrawal-table td:nth-child(6)::before { content: "Aksi"; }
+  .platform-withdrawal-table td:nth-child(6) .platform-table-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
-  .platform-table tr:has(td:nth-child(6)) td:nth-child(6) .platform-button {
+  .platform-withdrawal-table td:nth-child(6) .platform-button {
     width: 100%;
     min-height: 46px;
     justify-content: center;
@@ -45,11 +54,11 @@
 }
 
 @media (max-width: 360px) {
-  .platform-table tr:has(td:nth-child(6)) td:nth-child(6) {
+  .platform-withdrawal-table td:nth-child(6) {
     grid-column: auto;
   }
 
-  .platform-table tr:has(td:nth-child(6)) td:nth-child(6) .platform-table-actions,
+  .platform-withdrawal-table td:nth-child(6) .platform-table-actions,
   .payment-result-modal .modal-footer {
     grid-template-columns: 1fr;
   }
