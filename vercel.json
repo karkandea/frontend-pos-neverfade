@@ -1,5 +1,4 @@
 {
-  "buildCommand": "bash qa/vercel-mobile-acceptance.sh",
   "rewrites": [
     {
       "source": "/(.*)",
