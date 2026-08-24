@@ -14,6 +14,7 @@ type Props = {
 };
 
 type CashDetails = {
+  transactionId: string;
   dibayar: number;
   kembalian: number;
 };
@@ -40,26 +41,27 @@ export default function PaymentSuccessModal({
 
   useEffect(() => {
     if (!open || !transactionId) {
-      setCashDetails(null);
       return;
     }
 
     let active = true;
 
     void api
-      .get<CashDetails>(`/api/transactions/${transactionId}`)
+      .get<{ dibayar: number; kembalian: number }>(
+        `/api/transactions/${transactionId}`
+      )
       .then((response) => {
         if (active) {
           setCashDetails({
+            transactionId,
             dibayar: response.data.dibayar,
             kembalian: response.data.kembalian,
           });
         }
       })
       .catch(() => {
-        if (active) {
-          setCashDetails(null);
-        }
+        // The transaction already succeeded. Receipt remains the recovery path
+        // if this secondary detail request is temporarily unavailable.
       });
 
     return () => {
@@ -68,6 +70,11 @@ export default function PaymentSuccessModal({
   }, [open, transactionId]);
 
   if (!open) return null;
+
+  const visibleCashDetails =
+    cashDetails?.transactionId === transactionId
+      ? cashDetails
+      : null;
 
   return (
     <div className="modal-overlay open">
@@ -88,16 +95,19 @@ export default function PaymentSuccessModal({
             <strong>{rupiah.format(amount)}</strong>
           </div>
 
-          {cashDetails ? (
+          {visibleCashDetails ? (
             <>
               <div className="payment-success-received">
                 <span>Diterima</span>
-                <strong>{rupiah.format(cashDetails.dibayar)}</strong>
+                <strong>{rupiah.format(visibleCashDetails.dibayar)}</strong>
               </div>
 
-              <div className="payment-success-change" aria-label={`Kembalian ${rupiah.format(cashDetails.kembalian)}`}>
+              <div
+                className="payment-success-change"
+                aria-label={`Kembalian ${rupiah.format(visibleCashDetails.kembalian)}`}
+              >
                 <span>Kembalian</span>
-                <strong>{rupiah.format(cashDetails.kembalian)}</strong>
+                <strong>{rupiah.format(visibleCashDetails.kembalian)}</strong>
               </div>
             </>
           ) : null}
