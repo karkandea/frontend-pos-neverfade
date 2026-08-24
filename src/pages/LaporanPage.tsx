@@ -33,6 +33,13 @@ type TopProduct = {
   revenue: number;
 };
 
+const periodLabels: Record<Period, string> = {
+  harian: "Harian",
+  mingguan: "Mingguan",
+  bulanan: "Bulanan",
+  tahunan: "Tahunan",
+};
+
 function rupiah(value: number) {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -274,7 +281,7 @@ export default function LaporanPage() {
             >
               {loading
                 ? "Memuat..."
-                : "Generate"}
+                : "Terapkan"}
             </button>
           </div>
         </div>
@@ -305,11 +312,11 @@ export default function LaporanPage() {
                 <div className="card-header">
                   <div>
                     <h3>
-                      Grafik Penjualan
+                      Tren Penjualan 7 Hari
                     </h3>
 
                     <p>
-                      7 hari terakhir
+                      Grafik ini selalu menampilkan 7 hari terakhir dan tidak mengikuti filter periode di atas.
                     </p>
                   </div>
                 </div>
@@ -325,9 +332,14 @@ export default function LaporanPage() {
               <div className="dashboard-side">
                 <div className="card-panel">
                   <div className="card-header">
-                    <h3>
-                      Ringkasan
-                    </h3>
+                    <div>
+                      <h3>
+                        Ringkasan
+                      </h3>
+                      <p>
+                        Periode: {periodLabels[appliedPeriod]}
+                      </p>
+                    </div>
                   </div>
 
                   <div id="laporan-summary">
@@ -406,7 +418,7 @@ export default function LaporanPage() {
                   </h3>
 
                   <p>
-                    Berdasarkan periode laporan
+                    Periode: {periodLabels[appliedPeriod]}
                   </p>
                 </div>
               </div>
