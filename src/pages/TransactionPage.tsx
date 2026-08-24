@@ -206,6 +206,8 @@ export default function TransactionPage() {
     transactionId: string;
     transactionNumber: string;
     amount: number;
+    paid: number;
+    change: number;
     method: string;
   } | null>(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
@@ -848,6 +850,8 @@ export default function TransactionPage() {
         transactionId: response.data.id,
         transactionNumber: response.data.noTrx,
         amount: response.data.total,
+        paid: response.data.dibayar,
+        change: response.data.kembalian,
         method: response.data.metodePembayaran,
       });
       clearCart();
@@ -998,6 +1002,8 @@ export default function TransactionPage() {
           open={cashSuccess !== null}
           method={cashSuccess?.method ?? "tunai"}
           amount={cashSuccess?.amount ?? 0}
+          paid={cashSuccess?.paid ?? 0}
+          change={cashSuccess?.change ?? 0}
           transactionNumber={cashSuccess?.transactionNumber ?? ""}
           transactionId={cashSuccess?.transactionId ?? ""}
           onViewReceipt={() => {
