@@ -1,3 +1,52 @@
+/* Hide the legacy tax display toggle until its downstream semantics are fully wired.
+   Keeping the saved value untouched is safer than exposing a control that currently changes nothing. */
+.checkbox-label:has(input[name="showTax"]) {
+  display: none;
+}
+
+/* Cash success keeps the hand-back amount visible after the cart is cleared. */
+.payment-success-total,
+.payment-success-received {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.payment-success-total span,
+.payment-success-received span,
+.payment-success-change span {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.payment-success-total strong,
+.payment-success-received strong {
+  font-size: 17px;
+}
+
+.payment-success-change {
+  width: 100%;
+  margin-top: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+
+.payment-success-change strong {
+  color: var(--text);
+  font-family: var(--font-head);
+  font-size: clamp(26px, 7vw, 36px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
 @media (min-width: 769px) and (max-width: 950px) {
   /* Small tablets keep the cashier sequence product-first instead of inheriting the legacy cart-first stack. */
   .pos-right {
@@ -25,6 +74,19 @@
 
   .sidebar.mobile-open {
     z-index: 1500;
+  }
+
+  /* Older CRUD screens still render desktop tables directly inside the card.
+     Keep every column/action reachable instead of clipping the right edge. */
+  .table-card:has(> .data-table) {
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-card > .data-table {
+    min-width: 760px;
   }
 
   /* Financial tables keep labels semantically exact on phones. */
