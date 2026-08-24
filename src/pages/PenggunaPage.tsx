@@ -157,14 +157,18 @@ export default function PenggunaPage() {
     setOpen(true);
   }
 
+  function resetModal() {
+    setOpen(false);
+    setEditingId(null);
+    setForm(emptyForm);
+  }
+
   function closeModal() {
     if (saving) {
       return;
     }
 
-    setOpen(false);
-    setEditingId(null);
-    setForm(emptyForm);
+    resetModal();
   }
 
   function onChange(
@@ -252,7 +256,7 @@ export default function PenggunaPage() {
         );
       }
 
-      closeModal();
+      resetModal();
       await loadUsers();
     } catch (error) {
       window.alert(
