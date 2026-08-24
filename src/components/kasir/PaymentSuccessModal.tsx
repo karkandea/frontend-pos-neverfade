@@ -1,22 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 
-import api from "../../lib/api";
 import { useDialogFocus } from "./useDialogFocus";
 
 type Props = {
   open: boolean;
   method: string;
   amount: number;
+  paid: number;
+  change: number;
   transactionNumber: string;
   transactionId: string;
   onViewReceipt: () => void;
   onNewTransaction: () => void;
-};
-
-type CashDetails = {
-  transactionId: string;
-  dibayar: number;
-  kembalian: number;
 };
 
 const rupiah = new Intl.NumberFormat("id-ID", {
@@ -29,52 +24,18 @@ export default function PaymentSuccessModal({
   open,
   method,
   amount,
+  paid,
+  change,
   transactionNumber,
   transactionId,
   onViewReceipt,
   onNewTransaction,
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const [cashDetails, setCashDetails] = useState<CashDetails | null>(null);
 
   useDialogFocus(open, dialogRef);
 
-  useEffect(() => {
-    if (!open || !transactionId) {
-      return;
-    }
-
-    let active = true;
-
-    void api
-      .get<{ dibayar: number; kembalian: number }>(
-        `/api/transactions/${transactionId}`
-      )
-      .then((response) => {
-        if (active) {
-          setCashDetails({
-            transactionId,
-            dibayar: response.data.dibayar,
-            kembalian: response.data.kembalian,
-          });
-        }
-      })
-      .catch(() => {
-        // The transaction already succeeded. Receipt remains the recovery path
-        // if this secondary detail request is temporarily unavailable.
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [open, transactionId]);
-
   if (!open) return null;
-
-  const visibleCashDetails =
-    cashDetails?.transactionId === transactionId
-      ? cashDetails
-      : null;
 
   return (
     <div className="modal-overlay open">
@@ -95,22 +56,18 @@ export default function PaymentSuccessModal({
             <strong>{rupiah.format(amount)}</strong>
           </div>
 
-          {visibleCashDetails ? (
-            <>
-              <div className="payment-success-received">
-                <span>Diterima</span>
-                <strong>{rupiah.format(visibleCashDetails.dibayar)}</strong>
-              </div>
+          <div className="payment-success-received">
+            <span>Diterima</span>
+            <strong>{rupiah.format(paid)}</strong>
+          </div>
 
-              <div
-                className="payment-success-change"
-                aria-label={`Kembalian ${rupiah.format(visibleCashDetails.kembalian)}`}
-              >
-                <span>Kembalian</span>
-                <strong>{rupiah.format(visibleCashDetails.kembalian)}</strong>
-              </div>
-            </>
-          ) : null}
+          <div
+            className="payment-success-change"
+            aria-label={`Kembalian ${rupiah.format(change)}`}
+          >
+            <span>Kembalian</span>
+            <strong>{rupiah.format(change)}</strong>
+          </div>
 
           <dl className="payment-success-details">
             <div><dt>Metode</dt><dd>{method.toUpperCase()}</dd></div>
