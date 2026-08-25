@@ -4,6 +4,18 @@ export const TOKEN_KEY = "nfpos_token";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL?.trim() || undefined;
 
+export class ApiNetworkError extends Error {
+  code: string;
+  originalMessage: string;
+
+  constructor(code: string, originalMessage: string) {
+    super("Gagal terhubung ke server. Coba lagi.");
+    this.name = "ApiNetworkError";
+    this.code = code;
+    this.originalMessage = originalMessage;
+  }
+}
+
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -47,7 +59,10 @@ api.interceptors.response.use(
 
     if (!error.response) {
       return Promise.reject(
-        new Error("Gagal terhubung ke server. Coba lagi.")
+        new ApiNetworkError(
+          typeof error?.code === "string" ? error.code : "",
+          typeof error?.message === "string" ? error.message : ""
+        )
       );
     }
 
