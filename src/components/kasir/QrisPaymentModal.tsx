@@ -147,7 +147,10 @@ export default function QrisPaymentModal({
         <div className="modal-body qris-payment-body">
           {sandbox ? (
             <div className="payment-sandbox-warning" role="alert">
-              SANDBOX — TIDAK ADA DANA NYATA
+              <strong>SANDBOX — TIDAK ADA DANA NYATA</strong>
+              <span>
+                QA: scan kode ini dari <code>/qa/qris-scanner</code> di perangkat kedua.
+              </span>
             </div>
           ) : null}
 
