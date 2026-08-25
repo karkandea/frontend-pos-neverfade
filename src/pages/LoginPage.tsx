@@ -1,9 +1,13 @@
 import axios from "axios";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 
+import {
+  flushLoginFailureTelemetry,
+  reportLoginFailure,
+} from "../lib/loginTelemetry";
 import { useAuthStore } from "../stores/auth";
 
 export default function LoginPage() {
@@ -22,17 +26,27 @@ export default function LoginPage() {
       : ""
   );
 
+  useEffect(() => {
+    void flushLoginFailureTelemetry();
+  }, []);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
     setLoading(true);
     setError("");
+    const startedAt = performance.now();
 
     try {
       await login(username, password, rememberMe);
       const user = useAuthStore.getState().user;
       navigate(user?.role === "kasir" ? "/kasir" : "/produk", { replace: true });
     } catch (error: unknown) {
+      void reportLoginFailure(
+        error,
+        performance.now() - startedAt
+      );
+
       const apiMessage =
         axios.isAxiosError<{
           error?: string;
