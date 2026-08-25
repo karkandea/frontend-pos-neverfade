@@ -22,6 +22,7 @@ import PelangganPage from "./pages/PelangganPage";
 import PengaturanPage from "./pages/PengaturanPage";
 import PenggunaPage from "./pages/PenggunaPage";
 import ProductPage from "./pages/ProductPage";
+import QaQrisScannerPage from "./pages/QaQrisScannerPage";
 import TransaksiPage from "./pages/TransaksiPage";
 import PlatformLoginPage from "./pages/platform/PlatformLoginPage";
 import PlatformTenantCreatePage from "./pages/platform/PlatformTenantCreatePage";
@@ -59,6 +60,7 @@ const pageTitles: Record<string, string> = {
   "/absensi": "Absensi",
   "/pengguna": "Pengguna",
   "/pengaturan": "Pengaturan",
+  "/qa/qris-scanner": "QA QRIS Scanner",
   "/platform/login": "Platform Login",
   "/platform/tenants": "Tenant Platform",
   "/platform/tenants/new": "Buat Tenant",
@@ -267,6 +269,14 @@ export default function App() {
         path="/pengaturan"
         element={protectedPage(
           <PengaturanPage />,
+          true
+        )}
+      />
+
+      <Route
+        path="/qa/qris-scanner"
+        element={protectedPage(
+          <QaQrisScannerPage />,
           true
         )}
       />
