@@ -1,8 +1,11 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
-import { useSearchParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 
 import {
   flushLoginFailureTelemetry,
@@ -10,8 +13,26 @@ import {
 } from "../lib/loginTelemetry";
 import { useAuthStore } from "../stores/auth";
 
+type LoginLocationState = {
+  returnTo?: string;
+};
+
+function safeReturnPath(value: unknown) {
+  if (
+    typeof value === "string" &&
+    value.startsWith("/") &&
+    !value.startsWith("//") &&
+    !value.startsWith("/login")
+  ) {
+    return value;
+  }
+
+  return null;
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const login = useAuthStore((s) => s.login);
 
@@ -40,7 +61,14 @@ export default function LoginPage() {
     try {
       await login(username, password, rememberMe);
       const user = useAuthStore.getState().user;
-      navigate(user?.role === "kasir" ? "/kasir" : "/produk", { replace: true });
+      const returnTo = safeReturnPath(
+        (location.state as LoginLocationState | null)?.returnTo
+      );
+
+      navigate(
+        returnTo ?? (user?.role === "kasir" ? "/kasir" : "/produk"),
+        { replace: true }
+      );
     } catch (error: unknown) {
       void reportLoginFailure(
         error,
