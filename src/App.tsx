@@ -112,6 +112,9 @@ export default function App() {
         <Navigate
           replace
           to="/login"
+          state={{
+            returnTo: `${location.pathname}${location.search}`,
+          }}
         />
       );
     }
