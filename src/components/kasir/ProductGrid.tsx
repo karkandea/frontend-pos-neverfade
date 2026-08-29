@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Product = {
   id: string;
@@ -23,12 +23,138 @@ type Props = {
   quantityById: Map<string, number>;
 };
 
+type QuantityControlProps = {
+  product: Product;
+  quantity: number;
+  onIncrease: (id: string) => void;
+  onDecrease: (id: string) => void;
+};
+
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(value);
+
+function QuantityControl({
+  product,
+  quantity,
+  onIncrease,
+  onDecrease,
+}: QuantityControlProps) {
+  const [draft, setDraft] = useState(String(quantity));
+  const editingRef = useRef(false);
+
+  useEffect(() => {
+    if (!editingRef.current) {
+      setDraft(String(quantity));
+    }
+  }, [quantity]);
+
+  function commitDraft() {
+    editingRef.current = false;
+
+    if (draft.trim() === "") {
+      setDraft(String(quantity));
+      return;
+    }
+
+    const parsed = Math.trunc(Number(draft));
+
+    if (!Number.isFinite(parsed)) {
+      setDraft(String(quantity));
+      return;
+    }
+
+    const target = Math.min(
+      product.stok,
+      Math.max(1, parsed)
+    );
+
+    if (parsed > product.stok) {
+      window.alert(
+        `Stok ${product.nama} hanya ${product.stok}.`
+      );
+    }
+
+    const difference = target - quantity;
+
+    if (difference > 0) {
+      for (let index = 0; index < difference; index += 1) {
+        onIncrease(product.id);
+      }
+    } else if (difference < 0) {
+      for (let index = 0; index < Math.abs(difference); index += 1) {
+        onDecrease(product.id);
+      }
+    }
+
+    setDraft(String(target));
+  }
+
+  return (
+    <div
+      className="product-qty-control"
+      aria-label={`Jumlah ${product.nama}`}
+    >
+      <button
+        type="button"
+        aria-label={`Kurangi ${product.nama}`}
+        onClick={() => {
+          editingRef.current = false;
+          onDecrease(product.id);
+        }}
+      >
+        −
+      </button>
+
+      <input
+        className="product-qty-input"
+        type="text"
+        inputMode="numeric"
+        enterKeyHint="done"
+        pattern="[0-9]*"
+        value={draft}
+        aria-label={`Jumlah ${product.nama}. Ketik jumlah langsung.`}
+        title={`Ketik jumlah langsung. Maksimal ${product.stok}.`}
+        onFocus={(event) => {
+          editingRef.current = true;
+          event.currentTarget.select();
+        }}
+        onChange={(event) => {
+          setDraft(event.target.value.replace(/\D/g, ""));
+        }}
+        onBlur={commitDraft}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.currentTarget.blur();
+          }
+
+          if (event.key === "Escape") {
+            event.preventDefault();
+            editingRef.current = false;
+            setDraft(String(quantity));
+            event.currentTarget.blur();
+          }
+        }}
+      />
+
+      <button
+        type="button"
+        aria-label={`Tambah ${product.nama}`}
+        disabled={quantity >= product.stok}
+        onClick={() => {
+          editingRef.current = false;
+          onIncrease(product.id);
+        }}
+      >
+        +
+      </button>
+    </div>
+  );
+}
 
 export default function ProductGrid({
   products,
@@ -151,24 +277,12 @@ export default function ProductGrid({
 
                 <div className="pos-product-action">
                   {quantity > 0 ? (
-                    <div className="product-qty-control" aria-label={`Jumlah ${product.nama}`}>
-                      <button
-                        type="button"
-                        aria-label={`Kurangi ${product.nama}`}
-                        onClick={() => onDecrease(product.id)}
-                      >
-                        −
-                      </button>
-                      <span aria-live="polite">{quantity}</span>
-                      <button
-                        type="button"
-                        aria-label={`Tambah ${product.nama}`}
-                        disabled={quantity >= product.stok}
-                        onClick={() => onIncrease(product.id)}
-                      >
-                        +
-                      </button>
-                    </div>
+                    <QuantityControl
+                      product={product}
+                      quantity={quantity}
+                      onIncrease={onIncrease}
+                      onDecrease={onDecrease}
+                    />
                   ) : (
                     <button
                       type="button"
