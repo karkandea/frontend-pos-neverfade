@@ -47,6 +47,37 @@
   letter-spacing: -0.03em;
 }
 
+/* The quantity number is intentionally editable: +/- is for fine adjustment,
+   direct typing is for bulk orders such as 20, 50, or 100 units. */
+.product-qty-input {
+  width: 100% !important;
+  min-width: 0;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 2px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 7px !important;
+  background: var(--surface-3) !important;
+  color: var(--text) !important;
+  box-shadow: none !important;
+  outline: none;
+  text-align: center;
+  font-family: var(--font-head) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  cursor: text;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.product-qty-input:focus {
+  border-color: var(--text) !important;
+  background: var(--surface) !important;
+  box-shadow: 0 0 0 2px rgba(10, 10, 10, .1) !important;
+}
+
 @media (min-width: 769px) and (max-width: 950px) {
   /* Small tablets keep the cashier sequence product-first instead of inheriting the legacy cart-first stack. */
   .pos-right {
@@ -183,13 +214,16 @@
     gap: 4px;
   }
 
-  .product-qty-control span {
-    min-width: 0;
-  }
-
   .product-qty-control button {
     width: 44px;
     min-width: 44px;
+  }
+
+  .product-qty-input {
+    height: 44px;
+    min-height: 44px;
+    padding-inline: 0 !important;
+    font-size: 15px !important;
   }
 
   /* Keep the final product reachable above the persistent cart dock. */
