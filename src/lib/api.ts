@@ -3,6 +3,8 @@ import axios from "axios";
 export const TOKEN_KEY = "nfpos_token";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL?.trim() || undefined;
+const SHARED_SESSION_TOKEN_KEY = "nf_shared_session_token";
+const SHARED_MODE_KEY = "nf_shared_mode";
 
 export class ApiNetworkError extends Error {
   code: string;
@@ -42,8 +44,19 @@ api.interceptors.response.use(
     const status = error?.response?.status;
 
     if (status === 401) {
+      const sharedSessionActive =
+        localStorage.getItem(SHARED_MODE_KEY) === "1" &&
+        Boolean(sessionStorage.getItem(SHARED_SESSION_TOKEN_KEY));
+
       localStorage.removeItem(TOKEN_KEY);
       sessionStorage.removeItem(TOKEN_KEY);
+
+      if (sharedSessionActive) {
+        sessionStorage.removeItem(SHARED_SESSION_TOKEN_KEY);
+        window.location.replace("/shared-pos?reason=expired");
+        return Promise.reject(error);
+      }
+
       window.location.replace("/login");
     }
 
