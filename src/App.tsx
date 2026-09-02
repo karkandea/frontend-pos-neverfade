@@ -92,6 +92,7 @@ const pageTitles: Record<string, string> = {
 
 export default function App() {
   const location = useLocation();
+  const isPlatformRoute = location.pathname.startsWith("/platform");
   const {
     token,
     user,
@@ -113,12 +114,12 @@ export default function App() {
   }, [restore, restorePlatform]);
 
   useEffect(() => {
-    if (token) {
+    if (token && !isPlatformRoute) {
       void restoreTenantContext(token);
-    } else {
+    } else if (!token) {
       clearTenantContext();
     }
-  }, [token, restoreTenantContext, clearTenantContext]);
+  }, [token, isPlatformRoute, restoreTenantContext, clearTenantContext]);
 
   useEffect(() => {
     const exact = pageTitles[location.pathname];
@@ -130,11 +131,20 @@ export default function App() {
     document.title = `${section} · NeverFade POS`;
   }, [location.pathname]);
 
-  if (loading || platformLoading || (token && tenantContextLoading)) {
+  if (
+    loading ||
+    platformLoading ||
+    (!isPlatformRoute && token && tenantContextLoading)
+  ) {
     return <LoadingPage />;
   }
 
-  if (token && !tenantContext && tenantContextError) {
+  if (
+    !isPlatformRoute &&
+    token &&
+    !tenantContext &&
+    tenantContextError
+  ) {
     return (
       <TenantContextErrorPage
         retry={() => void restoreTenantContext(token)}
@@ -276,7 +286,7 @@ export default function App() {
 
       <Route
         path="/karyawan"
-        element={protectedPage(<KaryawanPage />, true)}
+        element={protectedPage(<KaryawanPage />, true, false, "attendance")}
       />
 
       <Route
