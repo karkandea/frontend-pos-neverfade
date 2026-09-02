@@ -25,7 +25,10 @@ function isTenantContext(value: unknown): value is TenantContext {
     candidate.capabilities.every(
       (capability) =>
         typeof capability === "string" &&
-        capability in capabilityLabels
+        Object.prototype.hasOwnProperty.call(
+          capabilityLabels,
+          capability
+        )
     );
 
   return (
