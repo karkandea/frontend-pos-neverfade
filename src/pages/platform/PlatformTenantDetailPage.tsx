@@ -9,6 +9,7 @@ import {
 } from "../../lib/businessModes";
 import platformApi from "../../lib/platformApi";
 import { getPlatformErrorMessage } from "../../lib/platformError";
+import { useTenantContextStore } from "../../stores/tenantContext";
 import type { BusinessType, PlatformTenant } from "../../types/platform";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("id-ID", {
@@ -121,6 +122,12 @@ export default function PlatformTenantDetailPage() {
         { businessType }
       );
       applyTenant(data);
+
+      const tenantContextState = useTenantContextStore.getState();
+      if (tenantContextState.context?.tenantId === data.id) {
+        tenantContextState.clear();
+      }
+
       setSuccess("Tipe bisnis dan capability tenant berhasil diperbarui.");
     } catch (requestError: unknown) {
       setProfileError(getPlatformErrorMessage(requestError));
