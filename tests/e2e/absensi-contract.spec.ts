@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { mockTenantContext } from "./tenantContextFixture";
 
 const employeeId = "11111111-1111-1111-1111-111111111111";
 
@@ -101,6 +102,7 @@ test("absensi uses the real backend request and response shape", async ({ page }
     });
   });
 
+  await mockTenantContext(page);
   await page.goto("/absensi");
 
   await expect(page.getByText("Dewi Safitri", { exact: true }).first()).toBeVisible();
