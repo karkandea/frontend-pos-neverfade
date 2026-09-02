@@ -36,10 +36,10 @@ export default function PlatformTenantDetailPage() {
   const [profileSubmitting, setProfileSubmitting] = useState(false);
   const [profileError, setProfileError] = useState("");
 
-  function applyTenant(data: PlatformTenant) {
+  const applyTenant = useCallback((data: PlatformTenant) => {
     setTenant(data);
     setBusinessType(data.businessType);
-  }
+  }, []);
 
   const loadTenant = useCallback(async (signal?: AbortSignal) => {
     if (!tenantId) return;
@@ -57,7 +57,7 @@ export default function PlatformTenantDetailPage() {
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
-  }, [tenantId]);
+  }, [tenantId, applyTenant]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -77,7 +77,7 @@ export default function PlatformTenantDetailPage() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [tenantId]);
+  }, [tenantId, applyTenant]);
 
   async function submitLifecycle(event: FormEvent) {
     event.preventDefault();
