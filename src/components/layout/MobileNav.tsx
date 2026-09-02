@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 
 import { useAuthStore } from "../../stores/auth";
+import { useTenantContextStore } from "../../stores/tenantContext";
 
 type Props = {
   onOpenMenu: () => void;
@@ -66,15 +67,23 @@ function MobileNavItem({ to, label, icon }: NavItemProps) {
 
 export default function MobileNav({ onOpenMenu }: Props) {
   const role = useAuthStore((state) => state.user?.role);
+  const hasCapability = useTenantContextStore((state) => state.hasCapability);
+  const canCorePos = hasCapability("core_pos");
+  const canReports = hasCapability("reports");
+  const canFinance = hasCapability("finance_withdrawal");
 
   return (
     <nav className="mobile-bottom-nav" aria-label="Navigasi cepat">
-      <MobileNavItem to="/kasir" label="Kasir" icon="cashier" />
-      <MobileNavItem to="/transaksi" label="Transaksi" icon="transactions" />
+      {canCorePos ? (
+        <>
+          <MobileNavItem to="/kasir" label="Kasir" icon="cashier" />
+          <MobileNavItem to="/transaksi" label="Transaksi" icon="transactions" />
+        </>
+      ) : null}
 
-      {role === "owner" ? (
+      {role === "owner" && canFinance ? (
         <MobileNavItem to="/keuangan" label="Keuangan" icon="finance" />
-      ) : role === "admin" ? (
+      ) : role === "admin" && canReports ? (
         <MobileNavItem to="/dashboard" label="Dashboard" icon="dashboard" />
       ) : null}
 
