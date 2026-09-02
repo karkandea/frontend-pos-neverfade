@@ -262,7 +262,10 @@ test("super admin provisions business mode, updates profile, and controls tenant
   await expect(
     page.getByText("Tipe bisnis dan capability tenant berhasil diperbarui.")
   ).toBeVisible();
-  await expect(page.getByText("Laundry", { exact: true })).toBeVisible();
+  const businessInfo = page.locator(".platform-detail-card").filter({
+    hasText: "Informasi Bisnis",
+  });
+  await expect(businessInfo.getByText("Laundry", { exact: true })).toBeVisible();
   await expect(page.getByText("Pesanan kerja / laundry")).toBeVisible();
   await expect(page.getByText("Pesanan meja")).toHaveCount(0);
 
