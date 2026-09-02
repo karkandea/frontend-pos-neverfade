@@ -33,7 +33,7 @@ export default function SharedPosActivityGuard() {
       timeout = window.setTimeout(() => void lockNow("idle"), IDLE_TIMEOUT_MS);
     }
 
-    async function lockNow(reason: "idle" | "manual") {
+    async function lockNow(reason: "idle") {
       setActive(false);
       try {
         await lockSharedPosSession();
@@ -43,13 +43,15 @@ export default function SharedPosActivityGuard() {
       }
     }
 
-    events.forEach((eventName) => window.addEventListener(eventName, resetTimer, { passive: true }));
-    window.addEventListener("shared-pos-lock-requested", resetTimer);
+    events.forEach((eventName) =>
+      window.addEventListener(eventName, resetTimer, { passive: true })
+    );
 
     return () => {
       window.clearTimeout(timeout);
-      events.forEach((eventName) => window.removeEventListener(eventName, resetTimer));
-      window.removeEventListener("shared-pos-lock-requested", resetTimer);
+      events.forEach((eventName) =>
+        window.removeEventListener(eventName, resetTimer)
+      );
     };
   }, [active, events]);
 
