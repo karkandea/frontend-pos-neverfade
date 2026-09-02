@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
+import { mockTenantContext } from "./tenantContextFixture";
 
 const product = {
   id: "mobile-product-1",
@@ -92,6 +93,7 @@ async function setupKasir(page: Page) {
 
     return json(route, []);
   });
+  await mockTenantContext(page);
 }
 
 async function assertNoHorizontalOverflow(page: Page) {
