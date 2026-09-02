@@ -21,6 +21,35 @@ type Employee = {
 
 type ActionKind = "checkin" | "checkout";
 
+type AttendanceData = {
+  attendance: Attendance[];
+  employees: Employee[];
+};
+
+async function fetchAttendanceData(): Promise<AttendanceData> {
+  const [attendanceResponse, employeeResponse] = await Promise.all([
+    api.get<Attendance[]>("/api/absensi"),
+    api.get<Employee[]>("/api/karyawan"),
+  ]);
+
+  return {
+    attendance: attendanceResponse.data,
+    employees: employeeResponse.data,
+  };
+}
+
+function resolveSelectedEmployee(current: string, employees: Employee[]) {
+  if (current && employees.some((employee) => employee.id === current)) {
+    return current;
+  }
+
+  return (
+    employees.find((employee) => employee.status.toLowerCase() === "aktif")?.id ??
+    employees[0]?.id ??
+    ""
+  );
+}
+
 export default function AbsensiPage() {
   const [items, setItems] = useState<Attendance[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -33,29 +62,13 @@ export default function AbsensiPage() {
 
   const load = useCallback(async () => {
     try {
-      const [attendanceResponse, employeeResponse] = await Promise.all([
-        api.get<Attendance[]>("/api/absensi"),
-        api.get<Employee[]>("/api/karyawan"),
-      ]);
-
-      setItems(attendanceResponse.data);
-      setEmployees(employeeResponse.data);
+      const data = await fetchAttendanceData();
+      setItems(data.attendance);
+      setEmployees(data.employees);
       setError("");
-
-      setSelectedKaryawanId((current) => {
-        if (
-          current &&
-          employeeResponse.data.some((employee) => employee.id === current)
-        ) {
-          return current;
-        }
-
-        return (
-          employeeResponse.data.find(
-            (employee) => employee.status.toLowerCase() === "aktif"
-          )?.id ?? employeeResponse.data[0]?.id ?? ""
-        );
-      });
+      setSelectedKaryawanId((current) =>
+        resolveSelectedEmployee(current, data.employees)
+      );
     } catch {
       setError("Data absensi gagal dimuat. Coba lagi.");
     } finally {
@@ -64,8 +77,36 @@ export default function AbsensiPage() {
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+
+    void fetchAttendanceData()
+      .then((data) => {
+        if (!active) {
+          return;
+        }
+
+        setItems(data.attendance);
+        setEmployees(data.employees);
+        setError("");
+        setSelectedKaryawanId((current) =>
+          resolveSelectedEmployee(current, data.employees)
+        );
+      })
+      .catch(() => {
+        if (active) {
+          setError("Data absensi gagal dimuat. Coba lagi.");
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const filteredItems = useMemo(() => {
     const keyword = search.trim().toLowerCase();
