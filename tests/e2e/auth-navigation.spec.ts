@@ -73,8 +73,8 @@ test("kasir login lands directly on Kasir with focused navigation", async ({ pag
   await page.getByLabel("Password", { exact: true }).fill("password");
   await page.getByRole("button", { name: "Masuk" }).click();
   await expect(page).toHaveURL(/\/kasir$/);
-  await expect(page.locator('a[href="/kasir"]:visible')).toBeVisible();
-  await expect(page.locator('a[href="/transaksi"]:visible')).toBeVisible();
+  await expect(page.locator('a[href="/kasir"]:visible').first()).toBeVisible();
+  await expect(page.locator('a[href="/transaksi"]:visible').first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Produk" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Laporan" })).toHaveCount(0);
 });
