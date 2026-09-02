@@ -166,6 +166,14 @@ export default function AbsensiPage() {
           </div>
 
           <div className="section-actions">
+            <button
+              className="btn-secondary"
+              type="button"
+              onClick={() => window.location.assign("/absensi/kelola")}
+            >
+              Kelola Jadwal & Shared POS
+            </button>
+
             <input
               type="search"
               aria-label="Cari karyawan di riwayat absensi"
