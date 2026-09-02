@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import PlatformShell from "../../components/platform/PlatformShell";
 import TenantStatusBadge from "../../components/platform/TenantStatusBadge";
+import { businessModeOptions } from "../../lib/businessModes";
 import platformApi from "../../lib/platformApi";
 import { getPlatformErrorMessage } from "../../lib/platformError";
 import type { PlatformTenant } from "../../types/platform";
@@ -11,6 +12,11 @@ const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   dateStyle: "medium",
   timeZone: "Asia/Jakarta",
 });
+
+function businessLabel(tenant: PlatformTenant) {
+  return businessModeOptions.find((option) => option.key === tenant.businessType)?.label
+    ?? tenant.businessType;
+}
 
 export default function PlatformTenantListPage() {
   const [tenants, setTenants] = useState<PlatformTenant[]>([]);
@@ -96,6 +102,7 @@ export default function PlatformTenantListPage() {
               <thead>
                 <tr>
                   <th>Tenant</th>
+                  <th>Tipe Bisnis</th>
                   <th>Owner</th>
                   <th>Status</th>
                   <th>Dibuat</th>
@@ -108,6 +115,10 @@ export default function PlatformTenantListPage() {
                     <td>
                       <strong>{tenant.namaToko}</strong>
                       <small>{tenant.slug}</small>
+                    </td>
+                    <td>
+                      <span>{businessLabel(tenant)}</span>
+                      <small>{tenant.capabilities.length} fitur aktif</small>
                     </td>
                     <td>
                       <span>{tenant.owner?.nama ?? "Owner belum tersedia"}</span>
