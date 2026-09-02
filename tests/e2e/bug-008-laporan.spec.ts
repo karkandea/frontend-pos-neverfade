@@ -189,7 +189,7 @@ test("BUG-008 Generate reloads report using selected period", async ({
 
   await page.goto("/laporan");
 
-  await expect(page.locator("#btn-generate-laporan")).toHaveText("Generate");
+  await expect(page.locator("#btn-generate-laporan")).toHaveText("Terapkan");
 
   await page.locator("#laporan-period").selectOption("mingguan");
 
