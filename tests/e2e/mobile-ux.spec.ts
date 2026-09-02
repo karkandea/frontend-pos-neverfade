@@ -128,7 +128,7 @@ for (const viewport of viewports) {
 
     const dock = page.getByRole("button", { name: /Buka keranjang/ });
     await expect(dock).toBeVisible();
-    await expect(dock).toContainText("Rp42.000");
+    await expect(dock).toContainText(/Rp\s*42\.000/);
     await assertNoHorizontalOverflow(page);
 
     await dock.click();
