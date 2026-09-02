@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
+import { mockTenantContext } from "./tenantContextFixture";
 
 const owner = {
   id: "11111111-1111-1111-1111-111111111111",
@@ -65,6 +66,7 @@ test("owner sees authoritative finance summary, requests withdrawal, and sees hi
     }
     return json(route, {});
   });
+  await mockTenantContext(page);
 
   await page.goto("/keuangan");
   await expect(page.getByRole("heading", { name: "Keuangan" })).toBeVisible();
@@ -100,6 +102,7 @@ test("owner sees insufficient balance error returned by backend", async ({ page 
     if (path === "/api/finance/withdrawals" && request.method() === "POST") return json(route, { code: "WITHDRAWAL_INSUFFICIENT_BALANCE", message: "Saldo tersedia tidak mencukupi untuk pencairan ini." }, 409);
     return json(route, {});
   });
+  await mockTenantContext(page);
 
   await page.goto("/keuangan");
   await page.getByLabel("Jumlah pencairan").fill("100000");
