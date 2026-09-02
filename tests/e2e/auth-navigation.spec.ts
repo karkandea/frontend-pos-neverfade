@@ -7,6 +7,7 @@ import {
 import {
   loginAsOwner,
 } from "./helpers";
+import { mockTenantContext } from "./tenantContextFixture";
 
 function json(route: Route, body: unknown) {
   return route.fulfill({
@@ -30,6 +31,7 @@ test("Ingat saya controls persistent versus terminal-only session", async ({ pag
     }
     return json(route, []);
   });
+  await mockTenantContext(page);
 
   await page.goto("/login");
   await page.getByLabel("Username").fill("owner");
@@ -65,6 +67,7 @@ test("kasir login lands directly on Kasir with focused navigation", async ({ pag
     if (path === "/api/payments/capabilities") return json(route, { qrisEnabled: false, mode: "disabled", isSandbox: false });
     return json(route, []);
   });
+  await mockTenantContext(page, "kasir");
   await page.goto("/login");
   await page.getByLabel("Username").fill("kasir");
   await page.getByLabel("Password", { exact: true }).fill("password");
