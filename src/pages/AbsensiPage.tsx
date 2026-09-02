@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
 
@@ -31,7 +31,7 @@ export default function AbsensiPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -63,11 +63,11 @@ export default function AbsensiPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   const filteredItems = useMemo(() => {
     const keyword = search.trim().toLowerCase();
