@@ -58,7 +58,7 @@ function json(route: Route, body: unknown, status = 200) {
   });
 }
 
-test("super admin provisions business mode and controls tenant lifecycle", async ({ page }) => {
+test("super admin provisions business mode, updates profile, and controls tenant lifecycle", async ({ page }) => {
   const tenants = [existingTenant];
   let createdTenant: Tenant | null = null;
 
@@ -90,9 +90,11 @@ test("super admin provisions business mode and controls tenant lifecycle", async
           ? "33333333-3333-3333-3333-333333333333"
           : existingTenant.id,
         namaToko: isNewTenant ? "QA Platform Coffee" : existingTenant.namaToko,
-        businessType: isNewTenant ? "food_beverage" : "general_retail",
+        businessType: isNewTenant
+          ? createdTenant?.businessType ?? "food_beverage"
+          : "general_retail",
         capabilities: isNewTenant
-          ? [...commonCapabilities, "table_orders", "kitchen_queue"]
+          ? createdTenant?.capabilities ?? [...commonCapabilities, "table_orders", "kitchen_queue"]
           : commonCapabilities,
         role: "owner",
       });
@@ -137,6 +139,25 @@ test("super admin provisions business mode and controls tenant lifecycle", async
         updatedAt: "2026-08-10T09:00:00Z",
       };
       tenants.unshift(createdTenant);
+      return json(route, createdTenant);
+    }
+
+    if (
+      createdTenant &&
+      path === `/api/platform/tenants/${createdTenant.id}/business-profile` &&
+      request.method() === "PUT"
+    ) {
+      const payload = request.postDataJSON() as {
+        businessType: Tenant["businessType"];
+      };
+      expect(payload).toEqual({ businessType: "laundry" });
+      createdTenant = {
+        ...createdTenant,
+        businessType: payload.businessType,
+        capabilities: [...commonCapabilities, "work_orders"],
+        updatedAt: "2026-08-10T09:30:00Z",
+      };
+      tenants[0] = createdTenant;
       return json(route, createdTenant);
     }
 
@@ -235,6 +256,15 @@ test("super admin provisions business mode and controls tenant lifecycle", async
   await expect(page.getByText("Tenant berhasil dibuat.")).toBeVisible();
   await expect(page.getByText("Restoran / Coffee Shop")).toBeVisible();
   await expect(page.getByText("qa.platform.owner")).toBeVisible();
+
+  await page.getByLabel("Tipe Bisnis").selectOption("laundry");
+  await page.getByRole("button", { name: "Simpan Tipe Bisnis" }).click();
+  await expect(
+    page.getByText("Tipe bisnis dan capability tenant berhasil diperbarui.")
+  ).toBeVisible();
+  await expect(page.getByText("Laundry", { exact: true })).toBeVisible();
+  await expect(page.getByText("Pesanan kerja / laundry")).toBeVisible();
+  await expect(page.getByText("Pesanan meja")).toHaveCount(0);
 
   await page.getByRole("button", { name: "Suspend Tenant" }).click();
   await page.getByLabel("Alasan").fill("QA lifecycle verification");
