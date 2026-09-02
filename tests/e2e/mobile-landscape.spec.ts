@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
+import { mockTenantContext } from "./tenantContextFixture";
 
 const product = { id: "landscape-product", kode: "LAND-001", nama: "Produk Landscape", kategori: "QA", hargaJual: 25000, stok: 10 };
 
@@ -18,6 +19,7 @@ async function setup(page: Page) {
     if (path === "/api/payments/current") return route.fulfill({ status: 204, body: "" });
     return json(route, []);
   });
+  await mockTenantContext(page);
 }
 
 for (const viewport of [{ width: 667, height: 375 }, { width: 844, height: 390 }]) {
