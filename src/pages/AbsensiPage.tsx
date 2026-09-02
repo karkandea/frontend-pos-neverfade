@@ -1,226 +1,221 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
 
 type Attendance = {
   id: string;
+  karyawanId: string;
+  karyawanNama: string;
+  jabatan: string;
   tanggal: string;
-  namaKaryawan: string;
   checkIn: string | null;
   checkOut: string | null;
-  status: string;
-  keterangan: string;
 };
 
+type Employee = {
+  id: string;
+  nama: string;
+  jabatan: string;
+  status: string;
+};
+
+type ActionKind = "checkin" | "checkout";
+
 export default function AbsensiPage() {
-  const [items, setItems] =
-    useState<Attendance[]>([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [search, setSearch] =
-    useState("");
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadInitial() {
-      setLoading(true);
-
-      try {
-        const { data } =
-          await api.get<Attendance[]>(
-            "/api/absensi",
-            {
-              params: {
-                search:
-                  search || undefined,
-              },
-            }
-          );
-
-        if (!active) {
-          return;
-        }
-
-        setItems(data);
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadInitial();
-
-    return () => {
-      active = false;
-    };
-  }, [search]);
+  const [items, setItems] = useState<Attendance[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [selectedKaryawanId, setSelectedKaryawanId] = useState("");
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<ActionKind | null>(null);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   async function load() {
     setLoading(true);
+    setError("");
 
     try {
-      const { data } =
-        await api.get<Attendance[]>(
-          "/api/absensi",
-          {
-            params: {
-              search:
-                search || undefined,
-            },
-          }
-        );
+      const [attendanceResponse, employeeResponse] = await Promise.all([
+        api.get<Attendance[]>("/api/absensi"),
+        api.get<Employee[]>("/api/karyawan"),
+      ]);
 
-      setItems(data);
+      setItems(attendanceResponse.data);
+      setEmployees(employeeResponse.data);
+
+      setSelectedKaryawanId((current) => {
+        if (
+          current &&
+          employeeResponse.data.some((employee) => employee.id === current)
+        ) {
+          return current;
+        }
+
+        return (
+          employeeResponse.data.find(
+            (employee) => employee.status.toLowerCase() === "aktif"
+          )?.id ?? employeeResponse.data[0]?.id ?? ""
+        );
+      });
+    } catch {
+      setError("Data absensi gagal dimuat. Coba lagi.");
     } finally {
       setLoading(false);
     }
   }
 
-  async function checkIn() {
-    await api.post(
-      "/api/absensi/checkin"
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const filteredItems = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) {
+      return items;
+    }
+
+    return items.filter((item) =>
+      `${item.karyawanNama} ${item.jabatan}`.toLowerCase().includes(keyword)
     );
+  }, [items, search]);
 
-    await load();
-  }
+  async function recordAttendance(kind: ActionKind) {
+    if (!selectedKaryawanId || actionLoading) {
+      return;
+    }
 
-  async function checkOut() {
-    await api.post(
-      "/api/absensi/checkout"
-    );
+    setActionLoading(kind);
+    setError("");
+    setSuccess("");
 
-    await load();
+    try {
+      await api.post(`/api/absensi/${kind}`, {
+        karyawanId: selectedKaryawanId,
+      });
+
+      setSuccess(
+        kind === "checkin"
+          ? "Check in berhasil dicatat."
+          : "Check out berhasil dicatat."
+      );
+      await load();
+    } catch {
+      setError(
+        kind === "checkin"
+          ? "Check in gagal. Periksa status absensi karyawan lalu coba lagi."
+          : "Check out gagal. Periksa status absensi karyawan lalu coba lagi."
+      );
+    } finally {
+      setActionLoading(null);
+    }
   }
 
   return (
     <AppShell>
       <section className="content-section active">
-
         <div className="section-header">
-
           <div>
             <h2>Absensi</h2>
-
-            <p>
-              Kehadiran
-              karyawan
-            </p>
+            <p>Kehadiran karyawan</p>
           </div>
 
           <div className="section-actions">
-
             <input
-              type="text"
+              type="search"
+              aria-label="Cari karyawan di riwayat absensi"
               placeholder="Cari karyawan..."
               value={search}
-              onChange={(e) =>
-                setSearch(
-                  e.target.value
-                )
-              }
+              onChange={(event) => setSearch(event.target.value)}
             />
+
+            <select
+              aria-label="Pilih karyawan untuk absensi"
+              value={selectedKaryawanId}
+              onChange={(event) => setSelectedKaryawanId(event.target.value)}
+              disabled={loading || employees.length === 0 || actionLoading !== null}
+            >
+              {employees.length === 0 ? (
+                <option value="">Tidak ada karyawan</option>
+              ) : (
+                employees.map((employee) => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.nama} · {employee.jabatan}
+                  </option>
+                ))
+              )}
+            </select>
 
             <button
               className="btn-secondary"
-              onClick={checkIn}
+              type="button"
+              disabled={!selectedKaryawanId || actionLoading !== null}
+              onClick={() => void recordAttendance("checkin")}
             >
-              Check In
+              {actionLoading === "checkin" ? "Mencatat..." : "Check In"}
             </button>
 
             <button
               className="btn-primary"
-              onClick={checkOut}
+              type="button"
+              disabled={!selectedKaryawanId || actionLoading !== null}
+              onClick={() => void recordAttendance("checkout")}
             >
-              Check Out
+              {actionLoading === "checkout" ? "Mencatat..." : "Check Out"}
             </button>
-
           </div>
         </div>
 
-        <div className="table-card">
+        {error ? (
+          <div role="alert">
+            <p>{error}</p>
+            <button className="btn-secondary" type="button" onClick={() => void load()}>
+              Coba Lagi
+            </button>
+          </div>
+        ) : null}
 
+        {success ? <p role="status">{success}</p> : null}
+
+        <div className="table-card">
           {loading ? (
-            <p>Loading...</p>
+            <p>Memuat data absensi...</p>
           ) : (
             <table className="data-table">
-
               <thead>
                 <tr>
-                  <th>
-                    Tanggal
-                  </th>
-
-                  <th>
-                    Karyawan
-                  </th>
-
-                  <th>
-                    Check In
-                  </th>
-
-                  <th>
-                    Check Out
-                  </th>
-
-                  <th>
-                    Status
-                  </th>
-
-                  <th>
-                    Keterangan
-                  </th>
+                  <th>Tanggal</th>
+                  <th>Karyawan</th>
+                  <th>Jabatan</th>
+                  <th>Check In</th>
+                  <th>Check Out</th>
                 </tr>
               </thead>
 
               <tbody>
-                {items.length === 0 ? (
+                {filteredItems.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={6}
-                      className="text-center"
-                    >
-                      Belum ada data.
+                    <td colSpan={5} className="text-center">
+                      {search
+                        ? "Tidak ada data absensi yang cocok."
+                        : "Belum ada data absensi."}
                     </td>
                   </tr>
                 ) : (
-                  items.map((item) => (
+                  filteredItems.map((item) => (
                     <tr key={item.id}>
                       <td>{item.tanggal}</td>
-
-                      <td>
-                        {item.namaKaryawan}
-                      </td>
-
-                      <td>
-                        {item.checkIn ?? "-"}
-                      </td>
-
-                      <td>
-                        {item.checkOut ?? "-"}
-                      </td>
-
-                      <td>
-                        {item.status}
-                      </td>
-
-                      <td>
-                        {item.keterangan ||
-                          "-"}
-                      </td>
+                      <td>{item.karyawanNama}</td>
+                      <td>{item.jabatan}</td>
+                      <td>{item.checkIn ?? "-"}</td>
+                      <td>{item.checkOut ?? "-"}</td>
                     </tr>
                   ))
                 )}
               </tbody>
-
             </table>
           )}
-
         </div>
-
       </section>
     </AppShell>
   );
