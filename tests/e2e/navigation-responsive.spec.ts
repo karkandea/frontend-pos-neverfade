@@ -1,4 +1,5 @@
 import { expect, test, type Route } from "@playwright/test";
+import { mockTenantContext } from "./tenantContextFixture";
 
 function json(route: Route, body: unknown) {
   return route.fulfill({
@@ -25,6 +26,7 @@ test("mobile navigation opens, closes, and page title follows route", async ({ p
     }
     return json(route, []);
   });
+  await mockTenantContext(page);
 
   await page.goto("/dashboard");
   await expect(page).toHaveTitle("Dashboard · NeverFade POS");
