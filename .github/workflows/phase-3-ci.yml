@@ -1,0 +1,50 @@
+name: Phase 3 Frontend CI
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Lint
+        run: npm run lint
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start frontend
+        env:
+          VITE_API_URL: http://127.0.0.1:9999
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 5273 --strictPort > /tmp/neverfade-phase3-vite.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:5273/login >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/neverfade-phase3-vite.log
+          exit 1
+      - name: Run Phase 3 contract E2E
+        run: >-
+          npx playwright test
+          tests/e2e/absensi-contract.spec.ts
+          tests/e2e/platform-control-plane.spec.ts
+          --project="Desktop Chromium"
+      - name: Show frontend log on failure
+        if: failure()
+        run: cat /tmp/neverfade-phase3-vite.log || true
