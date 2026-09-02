@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
+import { mockTenantContext } from "./tenantContextFixture";
 
 function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
@@ -16,6 +17,7 @@ async function setupRole(page: Page, role: "kasir" | "owner" | "admin") {
     if (path === "/api/transactions") return json(route, []);
     return json(route, []);
   });
+  await mockTenantContext(page, role);
 }
 
 for (const role of ["kasir", "owner", "admin"] as const) {
