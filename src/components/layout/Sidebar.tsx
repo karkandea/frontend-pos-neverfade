@@ -1,5 +1,6 @@
-import { useAuthStore } from "../../stores/auth";
 import { NavLink } from "react-router-dom";
+import { useAuthStore } from "../../stores/auth";
+import { useTenantContextStore } from "../../stores/tenantContext";
 
 type Props = {
   open: boolean;
@@ -8,10 +9,27 @@ type Props = {
 
 export default function Sidebar({ open, onClose }: Props) {
   const user = useAuthStore((s) => s.user);
+  const hasCapability = useTenantContextStore((s) => s.hasCapability);
 
   const isAdmin =
     user?.role === "owner" ||
     user?.role === "admin";
+
+  const canCorePos = hasCapability("core_pos");
+  const canInventory = hasCapability("inventory");
+  const canCustomers = hasCapability("customers");
+  const canReports = hasCapability("reports");
+  const canAttendance = hasCapability("attendance");
+  const canFinance = hasCapability("finance_withdrawal");
+
+  const showManagement =
+    user?.role !== "kasir" &&
+    (canCorePos || canInventory || canCustomers);
+
+  const showAnalytics =
+    canCorePos ||
+    (user?.role !== "kasir" && canReports) ||
+    (user?.role === "owner" && canFinance);
 
   return (
     <aside
@@ -60,196 +78,224 @@ export default function Sidebar({ open, onClose }: Props) {
           }
         }}
       >
-        <div className="nav-section-label">
-          UTAMA
-        </div>
+        {(canCorePos || (user?.role !== "kasir" && canReports)) && (
+          <div className="nav-section-label">
+            UTAMA
+          </div>
+        )}
 
-        <NavLink
-          to="/kasir"
-          className={({ isActive }) =>
-            isActive ? "nav-item active" : "nav-item"
-          }
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
+        {canCorePos && (
+          <NavLink
+            to="/kasir"
+            className={({ isActive }) =>
+              isActive ? "nav-item active" : "nav-item"
+            }
           >
-            <rect x="3" y="3" width="7" height="7" rx="1" />
-            <rect x="14" y="3" width="7" height="7" rx="1" />
-            <rect x="3" y="14" width="7" height="7" rx="1" />
-            <rect x="14" y="14" width="7" height="7" rx="1" />
-          </svg>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
 
-          <span>Kasir</span>
-        </NavLink>
+            <span>Kasir</span>
+          </NavLink>
+        )}
 
-        {user?.role !== "kasir" && <>
-        <NavLink
-          to="/dashboard"
-          className={({ isActive }) =>
-            isActive ? "nav-item active" : "nav-item"
-          }
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
+        {user?.role !== "kasir" && canReports && (
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) =>
+              isActive ? "nav-item active" : "nav-item"
+            }
           >
-            <rect x="2" y="3" width="20" height="14" rx="2" />
-            <path d="M8 21h8M12 17v4" />
-            <path d="M7 8h2M11 8h6M7 12h2M11 12h2" />
-          </svg>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <path d="M8 21h8M12 17v4" />
+              <path d="M7 8h2M11 8h6M7 12h2M11 12h2" />
+            </svg>
 
-          <span>Dashboard</span>
+            <span>Dashboard</span>
 
-          <span
-            className="nav-badge"
-            id="cart-badge"
-            style={{ display: "none" }}
+            <span
+              className="nav-badge"
+              id="cart-badge"
+              style={{ display: "none" }}
+            >
+              0
+            </span>
+          </NavLink>
+        )}
+
+        {showManagement && (
+          <div className="nav-section-label">
+            MANAJEMEN
+          </div>
+        )}
+
+        {user?.role !== "kasir" && canCorePos && (
+          <NavLink
+            to="/produk"
+            className={({ isActive }) =>
+              isActive ? "nav-item active" : "nav-item"
+            }
           >
-            0
-          </span>
-        </NavLink>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+              <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+            </svg>
 
-        <div className="nav-section-label">
-          MANAJEMEN
-        </div>
-        <NavLink
-          to="/produk"
-          className={({ isActive }) =>
-            isActive ? "nav-item active" : "nav-item"
-          }
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
+            <span>Produk</span>
+          </NavLink>
+        )}
+
+        {user?.role !== "kasir" && canInventory && (
+          <NavLink
+            to="/inventaris"
+            className={({ isActive }) =>
+              isActive ? "nav-item active" : "nav-item"
+            }
           >
-            <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
-            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-          </svg>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              <polyline points="3.27 6.96 12.01 11 20.73 6.96" />
+              <line x1="12" y1="22" x2="12" y2="12" />
+            </svg>
 
-          <span>Produk</span>
-        </NavLink>
+            <span>Inventaris</span>
+          </NavLink>
+        )}
 
-        <NavLink
-          to="/inventaris"
-          className={({ isActive }) =>
-            isActive ? "nav-item active" : "nav-item"
-          }
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
+        {user?.role !== "kasir" && canCustomers && (
+          <NavLink
+            to="/pelanggan"
+            className={({ isActive }) =>
+              isActive ? "nav-item active" : "nav-item"
+            }
           >
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-            <polyline points="3.27 6.96 12.01 11 20.73 6.96" />
-            <line x1="12" y1="22" x2="12" y2="12" />
-          </svg>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
 
-          <span>Inventaris</span>
-        </NavLink>
+            <span>Pelanggan</span>
+          </NavLink>
+        )}
 
-        <NavLink
-          to="/pelanggan"
-          className={({ isActive }) =>
-            isActive ? "nav-item active" : "nav-item"
-          }
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
+        {showAnalytics && (
+          <div className="nav-section-label">
+            ANALITIK
+          </div>
+        )}
+
+        {canCorePos && (
+          <NavLink
+            to="/transaksi"
+            className={({ isActive }) =>
+              isActive ? "nav-item active" : "nav-item"
+            }
           >
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
 
-          <span>Pelanggan</span>
-        </NavLink>
-        </>}
+            <span>Transaksi</span>
+          </NavLink>
+        )}
 
-        <div className="nav-section-label">
-          ANALITIK
-        </div>
-
-        <NavLink
-          to="/transaksi"
-          className={({ isActive }) =>
-            isActive ? "nav-item active" : "nav-item"
-          }
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
+        {user?.role !== "kasir" && canReports && (
+          <NavLink
+            to="/laporan"
+            className={({ isActive }) =>
+              isActive ? "nav-item active" : "nav-item"
+            }
           >
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-          </svg>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
 
-          <span>Transaksi</span>
-        </NavLink>
+            <span>Laporan</span>
+          </NavLink>
+        )}
 
-        {user?.role !== "kasir" && <NavLink
-          to="/laporan"
-          className={({ isActive }) =>
-            isActive ? "nav-item active" : "nav-item"
-          }
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <line x1="18" y1="20" x2="18" y2="10" />
-            <line x1="12" y1="20" x2="12" y2="4" />
-            <line x1="6" y1="20" x2="6" y2="14" />
-          </svg>
-
-          <span>Laporan</span>
-        </NavLink>}
-        {user?.role === "owner" && (
+        {user?.role === "owner" && canFinance && (
           <NavLink
             to="/keuangan"
             className={({ isActive }) =>
               isActive ? "nav-item active" : "nav-item"
             }
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <rect x="3" y="5" width="18" height="14" rx="2" />
               <path d="M3 9h18M16 14h2" />
             </svg>
             <span>Keuangan</span>
           </NavLink>
         )}
-        {isAdmin && (
+
+        {isAdmin && canAttendance && (
           <>
             <div className="nav-section-label nav-admin-section">
               SDM
@@ -301,7 +347,11 @@ export default function Sidebar({ open, onClose }: Props) {
 
               <span>Absensi</span>
             </NavLink>
+          </>
+        )}
 
+        {isAdmin && (
+          <>
             <div className="nav-section-label nav-admin-section">
               SISTEM
             </div>
