@@ -13,7 +13,7 @@ export const ownerPassword =
 
 export const e2eProductName =
   process.env.QA_E2E_PRODUCT_NAME ??
-  "";
+  "Lumpia Beef Original";
 
 export const knownTransactionNumber =
   process.env.QA_KNOWN_TRANSACTION_NO ??
