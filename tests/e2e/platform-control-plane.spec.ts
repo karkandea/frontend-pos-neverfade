@@ -244,8 +244,8 @@ test("super admin provisions business mode, updates profile, and controls tenant
   await page.getByRole("link", { name: "Buat Tenant" }).first().click();
   await page.getByLabel("Nama Toko").fill("QA Platform Coffee");
   await page.getByLabel("Tipe Bisnis").selectOption("food_beverage");
-  await expect(page.getByText("Pesanan meja")).toBeVisible();
-  await expect(page.getByText("Antrean dapur")).toBeVisible();
+  await expect(page.getByText("Pesanan meja", { exact: true })).toBeVisible();
+  await expect(page.getByText("Antrean dapur", { exact: true })).toBeVisible();
   await page.getByLabel("Nama Owner").fill("QA Owner Platform");
   await page.getByLabel("Username", { exact: true }).fill("qa.platform.owner");
   await page.getByLabel("Password Awal").fill("OwnerPassword123!");
@@ -266,8 +266,8 @@ test("super admin provisions business mode, updates profile, and controls tenant
     hasText: "Informasi Bisnis",
   });
   await expect(businessInfo.getByText("Laundry", { exact: true })).toBeVisible();
-  await expect(page.getByText("Pesanan kerja / laundry")).toBeVisible();
-  await expect(page.getByText("Pesanan meja")).toHaveCount(0);
+  await expect(page.getByText("Pesanan kerja / laundry", { exact: true })).toBeVisible();
+  await expect(page.getByText("Pesanan meja", { exact: true })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Suspend Tenant" }).click();
   await page.getByLabel("Alasan").fill("QA lifecycle verification");
