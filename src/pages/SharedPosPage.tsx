@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import axios from "axios";
 import {
   activateSharedPosUser,
@@ -256,7 +256,7 @@ export default function SharedPosPage() {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, CSSProperties> = {
   screen: {
     minHeight: "100vh",
     display: "grid",
