@@ -1,4 +1,5 @@
 import { expect, test, type Route } from "@playwright/test";
+import { mockTenantContext } from "./tenantContextFixture";
 
 function json(route: Route, body: unknown) {
   return route.fulfill({
@@ -40,6 +41,7 @@ test("transaction history renders authoritative paid pending failed expired and 
     }
     return json(route, {});
   });
+  await mockTenantContext(page);
 
   await page.goto("/transaksi");
   for (const label of ["Selesai", "Pending pembayaran", "Gagal", "Kedaluwarsa", "Dibatalkan"]) {
