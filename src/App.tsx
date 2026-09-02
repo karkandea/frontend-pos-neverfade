@@ -31,6 +31,8 @@ import PlatformTenantListPage from "./pages/platform/PlatformTenantListPage";
 import PlatformWithdrawalPage from "./pages/platform/PlatformWithdrawalPage";
 import { useAuthStore } from "./stores/auth";
 import { usePlatformAuthStore } from "./stores/platformAuth";
+import { useTenantContextStore } from "./stores/tenantContext";
+import type { TenantCapability } from "./types/platform";
 
 function LoadingPage() {
   return (
@@ -42,6 +44,27 @@ function LoadingPage() {
       }}
     >
       Memuat...
+    </div>
+  );
+}
+
+function TenantContextErrorPage({ retry }: { retry: () => void }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        placeItems: "center",
+        minHeight: "100vh",
+        padding: 24,
+      }}
+    >
+      <div role="alert" style={{ maxWidth: 420, textAlign: "center" }}>
+        <h1>Konteks bisnis belum dapat dimuat</h1>
+        <p>Fitur tenant tidak akan dibuka sebelum capability dari server tersedia.</p>
+        <button type="button" className="btn-primary" onClick={retry}>
+          Coba Lagi
+        </button>
+      </div>
     </div>
   );
 }
@@ -78,11 +101,24 @@ export default function App() {
   const platformToken = usePlatformAuthStore((state) => state.token);
   const platformLoading = usePlatformAuthStore((state) => state.loading);
   const restorePlatform = usePlatformAuthStore((state) => state.restore);
+  const tenantContext = useTenantContextStore((state) => state.context);
+  const tenantContextLoading = useTenantContextStore((state) => state.loading);
+  const tenantContextError = useTenantContextStore((state) => state.error);
+  const restoreTenantContext = useTenantContextStore((state) => state.restore);
+  const clearTenantContext = useTenantContextStore((state) => state.clear);
 
   useEffect(() => {
     void restore();
     void restorePlatform();
   }, [restore, restorePlatform]);
+
+  useEffect(() => {
+    if (token) {
+      void restoreTenantContext(token);
+    } else {
+      clearTenantContext();
+    }
+  }, [token, restoreTenantContext, clearTenantContext]);
 
   useEffect(() => {
     const exact = pageTitles[location.pathname];
@@ -94,8 +130,16 @@ export default function App() {
     document.title = `${section} · NeverFade POS`;
   }, [location.pathname]);
 
-  if (loading || platformLoading) {
+  if (loading || platformLoading || (token && tenantContextLoading)) {
     return <LoadingPage />;
+  }
+
+  if (token && !tenantContext && tenantContextError) {
+    return (
+      <TenantContextErrorPage
+        retry={() => void restoreTenantContext(token)}
+      />
+    );
   }
 
   const isAdmin =
@@ -105,7 +149,8 @@ export default function App() {
   function protectedPage(
     page: ReactNode,
     adminOnly = false,
-    ownerOnly = false
+    ownerOnly = false,
+    capability?: TenantCapability
   ) {
     if (!token) {
       return (
@@ -120,15 +165,17 @@ export default function App() {
     }
 
     if (adminOnly && !isAdmin) {
-      return (
-        <Navigate
-          replace
-          to="/dashboard"
-        />
-      );
+      return <Navigate replace to="/dashboard" />;
     }
 
     if (ownerOnly && user?.role !== "owner") {
+      return <Navigate replace to="/dashboard" />;
+    }
+
+    if (
+      capability &&
+      !tenantContext?.capabilities.includes(capability)
+    ) {
       return <Navigate replace to="/dashboard" />;
     }
 
@@ -149,10 +196,7 @@ export default function App() {
         path="/login"
         element={
           token ? (
-            <Navigate
-              replace
-              to="/dashboard"
-            />
+            <Navigate replace to="/dashboard" />
           ) : (
             <LoginPage />
           )
@@ -192,96 +236,67 @@ export default function App() {
 
       <Route
         path="/dashboard"
-        element={protectedPage(
-          <DashboardPage />
-        )}
+        element={protectedPage(<DashboardPage />, false, false, "reports")}
       />
 
       <Route
         path="/produk"
-        element={protectedPage(
-          <ProductPage />
-        )}
+        element={protectedPage(<ProductPage />, false, false, "core_pos")}
       />
 
       <Route
         path="/kasir"
-        element={protectedPage(
-          <KasirPage />
-        )}
+        element={protectedPage(<KasirPage />, false, false, "core_pos")}
       />
 
       <Route
         path="/inventaris"
-        element={protectedPage(
-          <InventarisPage />
-        )}
+        element={protectedPage(<InventarisPage />, false, false, "inventory")}
       />
 
       <Route
         path="/pelanggan"
-        element={protectedPage(
-          <PelangganPage />
-        )}
+        element={protectedPage(<PelangganPage />, false, false, "customers")}
       />
 
       <Route
         path="/transaksi"
-        element={protectedPage(
-          <TransaksiPage />
-        )}
+        element={protectedPage(<TransaksiPage />, false, false, "core_pos")}
       />
 
       <Route
         path="/laporan"
-        element={protectedPage(
-          <LaporanPage />
-        )}
+        element={protectedPage(<LaporanPage />, false, false, "reports")}
       />
 
       <Route
         path="/keuangan"
-        element={protectedPage(<FinancePage />, false, true)}
+        element={protectedPage(<FinancePage />, false, true, "finance_withdrawal")}
       />
 
       <Route
         path="/karyawan"
-        element={protectedPage(
-          <KaryawanPage />,
-          true
-        )}
+        element={protectedPage(<KaryawanPage />, true)}
       />
 
       <Route
         path="/absensi"
-        element={protectedPage(
-          <AbsensiPage />,
-          true
-        )}
+        element={protectedPage(<AbsensiPage />, true, false, "attendance")}
       />
 
       <Route
         path="/pengguna"
-        element={protectedPage(
-          <PenggunaPage />,
-          true
-        )}
+        element={protectedPage(<PenggunaPage />, true)}
       />
 
       <Route
         path="/pengaturan"
-        element={protectedPage(
-          <PengaturanPage />,
-          true
-        )}
+        element={protectedPage(<PengaturanPage />, true)}
       />
 
       <Route
         path="/qa/qris-scanner"
-        element={protectedPage(
-          <QaQrisScannerPage />,
-          true
-        )}
+        element={protectedPage(<QaQrisScannerPage />, true)}
       />
 
       <Route
