@@ -4,6 +4,7 @@ import {
   type Page,
   type Route,
 } from "@playwright/test";
+import { mockTenantContext } from "./tenantContextFixture";
 
 const product = {
   id: "11111111-1111-1111-1111-111111111111",
@@ -167,6 +168,10 @@ async function setupCheckout(
       return json(route, {
         id: payment.transactionId,
         customerId: null,
+        customerNama: "",
+        tanggal: "2026-08-11T17:40:00Z",
+        kasir: "Owner QA",
+        kasirId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
         disc: 0,
         tax: 0,
         noTrx: "TRX-20260811-0099",
@@ -192,6 +197,7 @@ async function setupCheckout(
     return json(route, {});
   });
 
+  await mockTenantContext(page);
   await page.goto("/kasir");
   await expect(
     page.getByRole("heading", { name: "Kasir", exact: true })
