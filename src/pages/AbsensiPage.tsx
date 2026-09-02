@@ -32,9 +32,6 @@ export default function AbsensiPage() {
   const [success, setSuccess] = useState("");
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-
     try {
       const [attendanceResponse, employeeResponse] = await Promise.all([
         api.get<Attendance[]>("/api/absensi"),
@@ -43,6 +40,7 @@ export default function AbsensiPage() {
 
       setItems(attendanceResponse.data);
       setEmployees(employeeResponse.data);
+      setError("");
 
       setSelectedKaryawanId((current) => {
         if (
@@ -79,6 +77,12 @@ export default function AbsensiPage() {
       `${item.karyawanNama} ${item.jabatan}`.toLowerCase().includes(keyword)
     );
   }, [items, search]);
+
+  function retryLoad() {
+    setLoading(true);
+    setError("");
+    void load();
+  }
 
   async function recordAttendance(kind: ActionKind) {
     if (!selectedKaryawanId || actionLoading) {
@@ -169,7 +173,7 @@ export default function AbsensiPage() {
         {error ? (
           <div role="alert">
             <p>{error}</p>
-            <button className="btn-secondary" type="button" onClick={() => void load()}>
+            <button className="btn-secondary" type="button" onClick={retryLoad}>
               Coba Lagi
             </button>
           </div>
