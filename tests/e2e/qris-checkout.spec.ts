@@ -208,6 +208,12 @@ async function setupCheckout(
       name: `Tambah ${product.nama} ke keranjang`,
     })
     .click();
+
+  const mobileCartDock = page.getByRole("button", { name: /Buka keranjang/ });
+  if (await mobileCartDock.isVisible().catch(() => false)) {
+    await mobileCartDock.click();
+  }
+
   if (qrisEnabled) {
     await page
       .locator(".payment-options")
