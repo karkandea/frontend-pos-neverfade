@@ -1,4 +1,5 @@
 import { expect, test, type Route } from "@playwright/test";
+import { mockTenantContext } from "./tenantContextFixture";
 
 function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
@@ -18,6 +19,7 @@ test("cashier login is usable at 320px and lands on Kasir", async ({ page }, tes
     if (path === "/api/payments/current") return route.fulfill({ status: 204, body: "" });
     return json(route, []);
   });
+  await mockTenantContext(page, "kasir");
 
   await page.goto("/login");
   await expect(page.getByRole("button", { name: "Masuk" })).toBeVisible();
