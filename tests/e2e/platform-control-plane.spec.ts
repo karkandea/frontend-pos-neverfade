@@ -254,7 +254,12 @@ test("super admin provisions business mode, updates profile, and controls tenant
   await expect(page).toHaveURL(/33333333-3333-3333-3333-333333333333$/);
   await expect(page.getByRole("heading", { name: "QA Platform Coffee" })).toBeVisible();
   await expect(page.getByText("Tenant berhasil dibuat.")).toBeVisible();
-  await expect(page.getByText("Restoran / Coffee Shop")).toBeVisible();
+  const businessInfo = page.locator(".platform-detail-card").filter({
+    hasText: "Informasi Bisnis",
+  });
+  await expect(
+    businessInfo.getByText("Restoran / Coffee Shop", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("qa.platform.owner")).toBeVisible();
 
   await page.getByLabel("Tipe Bisnis").selectOption("laundry");
@@ -262,9 +267,6 @@ test("super admin provisions business mode, updates profile, and controls tenant
   await expect(
     page.getByText("Tipe bisnis dan capability tenant berhasil diperbarui.")
   ).toBeVisible();
-  const businessInfo = page.locator(".platform-detail-card").filter({
-    hasText: "Informasi Bisnis",
-  });
   await expect(businessInfo.getByText("Laundry", { exact: true })).toBeVisible();
   await expect(page.getByText("Pesanan kerja / laundry", { exact: true })).toBeVisible();
   await expect(page.getByText("Pesanan meja", { exact: true })).toHaveCount(0);
