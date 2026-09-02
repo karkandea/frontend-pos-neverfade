@@ -3,9 +3,13 @@ import { Link, useLocation, useParams } from "react-router-dom";
 
 import PlatformShell from "../../components/platform/PlatformShell";
 import TenantStatusBadge from "../../components/platform/TenantStatusBadge";
+import {
+  businessModeOptions,
+  capabilityLabels,
+} from "../../lib/businessModes";
 import platformApi from "../../lib/platformApi";
 import { getPlatformErrorMessage } from "../../lib/platformError";
-import type { PlatformTenant } from "../../types/platform";
+import type { BusinessType, PlatformTenant } from "../../types/platform";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("id-ID", {
   dateStyle: "long",
@@ -28,6 +32,14 @@ export default function PlatformTenantDetailPage() {
   const [reason, setReason] = useState("");
   const [actionError, setActionError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [businessType, setBusinessType] = useState<BusinessType>("general_retail");
+  const [profileSubmitting, setProfileSubmitting] = useState(false);
+  const [profileError, setProfileError] = useState("");
+
+  function applyTenant(data: PlatformTenant) {
+    setTenant(data);
+    setBusinessType(data.businessType);
+  }
 
   const loadTenant = useCallback(async (signal?: AbortSignal) => {
     if (!tenantId) return;
@@ -39,7 +51,7 @@ export default function PlatformTenantDetailPage() {
         `/api/platform/tenants/${tenantId}`,
         { signal }
       );
-      setTenant(data);
+      applyTenant(data);
     } catch (requestError: unknown) {
       if (!signal?.aborted) setError(getPlatformErrorMessage(requestError));
     } finally {
@@ -55,7 +67,7 @@ export default function PlatformTenantDetailPage() {
       .get<PlatformTenant>(`/api/platform/tenants/${tenantId}`, {
         signal: controller.signal,
       })
-      .then(({ data }) => setTenant(data))
+      .then(({ data }) => applyTenant(data))
       .catch((requestError: unknown) => {
         if (!controller.signal.aborted) {
           setError(getPlatformErrorMessage(requestError));
@@ -80,7 +92,7 @@ export default function PlatformTenantDetailPage() {
         ? { reason: reason.trim() || null }
         : undefined;
       const { data } = await platformApi.post<PlatformTenant>(endpoint, body);
-      setTenant(data);
+      applyTenant(data);
       setSuccess(
         action === "suspend"
           ? "Tenant berhasil ditangguhkan."
@@ -94,6 +106,33 @@ export default function PlatformTenantDetailPage() {
       setSubmitting(false);
     }
   }
+
+  async function submitBusinessProfile(event: FormEvent) {
+    event.preventDefault();
+    if (!tenant || businessType === tenant.businessType) return;
+
+    setProfileSubmitting(true);
+    setProfileError("");
+    setSuccess("");
+
+    try {
+      const { data } = await platformApi.put<PlatformTenant>(
+        `/api/platform/tenants/${tenant.id}/business-profile`,
+        { businessType }
+      );
+      applyTenant(data);
+      setSuccess("Tipe bisnis dan capability tenant berhasil diperbarui.");
+    } catch (requestError: unknown) {
+      setProfileError(getPlatformErrorMessage(requestError));
+    } finally {
+      setProfileSubmitting(false);
+    }
+  }
+
+  const businessLabel = tenant
+    ? businessModeOptions.find((option) => option.key === tenant.businessType)?.label
+      ?? tenant.businessType
+    : "";
 
   return (
     <PlatformShell>
@@ -165,6 +204,7 @@ export default function PlatformTenantDetailPage() {
               <dl>
                 <div><dt>Nama Toko</dt><dd>{tenant.namaToko}</dd></div>
                 <div><dt>Slug</dt><dd className="platform-mono">{tenant.slug}</dd></div>
+                <div><dt>Tipe Bisnis</dt><dd>{businessLabel}</dd></div>
                 <div><dt>Status</dt><dd><TenantStatusBadge status={tenant.status} /></dd></div>
                 <div><dt>Dibuat</dt><dd>{dateTimeFormatter.format(new Date(tenant.createdAt))}</dd></div>
                 <div><dt>Diperbarui</dt><dd>{dateTimeFormatter.format(new Date(tenant.updatedAt))}</dd></div>
@@ -182,6 +222,50 @@ export default function PlatformTenantDetailPage() {
               ) : (
                 <p>Owner tidak tersedia pada data tenant ini.</p>
               )}
+            </section>
+
+            <section className="platform-panel platform-detail-card">
+              <span className="platform-card-label">Fitur Aktif</span>
+              <ul>
+                {tenant.capabilities.map((capability) => (
+                  <li key={capability}>{capabilityLabels[capability]}</li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="platform-panel platform-detail-card">
+              <span className="platform-card-label">Ubah Tipe Bisnis</span>
+              <form onSubmit={submitBusinessProfile}>
+                <label className="platform-field" htmlFor="detail-business-type">
+                  <span>Tipe Bisnis</span>
+                  <select
+                    id="detail-business-type"
+                    value={businessType}
+                    disabled={profileSubmitting}
+                    onChange={(event) =>
+                      setBusinessType(event.target.value as BusinessType)
+                    }
+                  >
+                    {businessModeOptions.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <small>
+                    Mengubah tipe hanya mengubah capability efektif. Data vertical yang
+                    sudah ada tidak dihapus.
+                  </small>
+                </label>
+                <div className="platform-form-error" role="alert">{profileError}</div>
+                <button
+                  type="submit"
+                  className="platform-button platform-button-primary"
+                  disabled={profileSubmitting || businessType === tenant.businessType}
+                >
+                  {profileSubmitting ? "Menyimpan..." : "Simpan Tipe Bisnis"}
+                </button>
+              </form>
             </section>
           </div>
         </>
