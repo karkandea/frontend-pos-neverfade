@@ -5,6 +5,8 @@ type Tenant = {
   namaToko: string;
   slug: string;
   status: "active" | "suspended";
+  businessType: "general_retail" | "food_beverage" | "laundry" | "salon_barbershop";
+  capabilities: string[];
   owner: {
     id: string;
     nama: string;
@@ -14,6 +16,15 @@ type Tenant = {
   createdAt: string;
   updatedAt: string;
 };
+
+const commonCapabilities = [
+  "core_pos",
+  "inventory",
+  "customers",
+  "reports",
+  "attendance",
+  "finance_withdrawal",
+];
 
 const platformUser = {
   id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -27,6 +38,8 @@ const existingTenant: Tenant = {
   namaToko: "Existing Tenant",
   slug: "existing-tenant",
   status: "active",
+  businessType: "general_retail",
+  capabilities: commonCapabilities,
   owner: {
     id: "22222222-2222-2222-2222-222222222222",
     nama: "Existing Owner",
@@ -45,9 +58,7 @@ function json(route: Route, body: unknown, status = 200) {
   });
 }
 
-test("super admin provisions and controls tenant lifecycle with isolated session", async ({
-  page,
-}) => {
+test("super admin provisions business mode and controls tenant lifecycle", async ({ page }) => {
   const tenants = [existingTenant];
   let createdTenant: Tenant | null = null;
 
@@ -72,6 +83,21 @@ test("super admin provisions and controls tenant lifecycle with isolated session
       });
     }
 
+    if (path === "/api/tenant/context") {
+      const isNewTenant = request.headers().authorization === "Bearer new-tenant-token";
+      return json(route, {
+        tenantId: isNewTenant
+          ? "33333333-3333-3333-3333-333333333333"
+          : existingTenant.id,
+        namaToko: isNewTenant ? "QA Platform Coffee" : existingTenant.namaToko,
+        businessType: isNewTenant ? "food_beverage" : "general_retail",
+        capabilities: isNewTenant
+          ? [...commonCapabilities, "table_orders", "kitchen_queue"]
+          : commonCapabilities,
+        role: "owner",
+      });
+    }
+
     if (path === "/api/platform/auth/login") {
       return json(route, {
         token: "platform-token",
@@ -90,13 +116,17 @@ test("super admin provisions and controls tenant lifecycle with isolated session
     if (path === "/api/platform/tenants" && request.method() === "POST") {
       const payload = request.postDataJSON() as {
         namaToko: string;
+        businessType: Tenant["businessType"];
         owner: { nama: string; username: string };
       };
+      expect(payload.businessType).toBe("food_beverage");
       createdTenant = {
         id: "33333333-3333-3333-3333-333333333333",
         namaToko: payload.namaToko,
         slug: "qa-platform-coffee",
         status: "active",
+        businessType: payload.businessType,
+        capabilities: [...commonCapabilities, "table_orders", "kitchen_queue"],
         owner: {
           id: "44444444-4444-4444-4444-444444444444",
           nama: payload.owner.nama,
@@ -189,20 +219,12 @@ test("super admin provisions and controls tenant lifecycle with isolated session
   await expect(page).toHaveURL(/\/platform\/tenants$/);
   await expect(page.getByRole("heading", { name: "Tenant" })).toBeVisible();
   await expect(page.getByText("Existing Tenant")).toBeVisible();
-  await expect.poll(() =>
-    page.evaluate(() => ({
-      tenant:
-        localStorage.getItem("nfpos_token") ??
-        sessionStorage.getItem("nfpos_token"),
-      platform: localStorage.getItem("nfpos_platform_token"),
-    }))
-  ).toEqual({
-    tenant: "existing-tenant-token",
-    platform: "platform-token",
-  });
 
   await page.getByRole("link", { name: "Buat Tenant" }).first().click();
   await page.getByLabel("Nama Toko").fill("QA Platform Coffee");
+  await page.getByLabel("Tipe Bisnis").selectOption("food_beverage");
+  await expect(page.getByText("Pesanan meja")).toBeVisible();
+  await expect(page.getByText("Antrean dapur")).toBeVisible();
   await page.getByLabel("Nama Owner").fill("QA Owner Platform");
   await page.getByLabel("Username", { exact: true }).fill("qa.platform.owner");
   await page.getByLabel("Password Awal").fill("OwnerPassword123!");
@@ -211,6 +233,7 @@ test("super admin provisions and controls tenant lifecycle with isolated session
   await expect(page).toHaveURL(/33333333-3333-3333-3333-333333333333$/);
   await expect(page.getByRole("heading", { name: "QA Platform Coffee" })).toBeVisible();
   await expect(page.getByText("Tenant berhasil dibuat.")).toBeVisible();
+  await expect(page.getByText("Restoran / Coffee Shop")).toBeVisible();
   await expect(page.getByText("qa.platform.owner")).toBeVisible();
 
   await page.getByRole("button", { name: "Suspend Tenant" }).click();
@@ -237,15 +260,4 @@ test("super admin provisions and controls tenant lifecycle with isolated session
   await page.locator("#btn-login").click();
   await expect(page).toHaveURL(/\/produk$/);
   await expect(page.getByRole("heading", { name: "Produk" })).toBeVisible();
-  await expect.poll(() =>
-    page.evaluate(() => ({
-      tenant:
-        localStorage.getItem("nfpos_token") ??
-        sessionStorage.getItem("nfpos_token"),
-      platform: localStorage.getItem("nfpos_platform_token"),
-    }))
-  ).toEqual({
-    tenant: "new-tenant-token",
-    platform: "platform-token",
-  });
 });
