@@ -1,5 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import { expect, test, type Page, type Route } from "@playwright/test";
+import { mockTenantContext } from "./tenantContextFixture";
 
 const product = {
   id: "visual-product",
@@ -102,6 +103,7 @@ async function setup(page: Page, qrisEnabled: boolean) {
 
     return json(route, []);
   });
+  await mockTenantContext(page);
 }
 
 test.beforeEach(async ({ page }) => {
