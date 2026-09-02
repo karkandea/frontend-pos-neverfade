@@ -2,15 +2,22 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import PlatformShell from "../../components/platform/PlatformShell";
+import {
+  businessModeOptions,
+  capabilityLabels,
+  capabilityPresets,
+} from "../../lib/businessModes";
 import platformApi from "../../lib/platformApi";
 import { getPlatformErrorMessage } from "../../lib/platformError";
 import type {
+  BusinessType,
   CreatePlatformTenantRequest,
   PlatformTenant,
 } from "../../types/platform";
 
 const initialForm: CreatePlatformTenantRequest = {
   namaToko: "",
+  businessType: "general_retail",
   owner: {
     nama: "",
     username: "",
@@ -24,6 +31,11 @@ export default function PlatformTenantCreatePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const selectedMode =
+    businessModeOptions.find((option) => option.key === form.businessType) ??
+    businessModeOptions[0];
+  const activeCapabilities = capabilityPresets[form.businessType];
 
   function updateOwner(
     field: keyof CreatePlatformTenantRequest["owner"],
@@ -68,7 +80,7 @@ export default function PlatformTenantCreatePage() {
         <div>
           <span className="platform-eyebrow">Provisioning</span>
           <h1>Buat Tenant</h1>
-          <p>Tenant akan langsung aktif untuk operasional POS tunai.</p>
+          <p>Pilih tipe bisnis agar workflow aktif sesuai operasional tenant.</p>
         </div>
       </div>
 
@@ -78,28 +90,70 @@ export default function PlatformTenantCreatePage() {
             <span>01</span>
             <div>
               <h2>Informasi Bisnis</h2>
-              <p>Identitas toko yang tampil pada control plane.</p>
+              <p>Identitas dan workflow utama tenant.</p>
             </div>
           </div>
-          <label className="platform-field" htmlFor="tenant-name">
-            <span>Nama Toko</span>
-            <input
-              id="tenant-name"
-              name="namaToko"
-              type="text"
-              required
-              maxLength={200}
-              autoFocus
-              value={form.namaToko}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  namaToko: event.target.value,
-                }))
-              }
-            />
-            <small>Slug dan Tenant ID dibuat otomatis oleh server.</small>
-          </label>
+
+          <div className="platform-form-grid">
+            <label className="platform-field" htmlFor="tenant-name">
+              <span>Nama Toko</span>
+              <input
+                id="tenant-name"
+                name="namaToko"
+                type="text"
+                required
+                maxLength={200}
+                autoFocus
+                value={form.namaToko}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    namaToko: event.target.value,
+                  }))
+                }
+              />
+              <small>Slug dan Tenant ID dibuat otomatis oleh server.</small>
+            </label>
+
+            <label className="platform-field" htmlFor="business-type">
+              <span>Tipe Bisnis</span>
+              <select
+                id="business-type"
+                name="businessType"
+                required
+                value={form.businessType}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    businessType: event.target.value as BusinessType,
+                  }))
+                }
+              >
+                {businessModeOptions.map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <small>{selectedMode.description}</small>
+            </label>
+          </div>
+
+          <div className="platform-detail-card" aria-live="polite">
+            <span className="platform-eyebrow">Fitur aktif untuk bisnis ini</span>
+            <h3>{selectedMode.label}</h3>
+            <ul>
+              {activeCapabilities.map((capability) => (
+                <li key={capability}>{capabilityLabels[capability]}</li>
+              ))}
+            </ul>
+            {form.businessType === "salon_barbershop" ? (
+              <small>
+                Appointment disiapkan sebagai capability, sedangkan UI operasionalnya
+                masuk fase setelah Laundry.
+              </small>
+            ) : null}
+          </div>
         </section>
 
         <section className="platform-form-section">
