@@ -10,7 +10,9 @@ import {
   useLocation,
 } from "react-router-dom";
 
+import SharedPosActivityGuard from "./components/shared/SharedPosActivityGuard";
 import AbsensiPage from "./pages/AbsensiPage";
+import AttendanceManagementPage from "./pages/AttendanceManagementPage";
 import DashboardPage from "./pages/DashboardPage";
 import InventarisPage from "./pages/InventarisPage";
 import KasirPage from "./pages/KasirPage";
@@ -23,6 +25,7 @@ import PengaturanPage from "./pages/PengaturanPage";
 import PenggunaPage from "./pages/PenggunaPage";
 import ProductPage from "./pages/ProductPage";
 import QaQrisScannerPage from "./pages/QaQrisScannerPage";
+import SharedPosPage from "./pages/SharedPosPage";
 import TransaksiPage from "./pages/TransaksiPage";
 import PlatformLoginPage from "./pages/platform/PlatformLoginPage";
 import PlatformTenantCreatePage from "./pages/platform/PlatformTenantCreatePage";
@@ -81,6 +84,8 @@ const pageTitles: Record<string, string> = {
   "/keuangan": "Keuangan",
   "/karyawan": "Karyawan",
   "/absensi": "Absensi",
+  "/absensi/kelola": "Kelola Absensi",
+  "/shared-pos": "Shared POS",
   "/pengguna": "Pengguna",
   "/pengaturan": "Pengaturan",
   "/qa/qris-scanner": "QA QRIS Scanner",
@@ -201,131 +206,141 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route
-        path="/login"
-        element={
-          token ? (
-            <Navigate replace to="/dashboard" />
-          ) : (
-            <LoginPage />
-          )
-        }
-      />
+    <>
+      <SharedPosActivityGuard />
+      <Routes>
+        <Route path="/shared-pos" element={<SharedPosPage />} />
 
-      <Route
-        path="/platform/login"
-        element={
-          platformToken ? (
-            <Navigate replace to="/platform/tenants" />
-          ) : (
-            <PlatformLoginPage />
-          )
-        }
-      />
+        <Route
+          path="/login"
+          element={
+            token ? (
+              <Navigate replace to="/dashboard" />
+            ) : (
+              <LoginPage />
+            )
+          }
+        />
 
-      <Route
-        path="/platform/tenants"
-        element={platformProtectedPage(<PlatformTenantListPage />)}
-      />
+        <Route
+          path="/platform/login"
+          element={
+            platformToken ? (
+              <Navigate replace to="/platform/tenants" />
+            ) : (
+              <PlatformLoginPage />
+            )
+          }
+        />
 
-      <Route
-        path="/platform/tenants/new"
-        element={platformProtectedPage(<PlatformTenantCreatePage />)}
-      />
+        <Route
+          path="/platform/tenants"
+          element={platformProtectedPage(<PlatformTenantListPage />)}
+        />
 
-      <Route
-        path="/platform/tenants/:tenantId"
-        element={platformProtectedPage(<PlatformTenantDetailPage />)}
-      />
+        <Route
+          path="/platform/tenants/new"
+          element={platformProtectedPage(<PlatformTenantCreatePage />)}
+        />
 
-      <Route
-        path="/platform/withdrawals"
-        element={platformProtectedPage(<PlatformWithdrawalPage />)}
-      />
+        <Route
+          path="/platform/tenants/:tenantId"
+          element={platformProtectedPage(<PlatformTenantDetailPage />)}
+        />
 
-      <Route
-        path="/dashboard"
-        element={protectedPage(<DashboardPage />, false, false, "reports")}
-      />
+        <Route
+          path="/platform/withdrawals"
+          element={platformProtectedPage(<PlatformWithdrawalPage />)}
+        />
 
-      <Route
-        path="/produk"
-        element={protectedPage(<ProductPage />, false, false, "core_pos")}
-      />
+        <Route
+          path="/dashboard"
+          element={protectedPage(<DashboardPage />, false, false, "reports")}
+        />
 
-      <Route
-        path="/kasir"
-        element={protectedPage(<KasirPage />, false, false, "core_pos")}
-      />
+        <Route
+          path="/produk"
+          element={protectedPage(<ProductPage />, false, false, "core_pos")}
+        />
 
-      <Route
-        path="/inventaris"
-        element={protectedPage(<InventarisPage />, false, false, "inventory")}
-      />
+        <Route
+          path="/kasir"
+          element={protectedPage(<KasirPage />, false, false, "core_pos")}
+        />
 
-      <Route
-        path="/pelanggan"
-        element={protectedPage(<PelangganPage />, false, false, "customers")}
-      />
+        <Route
+          path="/inventaris"
+          element={protectedPage(<InventarisPage />, false, false, "inventory")}
+        />
 
-      <Route
-        path="/transaksi"
-        element={protectedPage(<TransaksiPage />, false, false, "core_pos")}
-      />
+        <Route
+          path="/pelanggan"
+          element={protectedPage(<PelangganPage />, false, false, "customers")}
+        />
 
-      <Route
-        path="/laporan"
-        element={protectedPage(<LaporanPage />, false, false, "reports")}
-      />
+        <Route
+          path="/transaksi"
+          element={protectedPage(<TransaksiPage />, false, false, "core_pos")}
+        />
 
-      <Route
-        path="/keuangan"
-        element={protectedPage(<FinancePage />, false, true, "finance_withdrawal")}
-      />
+        <Route
+          path="/laporan"
+          element={protectedPage(<LaporanPage />, false, false, "reports")}
+        />
 
-      <Route
-        path="/karyawan"
-        element={protectedPage(<KaryawanPage />, true, false, "attendance")}
-      />
+        <Route
+          path="/keuangan"
+          element={protectedPage(<FinancePage />, false, true, "finance_withdrawal")}
+        />
 
-      <Route
-        path="/absensi"
-        element={protectedPage(<AbsensiPage />, true, false, "attendance")}
-      />
+        <Route
+          path="/karyawan"
+          element={protectedPage(<KaryawanPage />, true, false, "attendance")}
+        />
 
-      <Route
-        path="/pengguna"
-        element={protectedPage(<PenggunaPage />, true)}
-      />
+        <Route
+          path="/absensi"
+          element={protectedPage(<AbsensiPage />, true, false, "attendance")}
+        />
 
-      <Route
-        path="/pengaturan"
-        element={protectedPage(<PengaturanPage />, true)}
-      />
+        <Route
+          path="/absensi/kelola"
+          element={protectedPage(<AttendanceManagementPage />, true, false, "attendance")}
+        />
 
-      <Route
-        path="/qa/qris-scanner"
-        element={protectedPage(<QaQrisScannerPage />, true)}
-      />
+        <Route
+          path="/pengguna"
+          element={protectedPage(<PenggunaPage />, true)}
+        />
 
-      <Route
-        path="*"
-        element={
-          <Navigate
-            replace
-            to={
-              location.pathname.startsWith("/platform")
-                ? platformToken
-                  ? "/platform/tenants"
-                  : "/platform/login"
-                : token
-                ? "/dashboard"
-                : "/login"
-            }
-          />
-        }
-      />
-    </Routes>
+        <Route
+          path="/pengaturan"
+          element={protectedPage(<PengaturanPage />, true)}
+        />
+
+        <Route
+          path="/qa/qris-scanner"
+          element={protectedPage(<QaQrisScannerPage />, true)}
+        />
+
+        <Route
+          path="*"
+          element={
+            <Navigate
+              replace
+              to={
+                location.pathname.startsWith("/platform")
+                  ? platformToken
+                    ? "/platform/tenants"
+                    : "/platform/login"
+                  : token
+                  ? "/dashboard"
+                  : "/login"
+              }
+            />
+          }
+        />
+      </Routes>
+    </>
   );
 }
