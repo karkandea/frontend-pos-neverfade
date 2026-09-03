@@ -3,8 +3,8 @@ set -euo pipefail
 
 BRANCH="feat/phase-3b-shared-device-attendance"
 WORKSPACE="${NF_PHASE3B_WORKSPACE:-$HOME/neverfade-phase3b}"
-REPO="$WORKSPACE/frontend"
-QA_DIR="$WORKSPACE/neverfade-pos-qa"
+REPO="${NF_PHASE3B_FRONTEND_REPO:-$WORKSPACE/frontend}"
+QA_DIR="${NF_PHASE3B_QA_DIR:-$WORKSPACE/neverfade-pos-qa}"
 PW_IMAGE="mcr.microsoft.com/playwright:v1.62.0-noble"
 NPM_VOLUME="neverfade-phase3b-npm"
 
@@ -46,8 +46,9 @@ docker run --rm \
   -e CI=1 \
   -e PLAYWRIGHT_BASE_URL=http://127.0.0.1:5273 \
   -v "$NPM_VOLUME:/root/.npm" \
-  -v "$WORKSPACE:/phase3b" \
-  -w /phase3b/frontend \
+  -v "$REPO:/workspace/frontend" \
+  -v "$QA_DIR:/workspace/neverfade-pos-qa" \
+  -w /workspace/frontend \
   "$PW_IMAGE" bash -lc '
     set -euo pipefail
 
@@ -82,7 +83,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
   fail "Frontend gate changed tracked repository files"
 fi
 
-printf '\nFINAL PHASE 3B VPS FRONTEND GATE: PASS\n'
+printf '\nFINAL PHASE 3B FRONTEND GATE: PASS\n'
 printf 'Frontend HEAD : %s\n' "$(git rev-parse HEAD)"
 printf 'npm ci        : PASS\n'
 printf 'Build/type    : PASS\n'
