@@ -1,7 +1,8 @@
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import axios from "axios";
 import {
   activateSharedPosUser,
+  clearNormalPosAuth,
   clearSharedDevice,
   clearSharedSession,
   getSharedDeviceToken,
@@ -42,6 +43,10 @@ export default function SharedPosPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    clearNormalPosAuth();
+  }, []);
 
   function pushDigit(digit: string) {
     if (loading || unlocked || pin.length >= 6) {
