@@ -108,7 +108,9 @@ test("shared POS keeps invalid PIN on lock screen and auto-locks after punch", a
 
 test("owner can activate current browser as shared POS without retaining owner token", async ({ page }) => {
   await page.addInitScript(() => {
-    localStorage.setItem("nfpos_token", "owner-test-token");
+    if (!window.location.pathname.startsWith("/shared-pos")) {
+      localStorage.setItem("nfpos_token", "owner-test-token");
+    }
   });
 
   await page.route("**/api/auth/me", async (route) => {
