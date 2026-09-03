@@ -27,4 +27,8 @@ git -C "$REPO" switch "$BRANCH"
 git -C "$REPO" pull --ff-only origin "$BRANCH"
 
 WORKSPACE="$(dirname "$REPO")"
-NF_PHASE3B_WORKSPACE="$WORKSPACE" bash "$REPO/qa/phase3b-vps-frontend-gate.sh"
+QA_DIR="$WORKSPACE/neverfade-pos-qa"
+NF_PHASE3B_WORKSPACE="$WORKSPACE" \
+NF_PHASE3B_FRONTEND_REPO="$REPO" \
+NF_PHASE3B_QA_DIR="$QA_DIR" \
+  bash "$REPO/qa/phase3b-vps-frontend-gate.sh"
