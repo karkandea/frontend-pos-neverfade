@@ -7,6 +7,7 @@ REPO="${NF_PHASE3B_FRONTEND_REPO:-$WORKSPACE/frontend}"
 QA_DIR="${NF_PHASE3B_QA_DIR:-$WORKSPACE/neverfade-pos-qa}"
 PW_IMAGE="mcr.microsoft.com/playwright:v1.62.0-noble"
 NPM_VOLUME="neverfade-phase3b-npm"
+PLAYWRIGHT_ARGS="${PHASE3B_PLAYWRIGHT_ARGS:-}"
 
 fail() {
   printf '\n[FAIL] %s\n' "$1" >&2
@@ -38,13 +39,19 @@ printf 'Remote HEAD  : %s\n' "$(git rev-parse "origin/$BRANCH")"
 mkdir -p "$QA_DIR"
 docker volume inspect "$NPM_VOLUME" >/dev/null 2>&1 || docker volume create "$NPM_VOLUME" >/dev/null
 
-step "npm ci + build/typecheck + lint + full Playwright regression"
+if [[ -n "$PLAYWRIGHT_ARGS" ]]; then
+  step "npm ci + build/typecheck + lint + targeted Playwright: $PLAYWRIGHT_ARGS"
+else
+  step "npm ci + build/typecheck + lint + full Playwright regression"
+fi
+
 docker run --rm \
   --cpus=1 \
   --memory=3g \
   --shm-size=1g \
   -e CI=1 \
   -e PLAYWRIGHT_BASE_URL=http://127.0.0.1:5273 \
+  -e "PHASE3B_PLAYWRIGHT_ARGS=$PLAYWRIGHT_ARGS" \
   -v "$NPM_VOLUME:/root/.npm" \
   -v "$REPO:/workspace/frontend" \
   -v "$QA_DIR:/workspace/neverfade-pos-qa" \
@@ -74,7 +81,13 @@ docker run --rm \
       exit 1
     fi
 
-    npx playwright test
+    if [[ -n "${PHASE3B_PLAYWRIGHT_ARGS:-}" ]]; then
+      # Targeted gate accepts a whitespace-separated Playwright argument string from the trusted QA command.
+      # shellcheck disable=SC2086
+      npx playwright test $PHASE3B_PLAYWRIGHT_ARGS
+    else
+      npx playwright test
+    fi
   '
 
 step "Verify frontend repository cleanliness"
