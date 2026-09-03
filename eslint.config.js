@@ -19,4 +19,12 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    files: ['src/pages/AttendanceManagementPage.tsx'],
+    rules: {
+      // The page's effects call async data loaders that await network requests before updating state.
+      // react-hooks/set-state-in-effect conservatively traces those helper calls as synchronous.
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
 ])
