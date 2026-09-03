@@ -130,13 +130,6 @@ export default function AttendanceManagementPage() {
   }, [date]);
 
   const loadEmployeeDetails = useCallback(async (employeeId: string) => {
-    if (!employeeId) {
-      setAccess(null);
-      setSchedule(blankSchedule());
-      setExceptions([]);
-      return;
-    }
-
     const [accessResponse, scheduleResponse, exceptionResponse] = await Promise.all([
       api.get<EmployeeSharedAccess>(`/api/karyawan/${employeeId}/shared-access`),
       api.get<WeeklyScheduleDay[]>(`/api/attendance/employees/${employeeId}/schedule`),
@@ -160,7 +153,6 @@ export default function AttendanceManagementPage() {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
     void loadCore()
       .then(() => {
         if (active) setError("");
@@ -376,7 +368,15 @@ export default function AttendanceManagementPage() {
             <p>Jadwal, Shared POS, status kehadiran, dan koreksi</p>
           </div>
           <div className="section-actions">
-            <input aria-label="Tanggal dashboard absensi" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
+            <input
+              aria-label="Tanggal dashboard absensi"
+              type="date"
+              value={date}
+              onChange={(event) => {
+                setLoading(true);
+                setDate(event.target.value);
+              }}
+            />
             <button className="btn-secondary" type="button" onClick={() => window.location.assign("/absensi")}>Riwayat Lama</button>
           </div>
         </div>
