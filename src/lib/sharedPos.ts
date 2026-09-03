@@ -20,11 +20,17 @@ export const sharedPosApi = axios.create({
   timeout: 10000,
 });
 
+export function clearNormalPosAuth() {
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+}
+
 export function getSharedDeviceToken() {
   return localStorage.getItem(SHARED_DEVICE_TOKEN_KEY) ?? "";
 }
 
 export function saveSharedDeviceToken(token: string) {
+  clearNormalPosAuth();
   localStorage.setItem(SHARED_DEVICE_TOKEN_KEY, token);
   localStorage.setItem(SHARED_MODE_KEY, "1");
 }
