@@ -56,6 +56,73 @@ test("Ingat saya controls persistent versus terminal-only session", async ({ pag
   expect(await page.evaluate(() => sessionStorage.getItem("nfpos_token"))).toBeNull();
 });
 
+test("owner login waits for tenant context before capability routing", async ({ page }) => {
+  await page.route("**/api/**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+
+    if (path === "/api/auth/login") {
+      return json(route, {
+        token: "delayed-context-token",
+        user: {
+          id: "owner",
+          nama: "Owner QA",
+          username: "owner",
+          role: "owner",
+        },
+      });
+    }
+
+    if (path === "/api/auth/me") {
+      return json(route, {
+        id: "owner",
+        nama: "Owner QA",
+        username: "owner",
+        role: "owner",
+      });
+    }
+
+    if (path === "/api/tenant/context") {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      return json(route, {
+        tenantId: "99999999-9999-9999-9999-999999999999",
+        namaToko: "NeverFade QA",
+        businessType: "general_retail",
+        capabilities: [
+          "core_pos",
+          "inventory",
+          "customers",
+          "reports",
+          "attendance",
+          "finance_withdrawal",
+        ],
+        role: "owner",
+      });
+    }
+
+    if (path === "/api/products") {
+      return json(route, []);
+    }
+
+    return json(route, {});
+  });
+
+  await page.goto("/login");
+  await page.getByLabel("Username").fill("owner");
+  await page.getByLabel("Password", { exact: true }).fill("password");
+  await page.getByRole("button", { name: "Masuk" }).click();
+
+  await expect(page).toHaveURL(/\/produk$/);
+  await expect(page.getByText("Memuat...", { exact: true })).toBeVisible();
+  await expect(page).not.toHaveURL(/\/dashboard$/);
+  await expect(
+    page.getByRole("heading", {
+      name: "Produk",
+      exact: true,
+    })
+  ).toBeVisible();
+});
+
 test("kasir login lands directly on Kasir with focused navigation", async ({ page }) => {
   await page.route("**/api/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
