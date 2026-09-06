@@ -7,6 +7,28 @@ const baseURL =
   process.env.PLAYWRIGHT_BASE_URL ??
   "http://127.0.0.1:5273";
 
+function positiveTimeout(
+  value: string | undefined,
+  fallback: number
+) {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) &&
+    parsed > 0
+    ? parsed
+    : fallback;
+}
+
+const testTimeout = positiveTimeout(
+  process.env.PLAYWRIGHT_TEST_TIMEOUT,
+  30_000
+);
+
+const expectTimeout = positiveTimeout(
+  process.env.PLAYWRIGHT_EXPECT_TIMEOUT,
+  8_000
+);
+
 export default defineConfig({
   testDir: "./tests/e2e",
 
@@ -18,10 +40,10 @@ export default defineConfig({
 
   workers: 1,
 
-  timeout: 30_000,
+  timeout: testTimeout,
 
   expect: {
-    timeout: 8_000,
+    timeout: expectTimeout,
   },
 
   reporter: [
