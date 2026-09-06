@@ -110,6 +110,9 @@ export default function App() {
   const tenantContext = useTenantContextStore((state) => state.context);
   const tenantContextLoading = useTenantContextStore((state) => state.loading);
   const tenantContextError = useTenantContextStore((state) => state.error);
+  const tenantContextLoadedForToken = useTenantContextStore(
+    (state) => state.loadedForToken
+  );
   const restoreTenantContext = useTenantContextStore((state) => state.restore);
   const clearTenantContext = useTenantContextStore((state) => state.clear);
 
@@ -136,10 +139,20 @@ export default function App() {
     document.title = `${section} · NeverFade POS`;
   }, [location.pathname]);
 
+  const tenantContextPending =
+    !isPlatformRoute &&
+    Boolean(token) &&
+    !tenantContextError &&
+    (
+      tenantContextLoading ||
+      tenantContextLoadedForToken !== token ||
+      !tenantContext
+    );
+
   if (
     loading ||
     platformLoading ||
-    (!isPlatformRoute && token && tenantContextLoading)
+    tenantContextPending
   ) {
     return <LoadingPage />;
   }
