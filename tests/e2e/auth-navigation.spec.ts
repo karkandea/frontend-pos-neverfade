@@ -57,6 +57,8 @@ test("Ingat saya controls persistent versus terminal-only session", async ({ pag
 });
 
 test("owner login waits for tenant context before capability routing", async ({ page }) => {
+  let tenantContextRequests = 0;
+
   await page.route("**/api/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
 
@@ -82,6 +84,7 @@ test("owner login waits for tenant context before capability routing", async ({ 
     }
 
     if (path === "/api/tenant/context") {
+      tenantContextRequests += 1;
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       return json(route, {
@@ -121,6 +124,8 @@ test("owner login waits for tenant context before capability routing", async ({ 
       exact: true,
     })
   ).toBeVisible();
+
+  expect(tenantContextRequests).toBe(1);
 });
 
 test("kasir login lands directly on Kasir with focused navigation", async ({ page }) => {
