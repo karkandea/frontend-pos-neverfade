@@ -8,6 +8,9 @@ QA_DIR="${NF_PHASE3B_QA_DIR:-$WORKSPACE/neverfade-pos-qa}"
 PW_IMAGE="mcr.microsoft.com/playwright:v1.62.0-noble"
 NPM_VOLUME="neverfade-phase3b-npm"
 PLAYWRIGHT_ARGS="${PHASE3B_PLAYWRIGHT_ARGS:-}"
+PLAYWRIGHT_FILE="${PHASE3B_PLAYWRIGHT_FILE:-}"
+PLAYWRIGHT_GREP="${PHASE3B_PLAYWRIGHT_GREP:-}"
+PLAYWRIGHT_PROJECT="${PHASE3B_PLAYWRIGHT_PROJECT:-}"
 
 fail() {
   printf '\n[FAIL] %s\n' "$1" >&2
@@ -39,7 +42,13 @@ printf 'Remote HEAD  : %s\n' "$(git rev-parse "origin/$BRANCH")"
 mkdir -p "$QA_DIR"
 docker volume inspect "$NPM_VOLUME" >/dev/null 2>&1 || docker volume create "$NPM_VOLUME" >/dev/null
 
-if [[ -n "$PLAYWRIGHT_ARGS" ]]; then
+if [[ -n "$PLAYWRIGHT_ARGS" && ( -n "$PLAYWRIGHT_FILE" || -n "$PLAYWRIGHT_GREP" || -n "$PLAYWRIGHT_PROJECT" ) ]]; then
+  fail "Gunakan PHASE3B_PLAYWRIGHT_ARGS atau structured targeted vars, jangan keduanya"
+fi
+
+if [[ -n "$PLAYWRIGHT_FILE" || -n "$PLAYWRIGHT_GREP" || -n "$PLAYWRIGHT_PROJECT" ]]; then
+  step "npm ci + build/typecheck + lint + targeted Playwright (structured args)"
+elif [[ -n "$PLAYWRIGHT_ARGS" ]]; then
   step "npm ci + build/typecheck + lint + targeted Playwright: $PLAYWRIGHT_ARGS"
 else
   step "npm ci + build/typecheck + lint + full Playwright regression"
@@ -52,6 +61,9 @@ docker run --rm \
   -e CI=1 \
   -e PLAYWRIGHT_BASE_URL=http://127.0.0.1:5273 \
   -e "PHASE3B_PLAYWRIGHT_ARGS=$PLAYWRIGHT_ARGS" \
+  -e "PHASE3B_PLAYWRIGHT_FILE=$PLAYWRIGHT_FILE" \
+  -e "PHASE3B_PLAYWRIGHT_GREP=$PLAYWRIGHT_GREP" \
+  -e "PHASE3B_PLAYWRIGHT_PROJECT=$PLAYWRIGHT_PROJECT" \
   -v "$NPM_VOLUME:/root/.npm" \
   -v "$REPO:/workspace/frontend" \
   -v "$QA_DIR:/workspace/neverfade-pos-qa" \
@@ -81,8 +93,24 @@ docker run --rm \
       exit 1
     fi
 
-    if [[ -n "${PHASE3B_PLAYWRIGHT_ARGS:-}" ]]; then
-      # Targeted gate accepts a whitespace-separated Playwright argument string from the trusted QA command.
+    if [[ -n "${PHASE3B_PLAYWRIGHT_FILE:-}" || -n "${PHASE3B_PLAYWRIGHT_GREP:-}" || -n "${PHASE3B_PLAYWRIGHT_PROJECT:-}" ]]; then
+      playwright_args=()
+
+      if [[ -n "${PHASE3B_PLAYWRIGHT_FILE:-}" ]]; then
+        playwright_args+=("$PHASE3B_PLAYWRIGHT_FILE")
+      fi
+
+      if [[ -n "${PHASE3B_PLAYWRIGHT_GREP:-}" ]]; then
+        playwright_args+=(--grep "$PHASE3B_PLAYWRIGHT_GREP")
+      fi
+
+      if [[ -n "${PHASE3B_PLAYWRIGHT_PROJECT:-}" ]]; then
+        playwright_args+=(--project "$PHASE3B_PLAYWRIGHT_PROJECT")
+      fi
+
+      npx playwright test "${playwright_args[@]}"
+    elif [[ -n "${PHASE3B_PLAYWRIGHT_ARGS:-}" ]]; then
+      # Legacy path for simple whitespace-free targeted args.
       # shellcheck disable=SC2086
       npx playwright test $PHASE3B_PLAYWRIGHT_ARGS
     else
