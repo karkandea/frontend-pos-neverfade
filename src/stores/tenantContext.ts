@@ -3,6 +3,12 @@ import api from "../lib/api";
 import { businessModeOptions, capabilityLabels } from "../lib/businessModes";
 import type { TenantCapability, TenantContext } from "../types/platform";
 
+let restoreGeneration = 0;
+let restoreInFlight: {
+  token: string;
+  promise: Promise<void>;
+} | null = null;
+
 type TenantContextState = {
   context: TenantContext | null;
   loading: boolean;
@@ -54,31 +60,59 @@ export const useTenantContextStore = create<TenantContextState>((set, get) => ({
       return;
     }
 
-    set({ loading: true, error: "" });
+    if (restoreInFlight?.token === token) {
+      return restoreInFlight.promise;
+    }
+
+    const generation = ++restoreGeneration;
+    const promise = (async () => {
+      set({ loading: true, error: "" });
+
+      try {
+        const { data } = await api.get<unknown>("/api/tenant/context");
+        if (!isTenantContext(data)) {
+          throw new Error("Invalid tenant context response.");
+        }
+
+        if (generation !== restoreGeneration) {
+          return;
+        }
+
+        set({
+          context: data,
+          loading: false,
+          error: "",
+          loadedForToken: token,
+        });
+      } catch {
+        if (generation !== restoreGeneration) {
+          return;
+        }
+
+        set({
+          context: null,
+          loading: false,
+          error: "Konteks bisnis belum dapat dimuat. Coba lagi.",
+          loadedForToken: null,
+        });
+      }
+    })();
+
+    restoreInFlight = { token, promise };
 
     try {
-      const { data } = await api.get<unknown>("/api/tenant/context");
-      if (!isTenantContext(data)) {
-        throw new Error("Invalid tenant context response.");
+      await promise;
+    } finally {
+      if (restoreInFlight?.promise === promise) {
+        restoreInFlight = null;
       }
-
-      set({
-        context: data,
-        loading: false,
-        error: "",
-        loadedForToken: token,
-      });
-    } catch {
-      set({
-        context: null,
-        loading: false,
-        error: "Konteks bisnis belum dapat dimuat. Coba lagi.",
-        loadedForToken: null,
-      });
     }
   },
 
   clear: () => {
+    restoreGeneration += 1;
+    restoreInFlight = null;
+
     set({
       context: null,
       loading: false,
