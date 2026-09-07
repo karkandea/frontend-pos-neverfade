@@ -6,6 +6,7 @@ import {
   clearSharedDevice,
   clearSharedSession,
   getSharedDeviceToken,
+  lockSharedPosSession,
   punchSharedAttendance,
   unlockSharedPos,
 } from "../lib/sharedPos";
@@ -100,6 +101,26 @@ export default function SharedPosPage() {
       setUnlocked(null);
       setError(errorMessage(requestError));
     } finally {
+      setLoading(false);
+    }
+  }
+
+  async function lockSession() {
+    if (!unlocked || loading) {
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      await lockSharedPosSession();
+    } catch {
+      // lockSharedPosSession always clears the local session in finally.
+    } finally {
+      setUnlocked(null);
+      setPin("");
       setLoading(false);
     }
   }
@@ -240,13 +261,10 @@ export default function SharedPosPage() {
             <button
               type="button"
               style={styles.textButton}
-              onClick={() => {
-                clearSharedSession();
-                setUnlocked(null);
-                setError("");
-              }}
+              disabled={loading}
+              onClick={() => void lockSession()}
             >
-              Kunci kembali
+              {loading ? "Mengunci..." : "Kunci kembali"}
             </button>
           </div>
         )}
