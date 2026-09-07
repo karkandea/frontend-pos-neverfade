@@ -106,6 +106,69 @@ test("shared POS keeps invalid PIN on lock screen and auto-locks after punch", a
   expect(sharedSession).toBeNull();
 });
 
+test("manual Kunci kembali revokes backend session and clears local shared session", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("nf_shared_device_token", "device-test-token");
+    localStorage.setItem("nf_shared_mode", "1");
+  });
+
+  await page.route("**/api/shared-pos/unlock", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        sessionToken: "session-lock-token",
+        expiresAtUtc: "2026-09-02T09:00:00Z",
+        employee: {
+          id: employeeId,
+          nama: "Dewi Safitri",
+          jabatan: "Kasir",
+          role: null,
+          canAccessPos: false,
+        },
+        attendance: {
+          date: "2026-09-02",
+          status: "scheduled",
+          checkIn: null,
+          checkOut: null,
+          scheduleStart: "09:00",
+          scheduleEnd: "17:00",
+          exceptionType: null,
+          outsideSchedule: false,
+          nextAction: "checkin",
+        },
+        posToken: null,
+        posExpiresAtUtc: null,
+      }),
+    });
+  });
+
+  let lockCalled = 0;
+  await page.route("**/api/shared-pos/lock", async (route) => {
+    lockCalled += 1;
+    expect(route.request().headers()["x-nf-session-token"]).toBe("session-lock-token");
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true }),
+    });
+  });
+
+  await page.goto("/shared-pos");
+  await pressPin(page, "4321");
+
+  await expect(page.getByRole("heading", { name: "Halo, Dewi Safitri" })).toBeVisible();
+  await page.getByRole("button", { name: "Kunci kembali" }).click();
+
+  await expect(page.getByRole("heading", { name: "Masukkan PIN karyawan" })).toBeVisible();
+  expect(lockCalled).toBe(1);
+
+  const sharedSession = await page.evaluate(() =>
+    sessionStorage.getItem("nf_shared_session_token")
+  );
+  expect(sharedSession).toBeNull();
+});
+
 test("owner can activate current browser as shared POS without retaining owner token", async ({ page }) => {
   await page.addInitScript(() => {
     if (!window.location.pathname.startsWith("/shared-pos")) {
