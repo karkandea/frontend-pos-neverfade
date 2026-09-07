@@ -113,10 +113,16 @@ test("owner login waits for tenant context before capability routing", async ({ 
   await page.goto("/login");
   await page.getByLabel("Username").fill("owner");
   await page.getByLabel("Password", { exact: true }).fill("password");
-  await page.getByRole("button", { name: "Masuk" }).click();
+
+  const loginPromise = page.getByRole("button", { name: "Masuk" }).click();
+
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("button", { name: "Masuk…" })).toBeDisabled();
+  await expect(page).not.toHaveURL(/\/dashboard$/);
+
+  await loginPromise;
 
   await expect(page).toHaveURL(/\/produk$/);
-  await expect(page.getByText("Memuat...", { exact: true })).toBeVisible();
   await expect(page).not.toHaveURL(/\/dashboard$/);
   await expect(
     page.getByRole("heading", {
