@@ -12,6 +12,7 @@ import {
   reportLoginFailure,
 } from "../lib/loginTelemetry";
 import { useAuthStore } from "../stores/auth";
+import { useTenantContextStore } from "../stores/tenantContext";
 
 type LoginLocationState = {
   returnTo?: string;
@@ -60,7 +61,24 @@ export default function LoginPage() {
 
     try {
       await login(username, password, rememberMe);
-      const user = useAuthStore.getState().user;
+      const authState = useAuthStore.getState();
+      const token = authState.token;
+      const user = authState.user;
+
+      if (!token) {
+        throw new Error("Token login tidak tersedia.");
+      }
+
+      await useTenantContextStore.getState().restore(token);
+
+      const tenantContextState = useTenantContextStore.getState();
+      if (
+        tenantContextState.loadedForToken !== token ||
+        !tenantContextState.context
+      ) {
+        return;
+      }
+
       const returnTo = safeReturnPath(
         (location.state as LoginLocationState | null)?.returnTo
       );
