@@ -23,11 +23,26 @@ async function login(
     .locator("#login-password")
     .fill(password);
 
-  await Promise.all([
-    page.waitForURL(username === "kasir" ? "**/kasir" : "**/produk"),
+  const tenantContextResponse =
+    page.waitForResponse((response) => {
+      const url = new URL(response.url());
 
+      return (
+        url.pathname === "/api/tenant/context" &&
+        response.request().method() === "GET"
+      );
+    });
+
+  const [, contextResponse] = await Promise.all([
+    page.waitForURL(username === "kasir" ? "**/kasir" : "**/produk"),
+    tenantContextResponse,
     page.locator("#btn-login").click(),
   ]);
+
+  expect(
+    contextResponse.status(),
+    "Tenant context must load successfully after login."
+  ).toBe(200);
 
   await expect(page.getByRole("heading", {
     name: username === "kasir" ? "Kasir" : "Produk",
