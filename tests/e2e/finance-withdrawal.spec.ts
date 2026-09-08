@@ -470,7 +470,7 @@ test(
     ).toBeVisible();
 
     await expect(
-      page.getByText("•••• 6655")
+      page.getByText("•••• 6655", { exact: true })
     ).toBeVisible();
   }
 );
@@ -638,7 +638,7 @@ test(
       .click();
 
     await expect(
-      bankRow.getByText("Terverifikasi")
+      bankRow.getByText("Terverifikasi", { exact: true }).first()
     ).toBeVisible();
 
     const kopiRow = page
