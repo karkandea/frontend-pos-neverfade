@@ -21,6 +21,8 @@ export default function Sidebar({ open, onClose }: Props) {
   const canReports = hasCapability("reports");
   const canAttendance = hasCapability("attendance");
   const canFinance = hasCapability("finance_withdrawal");
+  const canTableOrders = hasCapability("table_orders");
+  const canKitchenQueue = hasCapability("kitchen_queue");
 
   const showManagement =
     user?.role !== "kasir" &&
@@ -106,6 +108,49 @@ export default function Sidebar({ open, onClose }: Props) {
             </svg>
 
             <span>Kasir</span>
+          </NavLink>
+        )}
+
+        {canTableOrders && (
+          <NavLink
+            to="/meja"
+            className={({ isActive }) =>
+              isActive ? "nav-item active" : "nav-item"
+            }
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <rect x="3" y="4" width="18" height="14" rx="2" />
+              <path d="M7 18v2M17 18v2M3 10h18" />
+            </svg>
+            <span>Meja</span>
+          </NavLink>
+        )}
+
+        {canKitchenQueue && (
+          <NavLink
+            to="/dapur"
+            className={({ isActive }) =>
+              isActive ? "nav-item active" : "nav-item"
+            }
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <path d="M4 3v18M9 3v8a4 4 0 0 1-4 4M15 3v6M19 3v6M15 6h4v15" />
+            </svg>
+            <span>Dapur</span>
           </NavLink>
         )}
 
