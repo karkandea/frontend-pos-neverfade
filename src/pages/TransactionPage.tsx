@@ -12,7 +12,6 @@ import {
   getRestaurantCheckout,
   markRestaurantCheckoutTransaction,
   resetRestaurantCheckoutTransaction,
-  saveRestaurantCheckout,
   type RestaurantCheckoutContext,
 } from "../lib/restaurantCheckout";
 import type { RestaurantOrder, RestaurantProduct } from "../types/restaurant";
