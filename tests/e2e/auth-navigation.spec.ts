@@ -58,6 +58,10 @@ test("Ingat saya controls persistent versus terminal-only session", async ({ pag
 
 test("owner login waits for tenant context before capability routing", async ({ page }) => {
   let tenantContextRequests = 0;
+  let releaseTenantContext!: () => void;
+  const tenantContextGate = new Promise<void>((resolve) => {
+    releaseTenantContext = resolve;
+  });
 
   await page.route("**/api/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
@@ -85,7 +89,7 @@ test("owner login waits for tenant context before capability routing", async ({ 
 
     if (path === "/api/tenant/context") {
       tenantContextRequests += 1;
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await tenantContextGate;
 
       return json(route, {
         tenantId: "99999999-9999-9999-9999-999999999999",
@@ -114,13 +118,14 @@ test("owner login waits for tenant context before capability routing", async ({ 
   await page.getByLabel("Username").fill("owner");
   await page.getByLabel("Password", { exact: true }).fill("password");
 
-  const loginPromise = page.getByRole("button", { name: "Masuk" }).click();
+  await page.getByRole("button", { name: "Masuk" }).click();
 
+  await expect.poll(() => tenantContextRequests).toBe(1);
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("button", { name: "Masuk…" })).toBeDisabled();
+  await expect(page.getByText("Memuat...", { exact: true })).toBeVisible();
   await expect(page).not.toHaveURL(/\/dashboard$/);
 
-  await loginPromise;
+  releaseTenantContext();
 
   await expect(page).toHaveURL(/\/produk$/);
   await expect(page).not.toHaveURL(/\/dashboard$/);
