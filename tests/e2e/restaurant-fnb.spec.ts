@@ -351,8 +351,8 @@ test(
       .click();
 
     await expect(
-      page.getByText("Tanpa es", { exact: true })
-    ).toBeVisible();
+      page.getByLabel("Catatan Es Kopi Susu")
+    ).toHaveValue("Tanpa es");
 
     await page
       .getByRole("button", { name: "Kirim Draft ke Dapur" })
