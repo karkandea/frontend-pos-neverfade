@@ -7,6 +7,15 @@ import ReceiptModal from "../components/kasir/ReceiptModal";
 import PaymentSuccessModal from "../components/kasir/PaymentSuccessModal";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
+import {
+  clearRestaurantCheckout,
+  getRestaurantCheckout,
+  markRestaurantCheckoutTransaction,
+  resetRestaurantCheckoutTransaction,
+  saveRestaurantCheckout,
+  type RestaurantCheckoutContext,
+} from "../lib/restaurantCheckout";
+import type { RestaurantOrder, RestaurantProduct } from "../types/restaurant";
 import type {
   PaymentCapabilities,
   PaymentStatus,
@@ -212,6 +221,12 @@ export default function TransactionPage() {
   } | null>(null);
   const [receiptLoading, setReceiptLoading] = useState(false);
   const [receiptError, setReceiptError] = useState("");
+  const [restaurantCheckout, setRestaurantCheckout] =
+    useState<RestaurantCheckoutContext | null>(
+      () => getRestaurantCheckout()
+    );
+  const [restaurantLinkError, setRestaurantLinkError] =
+    useState("");
 
   const [submitting, setSubmitting] =
     useState(false);
@@ -309,6 +324,8 @@ export default function TransactionPage() {
         ))
       );
 
+      await restoreRestaurantCheckout(productResponse.data);
+
       if (capabilitiesResponse.data.qrisEnabled) {
         await restoreQrisPayment();
       }
@@ -317,6 +334,117 @@ export default function TransactionPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function restoreRestaurantCheckout(
+    currentProducts: RestaurantProduct[]
+  ) {
+    const context = getRestaurantCheckout();
+    setRestaurantCheckout(context);
+    setRestaurantLinkError("");
+
+    if (!context) {
+      return;
+    }
+
+    if (
+      context.transactionId &&
+      context.paymentMethod === "tunai"
+    ) {
+      await finalizeRestaurantOrder(
+        context.transactionId,
+        context
+      );
+      return;
+    }
+
+    if (
+      context.transactionId &&
+      context.paymentMethod === "qris"
+    ) {
+      return;
+    }
+
+    try {
+      const { data } = await api.get<RestaurantOrder>(
+        `/api/restaurant/orders/${context.orderId}`
+      );
+
+      if (data.status !== "open") {
+        clearRestaurantCheckout();
+        setRestaurantCheckout(null);
+        return;
+      }
+
+      const activeItems = data.items.filter(
+        (item) => item.kitchenStatus !== "cancelled"
+      );
+
+      const nextCart: CartItem[] = activeItems.map((item) => {
+        const product = currentProducts.find(
+          (entry) => entry.id === item.productId
+        );
+
+        if (!product) {
+          throw new Error(
+            `${item.nama} sudah tidak tersedia di katalog POS.`
+          );
+        }
+
+        return {
+          id: product.id,
+          nama: product.nama,
+          hargaJual: product.hargaJual,
+          qty: item.qty,
+          subtotal: product.hargaJual * item.qty,
+        };
+      });
+
+      setCart(nextCart);
+      setCustomerId("");
+      setDiscount(0);
+    } catch (error) {
+      setRestaurantLinkError(
+        `Pesanan meja belum dapat dimuat ke Kasir. ${getErrorMessage(error)}`
+      );
+    }
+  }
+
+  async function finalizeRestaurantOrder(
+    transactionId: string,
+    explicitContext?: RestaurantCheckoutContext | null
+  ) {
+    const context =
+      explicitContext ??
+      restaurantCheckout ??
+      getRestaurantCheckout();
+
+    if (!context) {
+      return true;
+    }
+
+    try {
+      await api.post(
+        `/api/restaurant/orders/${context.orderId}/close`,
+        { transactionId }
+      );
+
+      clearRestaurantCheckout();
+      setRestaurantCheckout(null);
+      setRestaurantLinkError("");
+      return true;
+    } catch (error) {
+      setRestaurantLinkError(
+        `Pembayaran sudah berhasil, tetapi ${context.tableName} belum berhasil ditutup. Jangan bayar ulang. ${getErrorMessage(error)}`
+      );
+      return false;
+    }
+  }
+
+  function resetRestaurantPaymentLink() {
+    const reset = resetRestaurantCheckoutTransaction();
+    setRestaurantCheckout(reset);
+    setRestaurantLinkError("");
   }
 
   async function reloadProducts() {
@@ -368,6 +496,7 @@ export default function TransactionPage() {
         await Promise.all([
           loadReceipt(payment.transactionId),
           reloadProducts(),
+          finalizeRestaurantOrder(payment.transactionId),
         ]);
       } else if (
         status.status === "pending" ||
@@ -448,7 +577,13 @@ export default function TransactionPage() {
       await Promise.all([
         loadReceipt(payment.transactionId),
         reloadProducts(),
+        finalizeRestaurantOrder(payment.transactionId),
       ]);
+    } else if (
+      status === "failed" ||
+      status === "expired"
+    ) {
+      resetRestaurantPaymentLink();
     }
   }
 
@@ -469,6 +604,14 @@ export default function TransactionPage() {
       setQrisPayment(restored);
       setQrisStatus(data.status);
       persistPayment(restored);
+
+      if (
+        data.status !== "pending" &&
+        data.status !== "creating"
+      ) {
+        resetRestaurantPaymentLink();
+      }
+
       await restoreSaleContext(restored.transactionId);
     } catch (error) {
       setQrisStatusError(
@@ -534,6 +677,13 @@ export default function TransactionPage() {
   }
 
   function addToCart(product: Product) {
+    if (restaurantCheckout) {
+      window.alert(
+        "Item pesanan meja dikunci di Kasir. Ubah item dari halaman Meja."
+      );
+      return;
+    }
+
     setCart((current) => {
       const existing = current.find(
         (item) => item.id === product.id
@@ -583,6 +733,13 @@ export default function TransactionPage() {
   }
 
   function increase(productId: string) {
+    if (restaurantCheckout) {
+      window.alert(
+        "Qty pesanan meja dikunci di Kasir. Ubah dari halaman Meja."
+      );
+      return;
+    }
+
     const product = getProduct(productId);
 
     setCart((current) =>
@@ -615,6 +772,13 @@ export default function TransactionPage() {
   }
 
   function decrease(productId: string) {
+    if (restaurantCheckout) {
+      window.alert(
+        "Qty pesanan meja dikunci di Kasir. Ubah dari halaman Meja."
+      );
+      return;
+    }
+
     setCart((current) =>
       current
         .map((item) => {
@@ -635,6 +799,13 @@ export default function TransactionPage() {
   }
 
   function remove(productId: string) {
+    if (restaurantCheckout) {
+      window.alert(
+        "Item pesanan meja dikunci di Kasir. Ubah dari halaman Meja."
+      );
+      return;
+    }
+
     setCart((current) =>
       current.filter(
         (item) => item.id !== productId
@@ -652,6 +823,13 @@ export default function TransactionPage() {
   }
 
   function requestClearCart() {
+    if (restaurantCheckout) {
+      window.alert(
+        "Keranjang berasal dari pesanan meja dan tidak dapat dikosongkan dari Kasir."
+      );
+      return;
+    }
+
     const unitCount = cart.reduce(
       (sum, item) => sum + item.qty,
       0
@@ -733,6 +911,13 @@ export default function TransactionPage() {
   }
 
   async function checkout() {
+    if (restaurantCheckout?.transactionId) {
+      window.alert(
+        "Pembayaran pesanan meja sebelumnya sudah dibuat. Sinkronkan penutupan meja sebelum membuat pembayaran baru."
+      );
+      return;
+    }
+
     if (
       submissionLock.current ||
       submitting ||
@@ -817,6 +1002,14 @@ export default function TransactionPage() {
         );
         const payment = paymentResponse.data;
 
+        if (restaurantCheckout) {
+          const linked = markRestaurantCheckoutTransaction(
+            payment.transactionId,
+            "qris"
+          );
+          setRestaurantCheckout(linked);
+        }
+
         persistPayment(payment);
         setQrisPayment(payment);
         setQrisStatus(payment.status);
@@ -831,6 +1024,19 @@ export default function TransactionPage() {
         "/api/transactions",
         payload
       );
+
+      if (restaurantCheckout) {
+        const linked = markRestaurantCheckoutTransaction(
+          response.data.id,
+          "tunai"
+        );
+
+        setRestaurantCheckout(linked);
+        await finalizeRestaurantOrder(
+          response.data.id,
+          linked
+        );
+      }
 
       setReceipt({
         transactionId: response.data.id,
@@ -878,6 +1084,7 @@ export default function TransactionPage() {
 
   function closeFailedQris() {
     removePersistedPayment();
+    resetRestaurantPaymentLink();
     setQrisPayment(null);
     setQrisStatus(null);
     setQrisStatusError("");
@@ -913,6 +1120,40 @@ export default function TransactionPage() {
           </div>
 
         </div>
+
+
+        {restaurantCheckout ? (
+          <div className="restaurant-checkout-banner" role="status">
+            <div>
+              <strong>
+                Pesanan meja · {restaurantCheckout.tableName}
+              </strong>
+              <span>
+                {restaurantCheckout.orderNumber} · Item dan qty dikunci dari halaman Meja.
+              </span>
+            </div>
+            {restaurantCheckout.transactionId ? (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() =>
+                  void finalizeRestaurantOrder(
+                    restaurantCheckout.transactionId!
+                  )
+                }
+              >
+                Sinkronkan Meja
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {restaurantLinkError ? (
+          <div className="payment-recovery-banner" role="alert">
+            <strong>Sinkronisasi pesanan meja perlu perhatian.</strong>
+            <span>{restaurantLinkError}</span>
+          </div>
+        ) : null}
 
         {qrisStatusError && !qrisPayment ? (
           <div className="payment-recovery-banner" role="alert">
