@@ -403,6 +403,251 @@ test(
 );
 
 test(
+  "restaurant QRIS stays linked until provider paid then closes order exactly once",
+  async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "Desktop Chromium",
+      "Payment-state reconciliation runs once on desktop."
+    );
+
+    await tenantSession(page);
+
+    const paymentId =
+      "77777777-7777-7777-7777-777777777777";
+    const qrisTransactionId =
+      "88888888-8888-8888-8888-888888888888";
+
+    let statusCount = 0;
+    let closeCalls = 0;
+
+    const restaurantOrder = {
+      id: orderId,
+      orderNumber: "FNB-QA-QRIS",
+      tableId,
+      tableCode: "A1",
+      tableName: "Meja A1",
+      status: "open",
+      transactionId: null,
+      cancellationReason: null,
+      openedAt: "2026-09-08T05:00:00Z",
+      updatedAt: "2026-09-08T05:00:00Z",
+      closedAt: null,
+      cancelledAt: null,
+      subtotal: 18000,
+      items: [
+        {
+          id: itemId,
+          productId,
+          nama: product.nama,
+          hargaJual: product.hargaJual,
+          qty: 1,
+          subtotal: 18000,
+          note: "Tanpa es",
+          kitchenStatus: "queued",
+          createdAt: "2026-09-08T05:01:00Z",
+          queuedAt: "2026-09-08T05:02:00Z",
+          preparingAt: null,
+          readyAt: null,
+          servedAt: null,
+        },
+      ],
+    };
+
+    await page.addInitScript(
+      ({ orderId, orderNumber, tableName }) => {
+        localStorage.setItem(
+          "nfpos_restaurant_checkout",
+          JSON.stringify({
+            orderId,
+            orderNumber,
+            tableName,
+            transactionId: null,
+            paymentMethod: null,
+          })
+        );
+      },
+      {
+        orderId,
+        orderNumber: "FNB-QA-QRIS",
+        tableName: "Meja A1",
+      }
+    );
+
+    await page.route("**/api/**", async (route) => {
+      const request = route.request();
+      const path = new URL(request.url()).pathname;
+
+      if (
+        path === "/api/auth/me" ||
+        path === "/api/tenant/context"
+      ) {
+        return route.fallback();
+      }
+
+      if (
+        path === `/api/restaurant/orders/${orderId}` &&
+        request.method() === "GET"
+      ) {
+        return json(route, restaurantOrder);
+      }
+
+      if (path === "/api/products") {
+        return json(route, [product]);
+      }
+
+      if (path === "/api/customers") {
+        return json(route, []);
+      }
+
+      if (path === "/api/settings") {
+        return json(route, {
+          defaultTax: 0,
+          headerStruk: "",
+          footerStruk: "",
+        });
+      }
+
+      if (path === "/api/payments/capabilities") {
+        return json(route, {
+          qrisEnabled: true,
+          mode: "sandbox",
+          isSandbox: true,
+        });
+      }
+
+      if (path === "/api/payments/current") {
+        return route.fulfill({ status: 204, body: "" });
+      }
+
+      if (
+        path === "/api/payments/qris" &&
+        request.method() === "POST"
+      ) {
+        return json(route, {
+          id: paymentId,
+          transactionId: qrisTransactionId,
+          providerPaymentRequestId: "pr-fnb-qris",
+          providerReferenceId: "nf-fnb-qris",
+          amount: 18000,
+          currency: "IDR",
+          status: "pending",
+          qrString:
+            "00020101021226670016COM.NOBUBANK.WWW01189360050300000879140214123456789012340303UMI51440014ID.CO.QRIS.WWW0215ID10200211800100303UMI5204581253033605405180005802ID5915NEVERFADE QA6007JAKARTA6105123406304ABCD",
+          expiresAt: "2099-09-08T06:00:00Z",
+        });
+      }
+
+      if (
+        path === `/api/payments/${paymentId}` &&
+        request.method() === "GET"
+      ) {
+        const current =
+          statusCount++ === 0 ? "pending" : "paid";
+
+        return json(route, {
+          id: paymentId,
+          transactionId: qrisTransactionId,
+          providerPaymentRequestId: "pr-fnb-qris",
+          providerReferenceId: "nf-fnb-qris",
+          amount: 18000,
+          currency: "IDR",
+          status: current,
+          qrString:
+            "00020101021226670016COM.NOBUBANK.WWW01189360050300000879140214123456789012340303UMI51440014ID.CO.QRIS.WWW0215ID10200211800100303UMI5204581253033605405180005802ID5915NEVERFADE QA6007JAKARTA6105123406304ABCD",
+          expiresAt: "2099-09-08T06:00:00Z",
+          failureCode: null,
+          updatedAt: "2026-09-08T05:10:00Z",
+        });
+      }
+
+      if (
+        path === `/api/transactions/${qrisTransactionId}` &&
+        request.method() === "GET"
+      ) {
+        return json(route, {
+          id: qrisTransactionId,
+          customerId: null,
+          customerNama: "",
+          tanggal: "2026-09-08T05:10:00Z",
+          kasir: "Owner FNB",
+          kasirId: owner.id,
+          disc: 0,
+          tax: 0,
+          noTrx: "TRX-FNB-QRIS-001",
+          subtotal: 18000,
+          discAmt: 0,
+          taxAmt: 0,
+          total: 18000,
+          dibayar: 18000,
+          kembalian: 0,
+          metodePembayaran: "QRIS",
+          items: [
+            {
+              id: productId,
+              nama: product.nama,
+              hargaJual: 18000,
+              qty: 1,
+              subtotal: 18000,
+            },
+          ],
+        });
+      }
+
+      if (
+        path === `/api/restaurant/orders/${orderId}/close` &&
+        request.method() === "POST"
+      ) {
+        closeCalls += 1;
+
+        const payload = request.postDataJSON() as {
+          transactionId: string;
+        };
+
+        expect(payload.transactionId).toBe(qrisTransactionId);
+
+        return json(route, {
+          ...restaurantOrder,
+          status: "closed",
+          transactionId: qrisTransactionId,
+          closedAt: "2026-09-08T05:10:01Z",
+        });
+      }
+
+      return json(route, {});
+    });
+
+    await page.goto("/kasir");
+
+    await expect(
+      page.getByText("Pesanan meja · Meja A1", {
+        exact: true,
+      })
+    ).toBeVisible();
+
+    await page
+      .locator(".payment-options")
+      .getByRole("button", { name: "QRIS" })
+      .click();
+
+    await page
+      .getByRole("button", { name: "Proses Transaksi" })
+      .click();
+
+    await expect(
+      page.getByText("QRIS berhasil dibayar")
+    ).toBeVisible({ timeout: 12000 });
+
+    await expect.poll(() => closeCalls).toBe(1);
+
+    await expect.poll(async () =>
+      page.evaluate(() =>
+        localStorage.getItem("nfpos_restaurant_checkout")
+      )
+    ).toBeNull();
+  }
+);
+
+test(
   "kitchen queue advances queued to preparing to ready to served",
   async ({ page }) => {
     await tenantSession(page);
