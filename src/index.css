@@ -941,3 +941,476 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Phase 3C · Restaurant / F&B */
+.restaurant-page,
+.kitchen-page {
+  display: grid;
+  gap: 18px;
+}
+
+.restaurant-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.restaurant-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 330px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.restaurant-table-panel,
+.restaurant-order-panel {
+  min-width: 0;
+}
+
+.restaurant-table-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.restaurant-table-card {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card-bg, #fff);
+  color: var(--text-h);
+  text-align: left;
+  cursor: pointer;
+}
+
+.restaurant-table-card:hover,
+.restaurant-table-card.selected {
+  border-color: var(--accent);
+}
+
+.restaurant-table-card.selected {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .10);
+}
+
+.restaurant-table-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.restaurant-table-card small {
+  color: var(--text-muted);
+}
+
+.restaurant-table-status,
+.restaurant-kitchen-status {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.restaurant-table-status.available,
+.restaurant-kitchen-status.ready,
+.restaurant-kitchen-status.served {
+  background: #e7f8ee;
+  color: #167745;
+}
+
+.restaurant-table-status.occupied,
+.restaurant-kitchen-status.queued {
+  background: #fff7db;
+  color: #8a6500;
+}
+
+.restaurant-table-status.inactive,
+.restaurant-kitchen-status.cancelled,
+.restaurant-kitchen-status.draft {
+  background: #f2f4f7;
+  color: #475467;
+}
+
+.restaurant-kitchen-status.preparing {
+  background: #e8f1ff;
+  color: #175cd3;
+}
+
+.restaurant-table-edit {
+  margin-top: 4px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.restaurant-table-form-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.restaurant-table-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+.restaurant-table-form label,
+.restaurant-product-controls {
+  color: var(--text-h);
+}
+
+.restaurant-table-form label {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.restaurant-table-form input,
+.restaurant-product-controls input,
+.restaurant-draft-note input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--input-bg, #fff);
+  color: var(--text-h);
+  padding: 10px 11px;
+  font: inherit;
+  outline: none;
+}
+
+.restaurant-table-form input:focus,
+.restaurant-product-controls input:focus,
+.restaurant-draft-note input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .10);
+}
+
+.restaurant-checkbox-label {
+  display: flex !important;
+  grid-column: 1 / -1;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.restaurant-checkbox-label input {
+  width: auto;
+}
+
+.restaurant-table-form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.restaurant-open-order-state {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  min-height: 280px;
+  align-content: center;
+}
+
+.restaurant-order-header,
+.kitchen-order-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.restaurant-order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.restaurant-order-items,
+.restaurant-product-picker {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.restaurant-order-item-list {
+  display: grid;
+  gap: 10px;
+}
+
+.restaurant-order-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.restaurant-order-item:last-child {
+  border-bottom: 0;
+}
+
+.restaurant-order-item-main,
+.restaurant-order-item-end {
+  display: grid;
+  gap: 7px;
+}
+
+.restaurant-order-item-main small,
+.restaurant-order-item-end small {
+  color: var(--text-muted);
+}
+
+.restaurant-order-item-end {
+  justify-items: end;
+  text-align: right;
+}
+
+.restaurant-draft-note {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.restaurant-qty-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.restaurant-qty-actions button {
+  min-width: 32px;
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg, #fff);
+  color: var(--text-h);
+}
+
+.restaurant-qty-actions .restaurant-remove-item {
+  padding-inline: 10px;
+  color: #b42318;
+}
+
+.restaurant-product-controls {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 10px;
+}
+
+.restaurant-product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.restaurant-product-card {
+  display: grid;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+
+.restaurant-product-card > div {
+  display: grid;
+  gap: 4px;
+}
+
+.restaurant-product-card small {
+  color: var(--text-muted);
+}
+
+.kitchen-filter-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.restaurant-filter-chip {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card-bg, #fff);
+  color: var(--text-h);
+  padding: 8px 11px;
+  white-space: nowrap;
+}
+
+.restaurant-filter-chip span {
+  min-width: 22px;
+  border-radius: 999px;
+  background: #f2f4f7;
+  padding: 2px 6px;
+  font-size: 11px;
+  text-align: center;
+}
+
+.restaurant-filter-chip.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.kitchen-order-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.kitchen-order-card {
+  min-width: 0;
+}
+
+.kitchen-order-count {
+  border-radius: 999px;
+  background: #f2f4f7;
+  color: #475467;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.kitchen-item-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.kitchen-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 12px;
+}
+
+.kitchen-item-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.kitchen-item-copy > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.kitchen-item-copy p,
+.kitchen-item-copy small {
+  margin: 0;
+}
+
+.kitchen-item-copy p {
+  color: var(--text-h);
+}
+
+.kitchen-item-copy small,
+.kitchen-no-note {
+  color: var(--text-muted) !important;
+}
+
+.kitchen-empty {
+  min-height: 260px;
+}
+
+.restaurant-checkout-banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid #bfd4ff;
+  border-radius: 10px;
+  background: #f3f7ff;
+  color: #174ea6;
+}
+
+.restaurant-checkout-banner > div {
+  display: grid;
+  gap: 3px;
+}
+
+.restaurant-checkout-banner span {
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .restaurant-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .restaurant-table-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .restaurant-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .restaurant-table-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .restaurant-heading,
+  .restaurant-order-header,
+  .kitchen-order-header,
+  .restaurant-checkout-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .restaurant-table-grid,
+  .restaurant-product-grid,
+  .kitchen-order-grid,
+  .restaurant-product-controls,
+  .restaurant-table-form {
+    grid-template-columns: 1fr;
+  }
+
+  .restaurant-order-actions {
+    justify-content: stretch;
+  }
+
+  .restaurant-order-actions .btn,
+  .restaurant-heading .btn {
+    width: 100%;
+  }
+
+  .restaurant-order-item,
+  .kitchen-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .restaurant-order-item-end {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .restaurant-draft-note {
+    grid-template-columns: 1fr;
+  }
+}
