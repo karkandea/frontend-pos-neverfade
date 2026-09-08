@@ -378,6 +378,14 @@ test(
       page.getByText("Es Kopi Susu", { exact: true }).first()
     ).toBeVisible();
 
+    const mobileCartDock = page.getByRole("button", {
+      name: /Buka keranjang/,
+    });
+
+    if (await mobileCartDock.isVisible()) {
+      await mobileCartDock.click();
+    }
+
     await page.getByLabel("Uang Diterima").fill("18000");
 
     await page
