@@ -220,7 +220,7 @@ test(
       page.getByRole("heading", { name: "Rekening Payout" })
     ).toBeVisible();
 
-    await expect(page.getByText("Terverifikasi")).toBeVisible();
+    await expect(page.getByText("Terverifikasi", { exact: true })).toBeVisible();
     await expect(page.getByText("•••• 7890").first()).toBeVisible();
 
     await page.getByLabel("Jumlah pencairan").fill("250000");
@@ -466,7 +466,7 @@ test(
     ).toBeVisible();
 
     await expect(
-      page.getByText("Menunggu verifikasi")
+      page.getByText("Menunggu verifikasi", { exact: true })
     ).toBeVisible();
 
     await expect(
@@ -620,7 +620,7 @@ test(
     await page.goto("/platform/withdrawals");
 
     await expect(
-      page.getByRole("heading", { name: "Pencairan" })
+      page.getByRole("heading", { name: "Pencairan", exact: true })
     ).toBeVisible();
 
     const bankRow = page
