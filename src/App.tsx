@@ -19,6 +19,8 @@ import KasirPage from "./pages/KasirPage";
 import KaryawanPage from "./pages/KaryawanPage";
 import LaporanPage from "./pages/LaporanPage";
 import FinancePage from "./pages/FinancePage";
+import RestaurantTablesPage from "./pages/RestaurantTablesPage";
+import KitchenQueuePage from "./pages/KitchenQueuePage";
 import LoginPage from "./pages/LoginPage";
 import PelangganPage from "./pages/PelangganPage";
 import PengaturanPage from "./pages/PengaturanPage";
@@ -82,6 +84,8 @@ const pageTitles: Record<string, string> = {
   "/transaksi": "Transaksi",
   "/laporan": "Laporan",
   "/keuangan": "Keuangan",
+  "/meja": "Meja & Pesanan",
+  "/dapur": "Dapur",
   "/karyawan": "Karyawan",
   "/absensi": "Absensi",
   "/absensi/kelola": "Kelola Absensi",
@@ -304,6 +308,16 @@ export default function App() {
         <Route
           path="/keuangan"
           element={protectedPage(<FinancePage />, false, true, "finance_withdrawal")}
+        />
+
+        <Route
+          path="/meja"
+          element={protectedPage(<RestaurantTablesPage />, false, false, "table_orders")}
+        />
+
+        <Route
+          path="/dapur"
+          element={protectedPage(<KitchenQueuePage />, false, false, "kitchen_queue")}
         />
 
         <Route
