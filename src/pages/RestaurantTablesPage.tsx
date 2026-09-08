@@ -161,11 +161,15 @@ export default function RestaurantTablesPage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    // Async network loader is intentionally started once on mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadBase(controller.signal);
     return () => controller.abort();
   }, [loadBase]);
 
   useEffect(() => {
+    // Selected-table changes intentionally trigger async order loading.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadOrder(selectedTable?.openOrderId ?? null);
   }, [selectedTable?.openOrderId, loadOrder]);
 
