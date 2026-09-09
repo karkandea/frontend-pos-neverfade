@@ -1,6 +1,9 @@
 export const RESTAURANT_CHECKOUT_KEY =
   "nfpos_restaurant_checkout";
 
+const LAUNDRY_CHECKOUT_KEY =
+  "nfpos_laundry_checkout";
+
 export type RestaurantCheckoutContext = {
   orderId: string;
   orderNumber: string;
@@ -47,6 +50,8 @@ export function startRestaurantCheckout(
   orderNumber: string,
   tableName: string
 ) {
+  localStorage.removeItem(LAUNDRY_CHECKOUT_KEY);
+
   return saveRestaurantCheckout({
     orderId,
     orderNumber,

@@ -6,20 +6,7 @@ import {
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
 import { SkeletonTable } from "../components/common/Skeleton";
-
-type Product = {
-  id: string;
-  kode: string;
-  barcode?: string;
-  nama: string;
-  kategori: string;
-  hargaModal: number;
-  hargaJual: number;
-  stok: number;
-  supplier?: string;
-  satuan?: string;
-  deskripsi?: string;
-};
+import type { Product } from "../types/product";
 
 type Form = {
   kode: string;
@@ -32,6 +19,9 @@ type Form = {
   supplier: string;
   satuan: string;
   deskripsi: string;
+  type: "goods" | "service";
+  tracksStock: boolean;
+  quantityPrecision: number;
 };
 
 const emptyForm: Form = {
@@ -45,6 +35,9 @@ const emptyForm: Form = {
   supplier: "",
   satuan: "",
   deskripsi: "",
+  type: "goods",
+  tracksStock: true,
+  quantityPrecision: 0,
 };
 
 export default function ProductPage() {
@@ -139,6 +132,9 @@ export default function ProductPage() {
       supplier: product.supplier ?? "",
       satuan: product.satuan ?? "",
       deskripsi: product.deskripsi ?? "",
+      type: product.type ?? "goods",
+      tracksStock: product.tracksStock ?? true,
+      quantityPrecision: product.quantityPrecision ?? 0,
     });
 
     setOpen(true);
@@ -184,12 +180,47 @@ export default function ProductPage() {
     });
   }
 
+  function changeType(
+    type: "goods" | "service"
+  ) {
+    setForm((current) =>
+      type === "service"
+        ? {
+            ...current,
+            type,
+            tracksStock: false,
+            stok: 0,
+            quantityPrecision:
+              current.quantityPrecision > 0
+                ? current.quantityPrecision
+                : 2,
+          }
+        : {
+            ...current,
+            type,
+            tracksStock: true,
+            quantityPrecision: 0,
+          }
+    );
+  }
+
   async function save() {
     const payload = {
       ...form,
       hargaModal: Number(form.hargaModal),
       hargaJual: Number(form.hargaJual),
-      stok: Number(form.stok),
+      stok:
+        form.type === "service" || !form.tracksStock
+          ? 0
+          : Number(form.stok),
+      tracksStock:
+        form.type === "service"
+          ? false
+          : form.tracksStock,
+      quantityPrecision:
+        form.type === "goods"
+          ? 0
+          : Number(form.quantityPrecision),
     };
 
     if (editingId) {
@@ -248,6 +279,7 @@ export default function ProductPage() {
                   <th>Kode</th>
                   <th>Barcode</th>
                   <th>Nama</th>
+                  <th>Tipe</th>
                   <th>Kategori</th>
                   <th>Harga Modal</th>
                   <th>Harga Jual</th>
@@ -263,10 +295,13 @@ export default function ProductPage() {
                     <td>{p.kode}</td>
                     <td>{p.barcode ?? "-"}</td>
                     <td>{p.nama}</td>
+                    <td>
+                      {p.type === "service" ? "Jasa" : "Barang"}
+                    </td>
                     <td>{p.kategori}</td>
                     <td>{p.hargaModal}</td>
                     <td>{p.hargaJual}</td>
-                    <td>{p.stok}</td>
+                    <td>{p.tracksStock ? p.stok : "-"}</td>
                     <td>{p.satuan ?? "-"}</td>
                     <td style={{ display: "flex", gap: 8 }}>
                       <button
@@ -304,6 +339,21 @@ export default function ProductPage() {
             {/* BODY */}
             <div className="modal-body">
               <div className="form-grid-2">
+                <div className="form-group">
+                  <label>Tipe</label>
+                  <select
+                    value={form.type}
+                    onChange={(event) =>
+                      changeType(
+                        event.target.value as "goods" | "service"
+                      )
+                    }
+                  >
+                    <option value="goods">Barang</option>
+                    <option value="service">Jasa / layanan</option>
+                  </select>
+                </div>
+
                 <div className="form-group">
                   <label>Kode</label>
                   <input
@@ -364,15 +414,58 @@ export default function ProductPage() {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label>Stok</label>
-                  <input
-                    name="stok"
-                    type="number"
-                    value={form.stok}
-                    onChange={onChange}
-                  />
-                </div>
+                {form.type === "goods" ? (
+                  <>
+                    <div className="form-group">
+                      <label>Lacak stok</label>
+                      <label className="product-stock-toggle">
+                        <input
+                          type="checkbox"
+                          checked={form.tracksStock}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              tracksStock: event.target.checked,
+                              stok: event.target.checked ? current.stok : 0,
+                            }))
+                          }
+                        />
+                        Stok berkurang saat transaksi
+                      </label>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Stok</label>
+                      <input
+                        name="stok"
+                        type="number"
+                        min={0}
+                        step={1}
+                        disabled={!form.tracksStock}
+                        value={form.stok}
+                        onChange={onChange}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="form-group">
+                    <label>Presisi jumlah</label>
+                    <select
+                      value={form.quantityPrecision}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          quantityPrecision: Number(event.target.value),
+                        }))
+                      }
+                    >
+                      <option value={0}>Bulat</option>
+                      <option value={1}>1 desimal</option>
+                      <option value={2}>2 desimal</option>
+                      <option value={3}>3 desimal</option>
+                    </select>
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label>Satuan</label>

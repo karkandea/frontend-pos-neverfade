@@ -1,14 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-
-type Product = {
-  id: string;
-  kode: string;
-  barcode?: string;
-  nama: string;
-  kategori: string;
-  hargaJual: number;
-  stok: number;
-};
+import type { Product } from "../../types/product";
 
 type Props = {
   products: Product[];
@@ -20,6 +11,7 @@ type Props = {
   onAdd: (product: Product) => void;
   onIncrease: (id: string) => void;
   onDecrease: (id: string) => void;
+  onQuantityChange: (id: string, quantity: number) => void;
   quantityById: Map<string, number>;
 };
 
@@ -28,6 +20,7 @@ type QuantityControlProps = {
   quantity: number;
   onIncrease: (id: string) => void;
   onDecrease: (id: string) => void;
+  onQuantityChange: (id: string, quantity: number) => void;
 };
 
 const formatCurrency = (value: number) =>
@@ -42,6 +35,7 @@ function QuantityControl({
   quantity,
   onIncrease,
   onDecrease,
+  onQuantityChange,
 }: QuantityControlProps) {
   const [draft, setDraft] = useState(String(quantity));
   const editingRef = useRef(false);
@@ -60,35 +54,53 @@ function QuantityControl({
       return;
     }
 
-    const parsed = Math.trunc(Number(draft));
+    const parsed = Number(draft);
 
     if (!Number.isFinite(parsed)) {
       setDraft(String(quantity));
       return;
     }
 
-    const target = Math.min(
-      product.stok,
-      Math.max(1, parsed)
+    const precision =
+      product.type === "service"
+        ? product.quantityPrecision
+        : 0;
+
+    const rounded = Number(
+      parsed.toFixed(precision)
     );
 
-    if (parsed > product.stok) {
+    const target =
+      product.tracksStock
+        ? Math.min(
+            product.stok,
+            Math.max(
+              product.type === "service"
+                ? Math.pow(10, -precision)
+                : 1,
+              rounded
+            )
+          )
+        : Math.max(
+            product.type === "service"
+              ? Math.pow(10, -precision)
+              : 1,
+            rounded
+          );
+
+    if (
+      product.tracksStock &&
+      rounded > product.stok
+    ) {
       window.alert(
         `Stok ${product.nama} hanya ${product.stok}.`
       );
     }
 
-    const difference = target - quantity;
-
-    if (difference > 0) {
-      for (let index = 0; index < difference; index += 1) {
-        onIncrease(product.id);
-      }
-    } else if (difference < 0) {
-      for (let index = 0; index < Math.abs(difference); index += 1) {
-        onDecrease(product.id);
-      }
-    }
+    onQuantityChange(
+      product.id,
+      target
+    );
 
     setDraft(String(target));
   }
@@ -112,18 +124,30 @@ function QuantityControl({
       <input
         className="product-qty-input"
         type="text"
-        inputMode="numeric"
+        inputMode={
+          product.type === "service"
+            ? "decimal"
+            : "numeric"
+        }
         enterKeyHint="done"
-        pattern="[0-9]*"
         value={draft}
         aria-label={`Jumlah ${product.nama}. Ketik jumlah langsung.`}
-        title={`Ketik jumlah langsung. Maksimal ${product.stok}.`}
+        title={
+          product.tracksStock
+            ? `Ketik jumlah langsung. Maksimal ${product.stok}.`
+            : "Ketik jumlah langsung."
+        }
         onFocus={(event) => {
           editingRef.current = true;
           event.currentTarget.select();
         }}
         onChange={(event) => {
-          setDraft(event.target.value.replace(/\D/g, ""));
+          const value = event.target.value;
+          setDraft(
+            product.type === "service"
+              ? value.replace(/[^0-9.,]/g, "").replace(",", ".")
+              : value.replace(/\D/g, "")
+          );
         }}
         onBlur={commitDraft}
         onKeyDown={(event) => {
@@ -144,7 +168,10 @@ function QuantityControl({
       <button
         type="button"
         aria-label={`Tambah ${product.nama}`}
-        disabled={quantity >= product.stok}
+        disabled={
+          product.tracksStock &&
+          quantity >= product.stok
+        }
         onClick={() => {
           editingRef.current = false;
           onIncrease(product.id);
@@ -166,6 +193,7 @@ export default function ProductGrid({
   onAdd,
   onIncrease,
   onDecrease,
+  onQuantityChange,
   quantityById,
 }: Props) {
   const searchRef = useRef<HTMLInputElement>(null);
@@ -241,7 +269,9 @@ export default function ProductGrid({
           </div>
         ) : (
           products.map((product) => {
-            const outOfStock = product.stok <= 0;
+            const outOfStock =
+              product.tracksStock &&
+              product.stok <= 0;
             const quantity = quantityById.get(product.id) ?? 0;
 
             return (
@@ -267,11 +297,20 @@ export default function ProductGrid({
                   </div>
 
                   <div className={`pos-product-stock${
-                    outOfStock || product.stok <= 5
+                    product.tracksStock &&
+                    (outOfStock || product.stok <= 5)
                       ? " low"
                       : ""
                   }`}>
-                    {outOfStock ? "Habis" : product.stok <= 5 ? `Sisa ${product.stok}` : `Stok ${product.stok}`}
+                    {product.type === "service"
+                      ? `Jasa${product.satuan ? " / " + product.satuan : ""}`
+                      : !product.tracksStock
+                        ? "Tanpa stok"
+                        : outOfStock
+                          ? "Habis"
+                          : product.stok <= 5
+                            ? `Sisa ${product.stok}`
+                            : `Stok ${product.stok}`}
                   </div>
                 </div>
 
@@ -282,6 +321,7 @@ export default function ProductGrid({
                       quantity={quantity}
                       onIncrease={onIncrease}
                       onDecrease={onDecrease}
+                      onQuantityChange={onQuantityChange}
                     />
                   ) : (
                     <button

@@ -10,4 +10,7 @@ export type Product = {
   supplier: string;
   satuan: string;
   deskripsi: string;
+  type: "goods" | "service";
+  tracksStock: boolean;
+  quantityPrecision: number;
 };

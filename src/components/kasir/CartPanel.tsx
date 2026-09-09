@@ -8,6 +8,7 @@ type CartItem = {
   hargaJual: number;
   qty: number;
   subtotal: number;
+  unit?: string;
 };
 
 type Customer = {
@@ -17,6 +18,7 @@ type Customer = {
 
 type Props = {
   submitting: boolean;
+  locked?: boolean;
 
   items: CartItem[];
   customers: Customer[];
@@ -59,6 +61,7 @@ const rupiah = (value: number) =>
 
 export default function CartPanel({
   submitting,
+  locked = false,
   items,
   customers,
 
@@ -205,6 +208,7 @@ export default function CartPanel({
               <select
                 id="pos-customer"
                 value={customerId}
+                disabled={locked}
                 onChange={(e) =>
                   onCustomerChange(e.target.value)
                 }
@@ -249,17 +253,22 @@ export default function CartPanel({
                           type="button"
                           className="qty-btn"
                           aria-label={`Kurangi ${item.nama}`}
+                          disabled={locked}
                           onClick={() => decreaseItem(item.id)}
                         >
                           −
                         </button>
 
-                        <span className="qty-display" aria-live="polite">{item.qty}</span>
+                        <span className="qty-display" aria-live="polite">
+                          {item.qty}
+                          {item.unit ? ` ${item.unit}` : ""}
+                        </span>
 
                         <button
                           type="button"
                           className="qty-btn"
                           aria-label={`Tambah ${item.nama}`}
+                          disabled={locked}
                           onClick={() => onIncrease(item.id)}
                         >
                           +
@@ -275,6 +284,7 @@ export default function CartPanel({
                         type="button"
                         className="btn-remove-item"
                         aria-label={`Hapus ${item.nama} dari keranjang`}
+                        disabled={locked}
                         onClick={() => removeItem(item.id)}
                       >
                         ×
@@ -301,6 +311,7 @@ export default function CartPanel({
                     inputMode="decimal"
                     min={0}
                     max={100}
+                    disabled={locked}
                     value={discount}
                     onChange={(e) =>
                       onDiscountChange(
@@ -323,6 +334,7 @@ export default function CartPanel({
                     inputMode="decimal"
                     min={0}
                     max={100}
+                    disabled={locked}
                     value={tax}
                     onChange={(e) =>
                       onTaxChange(
@@ -438,7 +450,7 @@ export default function CartPanel({
               type="button"
               className="btn-secondary"
               onClick={clearItems}
-              disabled={items.length === 0 || submitting}
+              disabled={items.length === 0 || submitting || locked}
             >
               Kosongkan
             </button>

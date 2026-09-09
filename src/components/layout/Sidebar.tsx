@@ -23,6 +23,7 @@ export default function Sidebar({ open, onClose }: Props) {
   const canFinance = hasCapability("finance_withdrawal");
   const canTableOrders = hasCapability("table_orders");
   const canKitchenQueue = hasCapability("kitchen_queue");
+  const canWorkOrders = hasCapability("work_orders");
 
   const showManagement =
     user?.role !== "kasir" &&
@@ -130,6 +131,28 @@ export default function Sidebar({ open, onClose }: Props) {
               <path d="M7 18v2M17 18v2M3 10h18" />
             </svg>
             <span>Meja</span>
+          </NavLink>
+        )}
+
+        {canWorkOrders && (
+          <NavLink
+            to="/laundry"
+            className={({ isActive }) =>
+              isActive ? "nav-item active" : "nav-item"
+            }
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
+              <path d="M5 3h14l1 18H4L5 3z" />
+              <path d="M8 8h8M9 13h6" />
+            </svg>
+            <span>Laundry</span>
           </NavLink>
         )}
 
