@@ -14,22 +14,21 @@ import {
   resetRestaurantCheckoutTransaction,
   type RestaurantCheckoutContext,
 } from "../lib/restaurantCheckout";
+import {
+  clearLaundryCheckout,
+  getLaundryCheckout,
+  markLaundryCheckoutTransaction,
+  resetLaundryCheckoutTransaction,
+  type LaundryCheckoutContext,
+} from "../lib/laundryCheckout";
+import type { LaundryWorkOrder } from "../types/laundry";
+import type { Product } from "../types/product";
 import type { RestaurantOrder, RestaurantProduct } from "../types/restaurant";
 import type {
   PaymentCapabilities,
   PaymentStatus,
   QrisPayment,
 } from "../types/payment";
-
-type Product = {
-  id: string;
-  kode: string;
-  barcode?: string;
-  nama: string;
-  kategori: string;
-  hargaJual: number;
-  stok: number;
-};
 
 type Customer = {
   id: string;
@@ -42,6 +41,11 @@ type CartItem = {
   hargaJual: number;
   qty: number;
   subtotal: number;
+  productType?: "goods" | "service";
+  tracksStock?: boolean;
+  quantityPrecision?: number;
+  unit?: string;
+  quantity?: number;
 };
 
 type Settings = {
@@ -171,6 +175,23 @@ function getErrorMessage(error: unknown) {
   );
 }
 
+function normalizeTransactionItems(
+  items: CartItem[]
+) {
+  return items.map((item) => {
+    const quantity =
+      item.quantity && item.quantity > 0
+        ? item.quantity
+        : item.qty;
+
+    return {
+      ...item,
+      qty: quantity,
+      quantity,
+    };
+  });
+}
+
 export default function TransactionPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -225,6 +246,12 @@ export default function TransactionPage() {
       () => getRestaurantCheckout()
     );
   const [restaurantLinkError, setRestaurantLinkError] =
+    useState("");
+  const [laundryCheckout, setLaundryCheckout] =
+    useState<LaundryCheckoutContext | null>(
+      () => getLaundryCheckout()
+    );
+  const [laundryLinkError, setLaundryLinkError] =
     useState("");
 
   const [submitting, setSubmitting] =
@@ -324,6 +351,7 @@ export default function TransactionPage() {
       );
 
       await restoreRestaurantCheckout(productResponse.data);
+      await restoreLaundryCheckout(productResponse.data);
 
       if (capabilitiesResponse.data.qrisEnabled) {
         await restoreQrisPayment();
@@ -446,6 +474,140 @@ export default function TransactionPage() {
     setRestaurantLinkError("");
   }
 
+  async function restoreLaundryCheckout(
+    currentProducts: Product[]
+  ) {
+    const context = getLaundryCheckout();
+    setLaundryCheckout(context);
+    setLaundryLinkError("");
+
+    if (!context) {
+      return;
+    }
+
+    if (
+      context.transactionId &&
+      context.paymentMethod === "tunai"
+    ) {
+      await finalizeLaundryOrder(
+        context.transactionId,
+        context
+      );
+      return;
+    }
+
+    if (
+      context.transactionId &&
+      context.paymentMethod === "qris"
+    ) {
+      return;
+    }
+
+    try {
+      const { data } = await api.get<LaundryWorkOrder>(
+        "/api/laundry/work-orders/" + context.workOrderId
+      );
+
+      if (
+        data.status === "cancelled" ||
+        data.status === "completed" ||
+        data.paymentStatus === "paid"
+      ) {
+        clearLaundryCheckout();
+        setLaundryCheckout(null);
+        return;
+      }
+
+      const nextCart: CartItem[] = data.items.map((item) => {
+        const product = currentProducts.find(
+          (entry) => entry.id === item.productId
+        );
+
+        if (!product) {
+          throw new Error(
+            item.nama + " sudah tidak tersedia di katalog POS."
+          );
+        }
+
+        if (
+          Math.round(product.hargaJual * 100) !==
+          Math.round(item.unitPrice * 100)
+        ) {
+          throw new Error(
+            "Harga " +
+              item.nama +
+              " berubah sejak work order dibuat. Batalkan dan buat ulang pesanan sebelum pembayaran."
+          );
+        }
+
+        return {
+          id: product.id,
+          nama: product.nama,
+          hargaJual: product.hargaJual,
+          qty: item.quantity,
+          quantity: item.quantity,
+          subtotal: product.hargaJual * item.quantity,
+          productType: product.type,
+          tracksStock: product.tracksStock,
+          quantityPrecision: product.quantityPrecision,
+          unit: product.satuan,
+        };
+      });
+
+      setCart(nextCart);
+      setCustomerId(data.customerId);
+      setDiscount(0);
+      setTax(0);
+    } catch (error) {
+      setLaundryLinkError(
+        "Pesanan laundry belum dapat dimuat ke Kasir. " +
+          getErrorMessage(error)
+      );
+    }
+  }
+
+  async function finalizeLaundryOrder(
+    transactionId: string,
+    explicitContext?: LaundryCheckoutContext | null
+  ) {
+    const context =
+      explicitContext ??
+      laundryCheckout ??
+      getLaundryCheckout();
+
+    if (!context) {
+      return true;
+    }
+
+    try {
+      await api.post(
+        "/api/laundry/work-orders/" +
+          context.workOrderId +
+          "/complete-payment",
+        { transactionId }
+      );
+
+      clearLaundryCheckout();
+      setLaundryCheckout(null);
+      setLaundryLinkError("");
+      return true;
+    } catch (error) {
+      setLaundryLinkError(
+        "Pembayaran sudah berhasil, tetapi pesanan " +
+          context.orderNumber +
+          " belum berhasil ditautkan. Jangan bayar ulang. " +
+          getErrorMessage(error)
+      );
+      return false;
+    }
+  }
+
+  function resetLaundryPaymentLink() {
+    const reset = resetLaundryCheckoutTransaction();
+    setLaundryCheckout(reset);
+    setLaundryLinkError("");
+  }
+
   async function reloadProducts() {
     const response =
       await api.get<Product[]>("/api/products");
@@ -496,6 +658,7 @@ export default function TransactionPage() {
           loadReceipt(payment.transactionId),
           reloadProducts(),
           finalizeRestaurantOrder(payment.transactionId),
+          finalizeLaundryOrder(payment.transactionId),
         ]);
       } else if (
         status.status === "pending" ||
@@ -519,7 +682,7 @@ export default function TransactionPage() {
         disc: number;
         tax: number;
       }>(`/api/transactions/${transactionId}`);
-      setCart(data.items.map((item) => ({ ...item })));
+      setCart(normalizeTransactionItems(data.items));
       setCustomerId(data.customerId ?? "");
       setDiscount(clampPercent(data.disc));
       setTax(clampPercent(data.tax));
@@ -553,7 +716,7 @@ export default function TransactionPage() {
         dibayar: data.dibayar,
         kembalian: data.kembalian,
         metodePembayaran: data.metodePembayaran,
-        items: data.items,
+        items: normalizeTransactionItems(data.items),
       });
     } catch (error) {
       setReceiptError(
@@ -577,12 +740,14 @@ export default function TransactionPage() {
         loadReceipt(payment.transactionId),
         reloadProducts(),
         finalizeRestaurantOrder(payment.transactionId),
+        finalizeLaundryOrder(payment.transactionId),
       ]);
     } else if (
       status === "failed" ||
       status === "expired"
     ) {
       resetRestaurantPaymentLink();
+      resetLaundryPaymentLink();
     }
   }
 
@@ -609,6 +774,7 @@ export default function TransactionPage() {
         data.status !== "creating"
       ) {
         resetRestaurantPaymentLink();
+        resetLaundryPaymentLink();
       }
 
       await restoreSaleContext(restored.transactionId);
@@ -676,9 +842,11 @@ export default function TransactionPage() {
   }
 
   function addToCart(product: Product) {
-    if (restaurantCheckout) {
+    if (restaurantCheckout || laundryCheckout) {
       window.alert(
-        "Item pesanan meja dikunci di Kasir. Ubah item dari halaman Meja."
+        restaurantCheckout
+          ? "Item pesanan meja dikunci di Kasir. Ubah item dari halaman Meja."
+          : "Item pesanan laundry dikunci di Kasir. Ubah dari halaman Laundry."
       );
       return;
     }
@@ -688,7 +856,11 @@ export default function TransactionPage() {
         (item) => item.id === product.id
       );
 
-      if (existing && existing.qty >= product.stok) {
+      if (
+        existing &&
+        product.tracksStock &&
+        existing.qty >= product.stok
+      ) {
         window.alert(
           `Stok ${product.nama} hanya ${product.stok}.`
         );
@@ -702,6 +874,7 @@ export default function TransactionPage() {
             ? {
                 ...item,
                 qty: item.qty + 1,
+                quantity: item.qty + 1,
                 subtotal:
                   (item.qty + 1) *
                   item.hargaJual,
@@ -710,7 +883,10 @@ export default function TransactionPage() {
         );
       }
 
-      if (product.stok <= 0) {
+      if (
+        product.tracksStock &&
+        product.stok <= 0
+      ) {
         window.alert(
           `Stok ${product.nama} habis.`
         );
@@ -725,16 +901,23 @@ export default function TransactionPage() {
           nama: product.nama,
           hargaJual: product.hargaJual,
           qty: 1,
+          quantity: 1,
           subtotal: product.hargaJual,
+          productType: product.type,
+          tracksStock: product.tracksStock,
+          quantityPrecision: product.quantityPrecision,
+          unit: product.satuan,
         },
       ];
     });
   }
 
   function increase(productId: string) {
-    if (restaurantCheckout) {
+    if (restaurantCheckout || laundryCheckout) {
       window.alert(
-        "Qty pesanan meja dikunci di Kasir. Ubah dari halaman Meja."
+        restaurantCheckout
+          ? "Qty pesanan meja dikunci di Kasir. Ubah dari halaman Meja."
+          : "Jumlah pesanan laundry dikunci di Kasir. Ubah dari halaman Laundry."
       );
       return;
     }
@@ -751,7 +934,10 @@ export default function TransactionPage() {
           return item;
         }
 
-        if (item.qty >= product.stok) {
+        if (
+          product.tracksStock &&
+          item.qty >= product.stok
+        ) {
           window.alert(
             `Stok ${product.nama} hanya ${product.stok}.`
           );
@@ -764,16 +950,76 @@ export default function TransactionPage() {
         return {
           ...item,
           qty,
+          quantity: qty,
           subtotal: qty * item.hargaJual,
         };
       })
     );
   }
 
-  function decrease(productId: string) {
-    if (restaurantCheckout) {
+  function setQuantity(productId: string, requested: number) {
+    if (restaurantCheckout || laundryCheckout) {
       window.alert(
-        "Qty pesanan meja dikunci di Kasir. Ubah dari halaman Meja."
+        restaurantCheckout
+          ? "Qty pesanan meja dikunci di Kasir. Ubah dari halaman Meja."
+          : "Jumlah pesanan laundry dikunci di Kasir. Ubah dari halaman Laundry."
+      );
+      return;
+    }
+
+    const product = getProduct(productId);
+    if (!product || !Number.isFinite(requested)) return;
+
+    const precision = product.quantityPrecision ?? 0;
+    const normalized = Number(
+      requested.toFixed(precision)
+    );
+
+    if (normalized <= 0) {
+      remove(productId);
+      return;
+    }
+
+    if (
+      product.type === "goods" &&
+      !Number.isInteger(normalized)
+    ) {
+      window.alert(
+        "Jumlah barang harus bilangan bulat."
+      );
+      return;
+    }
+
+    if (
+      product.tracksStock &&
+      normalized > product.stok
+    ) {
+      window.alert(
+        `Stok ${product.nama} hanya ${product.stok}.`
+      );
+      return;
+    }
+
+    setCart((current) =>
+      current.map((item) =>
+        item.id === productId
+          ? {
+              ...item,
+              qty: normalized,
+              quantity: normalized,
+              subtotal: normalized * item.hargaJual,
+            }
+          : item
+      )
+    );
+  }
+
+  function decrease(productId: string) {
+    if (restaurantCheckout || laundryCheckout) {
+      window.alert(
+        restaurantCheckout
+          ? "Qty pesanan meja dikunci di Kasir. Ubah dari halaman Meja."
+          : "Jumlah pesanan laundry dikunci di Kasir. Ubah dari halaman Laundry."
       );
       return;
     }
@@ -790,6 +1036,7 @@ export default function TransactionPage() {
           return {
             ...item,
             qty,
+            quantity: qty,
             subtotal: qty * item.hargaJual,
           };
         })
@@ -798,9 +1045,11 @@ export default function TransactionPage() {
   }
 
   function remove(productId: string) {
-    if (restaurantCheckout) {
+    if (restaurantCheckout || laundryCheckout) {
       window.alert(
-        "Item pesanan meja dikunci di Kasir. Ubah dari halaman Meja."
+        restaurantCheckout
+          ? "Item pesanan meja dikunci di Kasir. Ubah dari halaman Meja."
+          : "Item pesanan laundry dikunci di Kasir. Ubah dari halaman Laundry."
       );
       return;
     }
@@ -822,9 +1071,11 @@ export default function TransactionPage() {
   }
 
   function requestClearCart() {
-    if (restaurantCheckout) {
+    if (restaurantCheckout || laundryCheckout) {
       window.alert(
-        "Keranjang berasal dari pesanan meja dan tidak dapat dikosongkan dari Kasir."
+        restaurantCheckout
+          ? "Keranjang berasal dari pesanan meja dan tidak dapat dikosongkan dari Kasir."
+          : "Keranjang berasal dari pesanan laundry dan tidak dapat dikosongkan dari Kasir."
       );
       return;
     }
@@ -901,7 +1152,10 @@ export default function TransactionPage() {
         return `${item.nama} tidak ditemukan. Muat ulang halaman.`;
       }
 
-      if (item.qty > product.stok) {
+      if (
+        product.tracksStock &&
+        item.qty > product.stok
+      ) {
         return `Stok ${item.nama} hanya ${product.stok}.`;
       }
     }
@@ -910,9 +1164,14 @@ export default function TransactionPage() {
   }
 
   async function checkout() {
-    if (restaurantCheckout?.transactionId) {
+    if (
+      restaurantCheckout?.transactionId ||
+      laundryCheckout?.transactionId
+    ) {
       window.alert(
-        "Pembayaran pesanan meja sebelumnya sudah dibuat. Sinkronkan penutupan meja sebelum membuat pembayaran baru."
+        restaurantCheckout?.transactionId
+          ? "Pembayaran pesanan meja sebelumnya sudah dibuat. Sinkronkan penutupan meja sebelum membuat pembayaran baru."
+          : "Pembayaran pesanan laundry sebelumnya sudah dibuat. Sinkronkan pesanan sebelum membuat pembayaran baru."
       );
       return;
     }
@@ -971,7 +1230,11 @@ export default function TransactionPage() {
           id: item.id,
           nama: item.nama,
           hargaJual: item.hargaJual,
-          qty: item.qty,
+          qty:
+            item.productType === "service"
+              ? 1
+              : Math.trunc(item.qty),
+          quantity: item.qty,
           subtotal: item.subtotal,
         })),
         subtotal,
@@ -1009,6 +1272,14 @@ export default function TransactionPage() {
           setRestaurantCheckout(linked);
         }
 
+        if (laundryCheckout) {
+          const linked = markLaundryCheckoutTransaction(
+            payment.transactionId,
+            "qris"
+          );
+          setLaundryCheckout(linked);
+        }
+
         persistPayment(payment);
         setQrisPayment(payment);
         setQrisStatus(payment.status);
@@ -1037,6 +1308,19 @@ export default function TransactionPage() {
         );
       }
 
+      if (laundryCheckout) {
+        const linked = markLaundryCheckoutTransaction(
+          response.data.id,
+          "tunai"
+        );
+
+        setLaundryCheckout(linked);
+        await finalizeLaundryOrder(
+          response.data.id,
+          linked
+        );
+      }
+
       setReceipt({
         transactionId: response.data.id,
         transactionDate: response.data.createdAt ?? new Date().toISOString(),
@@ -1048,7 +1332,9 @@ export default function TransactionPage() {
         dibayar: response.data.dibayar,
         kembalian: response.data.kembalian,
         metodePembayaran: response.data.metodePembayaran,
-        items: response.data.items ?? receiptItems,
+        items: response.data.items
+          ? normalizeTransactionItems(response.data.items)
+          : receiptItems,
       });
 
       setCashSuccess({
@@ -1084,6 +1370,7 @@ export default function TransactionPage() {
   function closeFailedQris() {
     removePersistedPayment();
     resetRestaurantPaymentLink();
+    resetLaundryPaymentLink();
     setQrisPayment(null);
     setQrisStatus(null);
     setQrisStatusError("");
@@ -1154,6 +1441,39 @@ export default function TransactionPage() {
           </div>
         ) : null}
 
+        {laundryCheckout ? (
+          <div className="restaurant-checkout-banner" role="status">
+            <div>
+              <strong>
+                Pesanan laundry · {laundryCheckout.orderNumber}
+              </strong>
+              <span>
+                {laundryCheckout.customerName} · Item, jumlah, pelanggan, diskon, dan pajak dikunci dari halaman Laundry.
+              </span>
+            </div>
+            {laundryCheckout.transactionId ? (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() =>
+                  void finalizeLaundryOrder(
+                    laundryCheckout.transactionId!
+                  )
+                }
+              >
+                Sinkronkan Laundry
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {laundryLinkError ? (
+          <div className="payment-recovery-banner" role="alert">
+            <strong>Sinkronisasi pesanan laundry perlu perhatian.</strong>
+            <span>{laundryLinkError}</span>
+          </div>
+        ) : null}
+
         {qrisStatusError && !qrisPayment ? (
           <div className="payment-recovery-banner" role="alert">
             <strong>Pembayaran sebelumnya belum dapat diperiksa.</strong>
@@ -1192,6 +1512,7 @@ export default function TransactionPage() {
               onAdd={addToCart}
               onIncrease={increase}
               onDecrease={decrease}
+              onQuantityChange={setQuantity}
               quantityById={cartQuantityById}
             />
 
@@ -1199,6 +1520,7 @@ export default function TransactionPage() {
               submitting={
                 submitting || qrisStatus === "pending"
               }
+              locked={Boolean(laundryCheckout)}
               items={cart}
               customers={customers}
               customerId={customerId}

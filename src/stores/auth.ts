@@ -4,6 +4,7 @@ import api, { TOKEN_KEY } from "../lib/api";
 
 const ACTIVE_QRIS_KEY = "nfpos_active_qris";
 const RESTAURANT_CHECKOUT_KEY = "nfpos_restaurant_checkout";
+const LAUNDRY_CHECKOUT_KEY = "nfpos_laundry_checkout";
 
 export type User = {
   id: string;
@@ -54,6 +55,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     sessionStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ACTIVE_QRIS_KEY);
     localStorage.removeItem(RESTAURANT_CHECKOUT_KEY);
+    localStorage.removeItem(LAUNDRY_CHECKOUT_KEY);
     const storage = remember ? localStorage : sessionStorage;
     storage.setItem(TOKEN_KEY, data.token);
 
@@ -94,6 +96,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         sessionStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(ACTIVE_QRIS_KEY);
     localStorage.removeItem(RESTAURANT_CHECKOUT_KEY);
+    localStorage.removeItem(LAUNDRY_CHECKOUT_KEY);
 
         set({
           token: null,
@@ -116,6 +119,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     sessionStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ACTIVE_QRIS_KEY);
     localStorage.removeItem(RESTAURANT_CHECKOUT_KEY);
+    localStorage.removeItem(LAUNDRY_CHECKOUT_KEY);
 
     set({
       token: null,
