@@ -137,7 +137,7 @@ test("fashion checkout uses variant and price-level snapshots", async ({ page },
     return json(route, {});
   });
 
-  await page.goto("/kasir");
+  await page.goto("/kasir", { waitUntil: "domcontentloaded" });
   const add = page.getByRole("button", { name: "Tambah Kaos Oversize · Black / M ke keranjang" });
   await expect(add).toBeVisible();
   await add.click();
@@ -183,7 +183,7 @@ test("fashion variant pricing page recovers after temporary API failure", async 
       : json(route, catalog);
   });
 
-  await page.goto("/retail/variants-pricing");
+  await page.goto("/retail/variants-pricing", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("alert")).toContainText("Data varian & harga gagal dimuat");
   const callsBeforeRetry = calls;
   await page.getByRole("button", { name: "Coba Lagi" }).click();
