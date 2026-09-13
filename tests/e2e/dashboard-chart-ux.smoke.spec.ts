@@ -32,7 +32,7 @@ test.beforeEach(async ({ page }) => {
   await page.getByLabel("Username").fill("owner");
   await page.getByLabel("Password", { exact: true }).fill("password");
   await page.getByRole("button", { name: "Masuk" }).click();
-  await page.goto("/dashboard");
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
 });
 
 test("minimal dashboard chart stays readable and interactive", async ({ page }) => {
