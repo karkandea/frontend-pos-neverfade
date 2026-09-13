@@ -961,3 +961,178 @@ body{overflow:hidden;height:100%}
     height:92px;
   }
 }
+
+/* ═══════════════════════════════════════
+   DASHBOARD SALES CHART — UX REFRESH
+   ═══════════════════════════════════════ */
+.dashboard-chart-card .card-header{
+  padding:15px 18px;
+  background:linear-gradient(180deg,#fff 0%,#fdfdfd 100%);
+}
+.dashboard-chart-card .card-header h3{
+  color:var(--text);
+  font-size:11.5px;
+  letter-spacing:.055em;
+}
+.dashboard-chart-card .chart-container{
+  padding:0 18px 16px;
+}
+.sales-chart{
+  min-width:0;
+  padding-top:14px;
+}
+.sales-chart-summary{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+}
+.sales-chart-total,
+.sales-chart-selected{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+.sales-chart-total span,
+.sales-chart-selected span{
+  color:var(--text-3);
+  font-family:'Poppins',sans-serif;
+  font-size:9.5px;
+  font-weight:600;
+  letter-spacing:.055em;
+  text-transform:uppercase;
+}
+.sales-chart-total strong{
+  margin-top:3px;
+  color:var(--text);
+  font-family:var(--font-head);
+  font-size:20px;
+  line-height:1.2;
+}
+.sales-chart-selected{
+  align-items:flex-end;
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:7px 10px;
+}
+.sales-chart-selected strong{
+  margin-top:2px;
+  color:var(--text);
+  font-size:12px;
+  line-height:1.2;
+}
+.sales-chart-plot{
+  position:relative;
+  margin-top:10px;
+  min-width:0;
+}
+.sales-chart-plot canvas{
+  display:block;
+  width:100% !important;
+  height:220px !important;
+  cursor:crosshair;
+  touch-action:pan-y;
+  border-radius:8px;
+  outline:none;
+}
+.sales-chart-plot canvas:focus-visible{
+  box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--text);
+}
+.sales-chart-empty-note{
+  position:absolute;
+  left:50%;
+  top:48%;
+  transform:translate(-50%,-50%);
+  width:min(250px,72%);
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:rgba(255,255,255,.92);
+  padding:8px 10px;
+  color:var(--text-3);
+  font-size:11px;
+  text-align:center;
+  pointer-events:none;
+}
+.sales-chart-hint{
+  margin:3px 0 0;
+  color:var(--text-3);
+  font-size:10px;
+  line-height:1.35;
+  text-align:right;
+}
+.sales-chart-state{
+  min-height:258px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  color:var(--text-3);
+  font-size:11px;
+  text-align:center;
+}
+.sales-chart-state strong{
+  color:var(--text-2);
+  font-size:12px;
+}
+.sales-chart-retry{
+  margin-top:7px;
+  border:1px solid var(--border-2);
+  border-radius:8px;
+  background:var(--surface);
+  color:var(--text);
+  padding:6px 10px;
+  font:600 11px var(--font-body);
+  cursor:pointer;
+}
+.sales-chart-retry:hover{
+  background:var(--surface-2);
+}
+.sales-chart-loading{
+  align-items:stretch;
+  justify-content:flex-start;
+  padding-top:16px;
+}
+.sales-chart-loading-bar{
+  display:block;
+  width:38%;
+  height:13px;
+  border-radius:6px;
+  background:var(--surface-3);
+}
+.sales-chart-loading-bar.short{
+  width:22%;
+  height:9px;
+}
+.sales-chart-loading-plot{
+  flex:1;
+  min-height:185px;
+  margin-top:12px;
+  border-radius:10px;
+  background:linear-gradient(110deg,var(--surface-2) 8%,var(--surface-3) 18%,var(--surface-2) 33%);
+  background-size:200% 100%;
+  animation:sales-chart-shimmer 1.35s linear infinite;
+}
+@keyframes sales-chart-shimmer{
+  to{background-position-x:-200%}
+}
+@media(max-width:768px){
+  .dashboard-chart-card .chart-container{padding:0 14px 14px}
+  .sales-chart{padding-top:12px}
+  .sales-chart-plot canvas{height:198px !important}
+  .sales-chart-total strong{font-size:18px}
+  .sales-chart-selected{padding:6px 9px}
+  .sales-chart-hint{text-align:left}
+  .sales-chart-state{min-height:235px}
+}
+@media(max-width:480px){
+  .dashboard-chart-card .card-header{padding:13px 14px}
+  .sales-chart-summary{gap:8px}
+  .sales-chart-total span,.sales-chart-selected span{font-size:8.5px}
+  .sales-chart-total strong{font-size:17px}
+  .sales-chart-selected strong{font-size:11px}
+  .sales-chart-plot{margin-top:8px}
+  .sales-chart-plot canvas{height:184px !important}
+  .sales-chart-hint{font-size:9.5px}
+}
