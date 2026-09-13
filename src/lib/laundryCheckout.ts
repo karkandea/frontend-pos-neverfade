@@ -12,7 +12,7 @@ export type LaundryCheckoutContext = {
   customerId: string;
   customerName: string;
   transactionId: string | null;
-  paymentMethod: "tunai" | "qris" | null;
+  paymentMethod: "tunai" | "qris" | "xendit" | null;
 };
 
 export function getLaundryCheckout() {
@@ -66,7 +66,7 @@ export function startLaundryCheckout(
 
 export function markLaundryCheckoutTransaction(
   transactionId: string,
-  paymentMethod: "tunai" | "qris"
+  paymentMethod: "tunai" | "qris" | "xendit"
 ) {
   const current = getLaundryCheckout();
   if (!current) return null;

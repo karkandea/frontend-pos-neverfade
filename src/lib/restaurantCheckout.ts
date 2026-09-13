@@ -9,7 +9,7 @@ export type RestaurantCheckoutContext = {
   orderNumber: string;
   tableName: string;
   transactionId: string | null;
-  paymentMethod: "tunai" | "qris" | null;
+  paymentMethod: "tunai" | "qris" | "xendit" | null;
 };
 
 export function getRestaurantCheckout() {
@@ -63,7 +63,7 @@ export function startRestaurantCheckout(
 
 export function markRestaurantCheckoutTransaction(
   transactionId: string,
-  paymentMethod: "tunai" | "qris"
+  paymentMethod: "tunai" | "qris" | "xendit"
 ) {
   const current = getRestaurantCheckout();
   if (!current) return null;
