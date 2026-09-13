@@ -22,9 +22,14 @@ export default function RetailVariantPricingPage(){
   const product=useMemo(()=>catalog.products.find(x=>x.id===selectedId)??catalog.products[0],[catalog,selectedId]);
 
   async function reload(){
-    const {data}=await api.get<RetailCatalog>("/api/retail/catalog");
-    setCatalog(data);
-    setSelectedId((current)=>current || data.products[0]?.id || "");
+    try{
+      setError("");
+      const {data}=await api.get<RetailCatalog>("/api/retail/catalog");
+      setCatalog(data);
+      setSelectedId((current)=>current || data.products[0]?.id || "");
+    }catch{
+      setError("Data varian & harga gagal dimuat.");
+    }
   }
   useEffect(()=>{
     let active=true;
@@ -69,7 +74,7 @@ export default function RetailVariantPricingPage(){
     <div className="section-header"><div><h2>Varian & Harga</h2><p>Kelola size/color, SKU, barcode, stok varian, dan harga satuan/grosir/reseller.</p></div></div>
     {error&&<div role="alert" className="financial-validation-error">{error} <button className="btn-secondary" onClick={()=>void reload()}>Coba Lagi</button></div>}
     {loading?<p>Memuat...</p>:<>
-      <div className="table-card" style={{padding:16,marginBottom:16}}><div className="form-group"><label>Produk</label><select value={product?.id??""} onChange={e=>setSelectedId(e.target.value)}>{catalog.products.map(p=><option key={p.id} value={p.id}>{p.nama} · stok {p.stok}</option>)}</select></div></div>
+      <div className="table-card" style={{padding:16,marginBottom:16}}><div className="form-group"><label htmlFor="retail-product-select">Produk</label><select id="retail-product-select" value={product?.id??""} onChange={e=>setSelectedId(e.target.value)}>{catalog.products.map(p=><option key={p.id} value={p.id}>{p.nama} · stok {p.stok}</option>)}</select></div></div>
       {product&&<>
         <div className="table-card" style={{padding:16,marginBottom:16}}><h3>Tambah Varian — {product.nama}</h3><div className="form-grid-2">
           <div className="form-group"><label>SKU</label><input value={variant.sku} onChange={e=>setVariant({...variant,sku:e.target.value})}/></div>
