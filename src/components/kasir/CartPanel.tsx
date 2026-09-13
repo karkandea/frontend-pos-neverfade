@@ -5,6 +5,10 @@ import { useDialogFocus } from "./useDialogFocus";
 type CartItem = {
   id: string;
   nama: string;
+  variantLabel?: string;
+  manualPriceLevelId?: string | null;
+  priceLevelName?: string;
+  priceOptions?: { id: string; name: string; unitPrice: number }[];
   hargaJual: number;
   qty: number;
   subtotal: number;
@@ -47,6 +51,7 @@ type Props = {
 
   onIncrease: (id: string) => void;
   onDecrease: (id: string) => void;
+  onPriceLevelChange: (id: string, priceLevelId: string) => void;
   onRemove: (id: string) => void;
   onClear: () => void;
   onCheckout: () => void;
@@ -87,6 +92,7 @@ export default function CartPanel({
 
   onIncrease,
   onDecrease,
+  onPriceLevelChange,
   onRemove,
   onClear,
   onCheckout,
@@ -246,7 +252,26 @@ export default function CartPanel({
 
                       <small className="cart-item-price">
                         {rupiah(item.hargaJual)}
+                        {item.priceLevelName ? ` · ${item.priceLevelName}` : " · Satuan"}
                       </small>
+
+                      {item.priceOptions && item.priceOptions.length > 0 ? (
+                        <select
+                          aria-label={`Level harga ${item.nama}`}
+                          value={item.manualPriceLevelId ?? ""}
+                          disabled={locked}
+                          onChange={(event) =>
+                            onPriceLevelChange(item.id, event.target.value)
+                          }
+                        >
+                          <option value="">Otomatis</option>
+                          {item.priceOptions.map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {option.name} · {rupiah(option.unitPrice)}
+                            </option>
+                          ))}
+                        </select>
+                      ) : null}
 
                       <div className="cart-item-controls">
                         <button

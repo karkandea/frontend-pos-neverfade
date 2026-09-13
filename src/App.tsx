@@ -27,6 +27,7 @@ import PelangganPage from "./pages/PelangganPage";
 import PengaturanPage from "./pages/PengaturanPage";
 import PenggunaPage from "./pages/PenggunaPage";
 import ProductPage from "./pages/ProductPage";
+import RetailVariantPricingPage from "./pages/RetailVariantPricingPage";
 import QaQrisScannerPage from "./pages/QaQrisScannerPage";
 import SharedPosPage from "./pages/SharedPosPage";
 import TransaksiPage from "./pages/TransaksiPage";
@@ -79,6 +80,7 @@ const pageTitles: Record<string, string> = {
   "/login": "Masuk",
   "/dashboard": "Dashboard",
   "/produk": "Produk",
+  "/retail/variants-pricing": "Varian & Harga",
   "/kasir": "Kasir",
   "/inventaris": "Inventaris",
   "/pelanggan": "Pelanggan",
@@ -280,6 +282,11 @@ export default function App() {
         <Route
           path="/produk"
           element={protectedPage(<ProductPage />, false, false, "core_pos")}
+        />
+
+        <Route
+          path="/retail/variants-pricing"
+          element={protectedPage(<RetailVariantPricingPage />, true, false, "product_variants")}
         />
 
         <Route

@@ -13,6 +13,11 @@ export const businessModeOptions: BusinessModeOption[] = [
     description: "POS inti, inventaris, pelanggan, laporan, absensi, dan keuangan.",
   },
   {
+    key: "fashion_retail",
+    label: "Fashion Retail",
+    description: "Retail dengan varian ukuran/warna dan harga satuan, grosir, atau reseller.",
+  },
+  {
     key: "food_beverage",
     label: "Restoran / Coffee Shop",
     description: "POS inti ditambah pesanan meja dan antrean dapur.",
@@ -40,6 +45,7 @@ const commonCapabilities: TenantCapability[] = [
 
 export const capabilityPresets: Record<BusinessType, TenantCapability[]> = {
   general_retail: commonCapabilities,
+  fashion_retail: [...commonCapabilities, "product_variants", "multi_pricing"],
   food_beverage: [...commonCapabilities, "table_orders", "kitchen_queue"],
   laundry: [...commonCapabilities, "work_orders"],
   salon_barbershop: [...commonCapabilities, "appointments"],
@@ -56,4 +62,6 @@ export const capabilityLabels: Record<TenantCapability, string> = {
   kitchen_queue: "Antrean dapur",
   work_orders: "Pesanan kerja / laundry",
   appointments: "Appointment",
+  product_variants: "Varian produk",
+  multi_pricing: "Multi harga",
 };

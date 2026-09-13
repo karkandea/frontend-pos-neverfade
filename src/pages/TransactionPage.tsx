@@ -7,6 +7,7 @@ import ReceiptModal from "../components/kasir/ReceiptModal";
 import PaymentSuccessModal from "../components/kasir/PaymentSuccessModal";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
+import { flattenRetailCatalog, getRetailPriceOptions, resolveProductRetailPrice } from "../lib/retailPricing";
 import {
   clearRestaurantCheckout,
   getRestaurantCheckout,
@@ -23,6 +24,8 @@ import {
 } from "../lib/laundryCheckout";
 import type { LaundryWorkOrder } from "../types/laundry";
 import type { Product } from "../types/product";
+import type { RetailCatalog } from "../types/retail";
+import { useTenantContextStore } from "../stores/tenantContext";
 import type { RestaurantOrder, RestaurantProduct } from "../types/restaurant";
 import type {
   PaymentCapabilities,
@@ -37,6 +40,13 @@ type Customer = {
 
 type CartItem = {
   id: string;
+  parentProductId?: string;
+  productVariantId?: string;
+  variantLabel?: string;
+  priceLevelId?: string | null;
+  manualPriceLevelId?: string | null;
+  priceLevelName?: string;
+  priceOptions?: { id: string; name: string; unitPrice: number }[];
   nama: string;
   hargaJual: number;
   qty: number;
@@ -193,6 +203,11 @@ function normalizeTransactionItems(
 }
 
 export default function TransactionPage() {
+  const hasAdvancedRetail = useTenantContextStore(
+    (state) =>
+      state.hasCapability("product_variants") &&
+      state.hasCapability("multi_pricing")
+  );
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -320,13 +335,16 @@ export default function TransactionPage() {
     setLoadError("");
 
     try {
+      const productRequest = hasAdvancedRetail
+        ? api.get<RetailCatalog>("/api/retail/catalog")
+        : api.get<Product[]>("/api/products");
       const [
         productResponse,
         customerResponse,
         settingsResponse,
         capabilitiesResponse,
       ] = await Promise.all([
-        api.get<Product[]>("/api/products"),
+        productRequest,
         api.get<Customer[]>("/api/customers"),
         api.get<Settings>("/api/settings"),
         api.get<PaymentCapabilities>(
@@ -334,7 +352,10 @@ export default function TransactionPage() {
         ),
       ]);
 
-      setAllProducts(productResponse.data);
+      const loadedProducts = hasAdvancedRetail
+        ? flattenRetailCatalog(productResponse.data as RetailCatalog)
+        : (productResponse.data as Product[]);
+      setAllProducts(loadedProducts);
       setCustomers(customerResponse.data);
       setSettings(settingsResponse.data);
       setPaymentCapabilities(capabilitiesResponse.data);
@@ -350,8 +371,8 @@ export default function TransactionPage() {
         ))
       );
 
-      await restoreRestaurantCheckout(productResponse.data);
-      await restoreLaundryCheckout(productResponse.data);
+      await restoreRestaurantCheckout(loadedProducts);
+      await restoreLaundryCheckout(loadedProducts);
 
       if (capabilitiesResponse.data.qrisEnabled) {
         await restoreQrisPayment();
@@ -609,9 +630,12 @@ export default function TransactionPage() {
   }
 
   async function reloadProducts() {
-    const response =
-      await api.get<Product[]>("/api/products");
-
+    if (hasAdvancedRetail) {
+      const response = await api.get<RetailCatalog>("/api/retail/catalog");
+      setAllProducts(flattenRetailCatalog(response.data));
+      return;
+    }
+    const response = await api.get<Product[]>("/api/products");
     setAllProducts(response.data);
   }
 
@@ -841,207 +865,94 @@ export default function TransactionPage() {
     );
   }
 
+  function pricedLine(product: Product, qty: number, manualPriceLevelId?: string | null) {
+    const pricing = resolveProductRetailPrice(product, qty, manualPriceLevelId);
+    return {
+      hargaJual: pricing.unitPrice,
+      priceLevelId: pricing.priceLevelId,
+      priceLevelName: pricing.priceLevelName,
+      manualPriceLevelId: manualPriceLevelId ?? null,
+      priceOptions: getRetailPriceOptions(product),
+      subtotal: qty * pricing.unitPrice,
+    };
+  }
+
   function addToCart(product: Product) {
     if (restaurantCheckout || laundryCheckout) {
-      window.alert(
-        restaurantCheckout
-          ? "Item pesanan meja dikunci di Kasir. Ubah item dari halaman Meja."
-          : "Item pesanan laundry dikunci di Kasir. Ubah dari halaman Laundry."
-      );
+      window.alert(restaurantCheckout
+        ? "Item pesanan meja dikunci di Kasir. Ubah item dari halaman Meja."
+        : "Item pesanan laundry dikunci di Kasir. Ubah dari halaman Laundry.");
       return;
     }
-
     setCart((current) => {
-      const existing = current.find(
-        (item) => item.id === product.id
-      );
-
-      if (
-        existing &&
-        product.tracksStock &&
-        existing.qty >= product.stok
-      ) {
-        window.alert(
-          `Stok ${product.nama} hanya ${product.stok}.`
-        );
-
-        return current;
+      const existing = current.find((item) => item.id === product.id);
+      if (existing && product.tracksStock && existing.qty >= product.stok) {
+        window.alert(`Stok ${product.nama} hanya ${product.stok}.`); return current;
       }
-
       if (existing) {
-        return current.map((item) =>
-          item.id === product.id
-            ? {
-                ...item,
-                qty: item.qty + 1,
-                quantity: item.qty + 1,
-                subtotal:
-                  (item.qty + 1) *
-                  item.hargaJual,
-              }
-            : item
-        );
+        const qty = existing.qty + 1;
+        const price = pricedLine(product, qty, existing.manualPriceLevelId);
+        return current.map((item) => item.id === product.id ? { ...item, ...price, qty, quantity: qty } : item);
       }
-
-      if (
-        product.tracksStock &&
-        product.stok <= 0
-      ) {
-        window.alert(
-          `Stok ${product.nama} habis.`
-        );
-
-        return current;
-      }
-
-      return [
-        ...current,
-        {
-          id: product.id,
-          nama: product.nama,
-          hargaJual: product.hargaJual,
-          qty: 1,
-          quantity: 1,
-          subtotal: product.hargaJual,
-          productType: product.type,
-          tracksStock: product.tracksStock,
-          quantityPrecision: product.quantityPrecision,
-          unit: product.satuan,
-        },
-      ];
+      if (product.tracksStock && product.stok <= 0) { window.alert(`Stok ${product.nama} habis.`); return current; }
+      const price = pricedLine(product, 1);
+      return [...current, {
+        id: product.id,
+        parentProductId: product.parentProductId,
+        productVariantId: product.productVariantId,
+        variantLabel: product.variantLabel,
+        nama: product.nama,
+        ...price,
+        qty: 1, quantity: 1,
+        productType: product.type, tracksStock: product.tracksStock,
+        quantityPrecision: product.quantityPrecision, unit: product.satuan,
+      }];
     });
   }
 
   function increase(productId: string) {
-    if (restaurantCheckout || laundryCheckout) {
-      window.alert(
-        restaurantCheckout
-          ? "Qty pesanan meja dikunci di Kasir. Ubah dari halaman Meja."
-          : "Jumlah pesanan laundry dikunci di Kasir. Ubah dari halaman Laundry."
-      );
-      return;
-    }
-
+    if (restaurantCheckout || laundryCheckout) return;
     const product = getProduct(productId);
-
-    setCart((current) =>
-      current.map((item) => {
-        if (item.id !== productId) {
-          return item;
-        }
-
-        if (!product) {
-          return item;
-        }
-
-        if (
-          product.tracksStock &&
-          item.qty >= product.stok
-        ) {
-          window.alert(
-            `Stok ${product.nama} hanya ${product.stok}.`
-          );
-
-          return item;
-        }
-
-        const qty = item.qty + 1;
-
-        return {
-          ...item,
-          qty,
-          quantity: qty,
-          subtotal: qty * item.hargaJual,
-        };
-      })
-    );
+    if (!product) return;
+    setCart((current) => current.map((item) => {
+      if (item.id !== productId) return item;
+      if (product.tracksStock && item.qty >= product.stok) { window.alert(`Stok ${product.nama} hanya ${product.stok}.`); return item; }
+      const qty = item.qty + 1;
+      return { ...item, ...pricedLine(product, qty, item.manualPriceLevelId), qty, quantity: qty };
+    }));
   }
 
   function setQuantity(productId: string, requested: number) {
-    if (restaurantCheckout || laundryCheckout) {
-      window.alert(
-        restaurantCheckout
-          ? "Qty pesanan meja dikunci di Kasir. Ubah dari halaman Meja."
-          : "Jumlah pesanan laundry dikunci di Kasir. Ubah dari halaman Laundry."
-      );
-      return;
-    }
-
+    if (restaurantCheckout || laundryCheckout) return;
     const product = getProduct(productId);
     if (!product || !Number.isFinite(requested)) return;
-
     const precision = product.quantityPrecision ?? 0;
-    const normalized = Number(
-      requested.toFixed(precision)
-    );
-
-    if (normalized <= 0) {
-      remove(productId);
-      return;
-    }
-
-    if (
-      product.type === "goods" &&
-      !Number.isInteger(normalized)
-    ) {
-      window.alert(
-        "Jumlah barang harus bilangan bulat."
-      );
-      return;
-    }
-
-    if (
-      product.tracksStock &&
-      normalized > product.stok
-    ) {
-      window.alert(
-        `Stok ${product.nama} hanya ${product.stok}.`
-      );
-      return;
-    }
-
-    setCart((current) =>
-      current.map((item) =>
-        item.id === productId
-          ? {
-              ...item,
-              qty: normalized,
-              quantity: normalized,
-              subtotal: normalized * item.hargaJual,
-            }
-          : item
-      )
-    );
+    const normalized = Number(requested.toFixed(precision));
+    if (normalized <= 0) { remove(productId); return; }
+    if (product.type === "goods" && !Number.isInteger(normalized)) { window.alert("Jumlah barang harus bilangan bulat."); return; }
+    if (product.tracksStock && normalized > product.stok) { window.alert(`Stok ${product.nama} hanya ${product.stok}.`); return; }
+    setCart((current) => current.map((item) => item.id === productId
+      ? { ...item, ...pricedLine(product, normalized, item.manualPriceLevelId), qty: normalized, quantity: normalized }
+      : item));
   }
 
   function decrease(productId: string) {
-    if (restaurantCheckout || laundryCheckout) {
-      window.alert(
-        restaurantCheckout
-          ? "Qty pesanan meja dikunci di Kasir. Ubah dari halaman Meja."
-          : "Jumlah pesanan laundry dikunci di Kasir. Ubah dari halaman Laundry."
-      );
-      return;
-    }
+    if (restaurantCheckout || laundryCheckout) return;
+    const product = getProduct(productId);
+    setCart((current) => current.map((item) => {
+      if (item.id !== productId) return item;
+      const qty = item.qty - 1;
+      if (!product || qty <= 0) return { ...item, qty: 0 };
+      return { ...item, ...pricedLine(product, qty, item.manualPriceLevelId), qty, quantity: qty };
+    }).filter((item) => item.qty > 0));
+  }
 
-    setCart((current) =>
-      current
-        .map((item) => {
-          if (item.id !== productId) {
-            return item;
-          }
-
-          const qty = item.qty - 1;
-
-          return {
-            ...item,
-            qty,
-            quantity: qty,
-            subtotal: qty * item.hargaJual,
-          };
-        })
-        .filter((item) => item.qty > 0)
-    );
+  function changePriceLevel(productId: string, manualPriceLevelId: string) {
+    const product = getProduct(productId);
+    if (!product) return;
+    setCart((current) => current.map((item) => item.id === productId
+      ? { ...item, ...pricedLine(product, item.qty, manualPriceLevelId || null) }
+      : item));
   }
 
   function remove(productId: string) {
@@ -1227,7 +1138,9 @@ export default function TransactionPage() {
       const payload = {
         customerId: customerId || null,
         items: cart.map((item) => ({
-          id: item.id,
+          id: item.parentProductId ?? item.id,
+          productVariantId: item.productVariantId ?? null,
+          priceLevelId: item.manualPriceLevelId ?? null,
           nama: item.nama,
           hargaJual: item.hargaJual,
           qty:
@@ -1543,6 +1456,7 @@ export default function TransactionPage() {
               onPaidChange={setPaid}
               onIncrease={increase}
               onDecrease={decrease}
+              onPriceLevelChange={changePriceLevel}
               onRemove={remove}
               onClear={requestClearCart}
               onCheckout={() => void checkout()}
