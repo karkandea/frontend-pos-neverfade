@@ -34,7 +34,7 @@ function shortDate(value: string) {
 }
 
 export default function DashboardChart() {
-  const ref = useRef<HTMLCanvasElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [data, setData] = useState<ChartItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,7 @@ export default function DashboardChart() {
 
         const next = Array.isArray(response.data) ? response.data : [];
         setData(next);
-        setActiveIndex(next.length > 0 ? next.length - 1 : null);
+        setActiveIndex(null);
         setError(false);
       } catch (loadError) {
         if (!mounted) return;
@@ -77,7 +77,7 @@ export default function DashboardChart() {
       const response = await api.get<ChartItem[]>("/api/laporan/chart");
       const next = Array.isArray(response.data) ? response.data : [];
       setData(next);
-      setActiveIndex(next.length > 0 ? next.length - 1 : null);
+      setActiveIndex(null);
     } catch (loadError) {
       console.error("chart error", loadError);
       setError(true);
@@ -88,15 +88,12 @@ export default function DashboardChart() {
 
   const labels = useMemo(() => data.map((item) => item.label), [data]);
   const values = useMemo(() => data.map((item) => item.total), [data]);
-  const total = useMemo(
-    () => values.reduce((sum, value) => sum + Math.max(0, value || 0), 0),
-    [values],
-  );
   const selected =
     activeIndex != null && activeIndex >= 0 ? data[activeIndex] : undefined;
+  const hasSales = values.some((value) => value > 0);
 
   useEffect(() => {
-    const canvas = ref.current;
+    const canvas = canvasRef.current;
     const wrap = wrapRef.current;
     if (!canvas || !wrap || loading || error) return;
 
@@ -117,15 +114,15 @@ export default function DashboardChart() {
   }, [activeIndex, error, labels, loading, values]);
 
   const selectFromPointer = (event: PointerEvent<HTMLCanvasElement>) => {
-    const canvas = ref.current;
+    const canvas = canvasRef.current;
     if (!canvas || data.length === 0) return;
 
     const rect = canvas.getBoundingClientRect();
-    const pad = getChartPadding(rect.width);
-    const graphWidth = Math.max(rect.width - pad.left - pad.right, 1);
+    const padding = getChartPadding(rect.width);
+    const graphWidth = Math.max(rect.width - padding.left - padding.right, 1);
     const step = data.length > 1 ? graphWidth / (data.length - 1) : graphWidth;
     const x = Math.min(
-      Math.max(event.clientX - rect.left - pad.left, 0),
+      Math.max(event.clientX - rect.left - padding.left, 0),
       graphWidth,
     );
     const index = data.length > 1 ? Math.round(x / step) : 0;
@@ -138,20 +135,22 @@ export default function DashboardChart() {
 
     if (event.key === "ArrowLeft") {
       event.preventDefault();
-      setActiveIndex((current) => Math.max((current ?? data.length - 1) - 1, 0));
+      setActiveIndex((current) => Math.max((current ?? data.length) - 1, 0));
     }
 
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      setActiveIndex((current) => Math.min((current ?? 0) + 1, data.length - 1));
+      setActiveIndex((current) => Math.min((current ?? -1) + 1, data.length - 1));
+    }
+
+    if (event.key === "Escape") {
+      setActiveIndex(null);
     }
   };
 
   if (loading) {
     return (
       <div className="sales-chart-state sales-chart-loading" aria-label="Memuat grafik penjualan">
-        <span className="sales-chart-loading-bar" />
-        <span className="sales-chart-loading-bar short" />
         <div className="sales-chart-loading-plot" />
       </div>
     );
@@ -170,45 +169,37 @@ export default function DashboardChart() {
   }
 
   return (
-    <div className="sales-chart" ref={wrapRef}>
-      <div className="sales-chart-summary">
-        <div className="sales-chart-total">
-          <span>Total 7 hari</span>
-          <strong>{rupiah(total)}</strong>
-        </div>
-
-        <div className="sales-chart-selected" aria-live="polite">
-          <span>
-            {selected
-              ? `${selected.label} · ${shortDate(selected.date)}`
-              : "Belum ada data"}
-          </span>
-          <strong>{selected ? rupiah(selected.total) : "—"}</strong>
-        </div>
+    <div className="sales-chart sales-chart-minimal" ref={wrapRef}>
+      <div className="sales-chart-meta" aria-live="polite">
+        {selected ? (
+          <div className="sales-chart-value-chip">
+            <span>{selected.label} · {shortDate(selected.date)}</span>
+            <strong>{rupiah(selected.total)}</strong>
+          </div>
+        ) : (
+          <span className="sales-chart-helper">Ketuk titik untuk melihat nominal</span>
+        )}
       </div>
 
       <div className="sales-chart-plot">
         <canvas
           id="sales-chart"
-          ref={ref}
+          ref={canvasRef}
           tabIndex={0}
           role="img"
-          aria-label={`Grafik penjualan 7 hari dengan total ${rupiah(total)}. Gunakan tombol panah untuk melihat nilai per hari.`}
+          aria-label="Grafik penjualan 7 hari. Ketuk titik atau gunakan tombol panah untuk melihat nominal harian."
           onPointerMove={selectFromPointer}
           onPointerDown={selectFromPointer}
+          onPointerLeave={() => setActiveIndex(null)}
           onKeyDown={handleKeyDown}
         />
 
-        {total === 0 && (
+        {!hasSales && (
           <div className="sales-chart-empty-note">
             Belum ada penjualan dalam 7 hari terakhir
           </div>
         )}
       </div>
-
-      <p className="sales-chart-hint">
-        Ketuk atau arahkan ke titik untuk melihat penjualan per hari.
-      </p>
     </div>
   );
 }

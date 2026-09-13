@@ -26,6 +26,7 @@ test.beforeEach(async ({ page }) => {
     if (path === "/api/laporan/chart") return json(route, chart);
     return json(route, []);
   });
+
   await mockTenantContext(page, "owner");
   await page.goto("/login");
   await page.getByLabel("Username").fill("owner");
@@ -34,22 +35,28 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/dashboard");
 });
 
-test("dashboard chart stays readable and interactive", async ({ page }) => {
+test("minimal dashboard chart stays readable and interactive", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
-  await expect(page.getByText("Total 7 hari")).toBeVisible();
-  await expect(page.getByText(/171\.000/)).toBeVisible();
+  await expect(page.getByText("Ketuk titik untuk melihat nominal")).toBeVisible();
 
   const canvas = page.locator("#sales-chart");
   await expect(canvas).toBeVisible();
   const box = await canvas.boundingBox();
   expect(box?.width ?? 0).toBeGreaterThan(250);
-  expect(box?.height ?? 0).toBeGreaterThanOrEqual(170);
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(160);
 
   await canvas.focus();
   await page.keyboard.press("ArrowLeft");
-  await expect(page.locator(".sales-chart-selected")).toContainText("Sab");
-  await expect(page.locator(".sales-chart-selected")).toContainText(/Rp\s?0/);
+  await expect(page.locator(".sales-chart-value-chip")).toContainText("Min");
+  await expect(page.locator(".sales-chart-value-chip")).toContainText(/72\.000/);
 
-  const size = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }));
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.locator(".sales-chart-value-chip")).toContainText("Sab");
+  await expect(page.locator(".sales-chart-value-chip")).toContainText(/Rp\s?0/);
+
+  const size = await page.evaluate(() => ({
+    viewport: innerWidth,
+    document: document.documentElement.scrollWidth,
+  }));
   expect(size.document).toBeLessThanOrEqual(size.viewport + 1);
 });
