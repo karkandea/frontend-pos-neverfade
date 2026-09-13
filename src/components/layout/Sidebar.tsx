@@ -24,6 +24,7 @@ export default function Sidebar({ open, onClose }: Props) {
   const canTableOrders = hasCapability("table_orders");
   const canKitchenQueue = hasCapability("kitchen_queue");
   const canWorkOrders = hasCapability("work_orders");
+  const canProductVariants = hasCapability("product_variants");
 
   const showManagement =
     user?.role !== "kasir" &&
@@ -235,6 +236,21 @@ export default function Sidebar({ open, onClose }: Props) {
             </svg>
 
             <span>Produk</span>
+          </NavLink>
+        )}
+
+        {user?.role !== "kasir" && canProductVariants && (
+          <NavLink
+            to="/retail/variants-pricing"
+            className={({ isActive }) =>
+              isActive ? "nav-item active" : "nav-item"
+            }
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M4 7h16M4 12h16M4 17h10" />
+              <circle cx="18" cy="17" r="2" />
+            </svg>
+            <span>Varian & Harga</span>
           </NavLink>
         )}
 

@@ -7,6 +7,7 @@ export type PlatformUser = {
 
 export type BusinessType =
   | "general_retail"
+  | "fashion_retail"
   | "food_beverage"
   | "laundry"
   | "salon_barbershop";
@@ -21,7 +22,9 @@ export type TenantCapability =
   | "table_orders"
   | "kitchen_queue"
   | "work_orders"
-  | "appointments";
+  | "appointments"
+  | "product_variants"
+  | "multi_pricing";
 
 export type TenantOwnerSummary = {
   id: string;
