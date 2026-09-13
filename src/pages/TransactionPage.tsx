@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import CartPanel from "../components/kasir/CartPanel";
+import HostedPaymentModal from "../components/kasir/HostedPaymentModal";
 import ProductGrid from "../components/kasir/ProductGrid";
 import QrisPaymentModal from "../components/kasir/QrisPaymentModal";
 import ReceiptModal from "../components/kasir/ReceiptModal";
@@ -8,6 +9,7 @@ import PaymentSuccessModal from "../components/kasir/PaymentSuccessModal";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
 import type {
+  HostedPayment,
   PaymentCapabilities,
   PaymentStatus,
   QrisPayment,
@@ -56,7 +58,7 @@ type ReceiptData = {
   items: CartItem[];
 };
 
-type PaymentMethod = "tunai" | "qris";
+type PaymentMethod = "tunai" | "qris" | "xendit";
 
 type TransactionResponse = ReceiptData & {
   id: string;
@@ -65,6 +67,7 @@ type TransactionResponse = ReceiptData & {
 
 const PAYMENT_POLL_INTERVAL_MS = 1000;
 const ACTIVE_QRIS_KEY = "nfpos_active_qris";
+const ACTIVE_HOSTED_KEY = "nfpos_active_xendit";
 
 function wait(milliseconds: number, signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
@@ -142,6 +145,20 @@ function paymentFromStatus(status: PaymentStatus): QrisPayment {
   };
 }
 
+function hostedPaymentFromStatus(status: PaymentStatus): HostedPayment {
+  return {
+    id: status.id,
+    transactionId: status.transactionId,
+    providerSessionId: status.providerSessionId ?? "",
+    providerReferenceId: status.providerReferenceId,
+    amount: status.amount,
+    currency: status.currency,
+    status: status.status,
+    checkoutUrl: status.checkoutUrl ?? "",
+    expiresAt: status.expiresAt,
+  };
+}
+
 function getErrorMessage(error: unknown) {
   if (typeof error !== "object" || error === null) {
     return "Transaksi gagal diproses.";
@@ -185,6 +202,7 @@ export default function TransactionPage() {
   const [paymentCapabilities, setPaymentCapabilities] =
     useState<PaymentCapabilities>({
       qrisEnabled: false,
+      hostedCheckoutEnabled: false,
       mode: "disabled",
       isSandbox: false,
     });
@@ -225,6 +243,13 @@ export default function TransactionPage() {
   const [saleContextReady, setSaleContextReady] = useState(false);
   const [saleContextError, setSaleContextError] = useState("");
   const [qrisCancelling, setQrisCancelling] = useState(false);
+  const [hostedPayment, setHostedPayment] =
+    useState<HostedPayment | null>(null);
+  const [hostedStatus, setHostedStatus] =
+    useState<string | null>(null);
+  const [hostedStatusError, setHostedStatusError] =
+    useState("");
+  const [hostedCancelling, setHostedCancelling] = useState(false);
 
   const submissionLock = useRef(false);
   const checkoutAbort = useRef<AbortController | null>(null);
@@ -297,20 +322,34 @@ export default function TransactionPage() {
       setCustomers(customerResponse.data);
       setSettings(settingsResponse.data);
       setPaymentCapabilities(capabilitiesResponse.data);
-      setPaymentMethod((current) =>
-        current === "qris" &&
-        !capabilitiesResponse.data.qrisEnabled
-          ? "tunai"
-          : current
-      );
+      setPaymentMethod((current) => {
+        if (
+          current === "qris" &&
+          !capabilitiesResponse.data.qrisEnabled
+        ) {
+          return "tunai";
+        }
+
+        if (
+          current === "xendit" &&
+          !capabilitiesResponse.data.hostedCheckoutEnabled
+        ) {
+          return "tunai";
+        }
+
+        return current;
+      });
       setTax(
         clampPercent(Number(
           settingsResponse.data.defaultTax ?? 0
         ))
       );
 
-      if (capabilitiesResponse.data.qrisEnabled) {
-        await restoreQrisPayment();
+      if (
+        capabilitiesResponse.data.qrisEnabled ||
+        capabilitiesResponse.data.hostedCheckoutEnabled
+      ) {
+        await restorePendingPayment();
       }
     } catch (error) {
       setLoadError(getErrorMessage(error));
@@ -328,19 +367,36 @@ export default function TransactionPage() {
 
   function persistPayment(payment: QrisPayment) {
     localStorage.setItem(ACTIVE_QRIS_KEY, JSON.stringify(payment));
+    localStorage.removeItem(ACTIVE_HOSTED_KEY);
   }
 
   function removePersistedPayment() {
     localStorage.removeItem(ACTIVE_QRIS_KEY);
   }
 
-  async function restoreQrisPayment() {
+  function persistHostedPayment(payment: HostedPayment) {
+    localStorage.setItem(ACTIVE_HOSTED_KEY, JSON.stringify(payment));
+    localStorage.removeItem(ACTIVE_QRIS_KEY);
+  }
+
+  function removePersistedHostedPayment() {
+    localStorage.removeItem(ACTIVE_HOSTED_KEY);
+  }
+
+  async function restorePendingPayment() {
     try {
-      const saved = localStorage.getItem(ACTIVE_QRIS_KEY);
+      const savedQris = localStorage.getItem(ACTIVE_QRIS_KEY);
+      const savedHosted = localStorage.getItem(ACTIVE_HOSTED_KEY);
       let status: PaymentStatus | null = null;
 
-      if (saved) {
-        const parsed = JSON.parse(saved) as QrisPayment;
+      if (savedQris) {
+        const parsed = JSON.parse(savedQris) as QrisPayment;
+        const response = await api.get<PaymentStatus>(
+          `/api/payments/${parsed.id}`
+        );
+        status = response.data;
+      } else if (savedHosted) {
+        const parsed = JSON.parse(savedHosted) as HostedPayment;
         const response = await api.get<PaymentStatus>(
           `/api/payments/${parsed.id}`
         );
@@ -356,12 +412,39 @@ export default function TransactionPage() {
 
       if (!status) return;
 
+      if (status.method === "xendit_hosted") {
+        const payment = hostedPaymentFromStatus(status);
+        persistHostedPayment(payment);
+        setHostedPayment(payment);
+        setHostedStatus(status.status);
+        setHostedStatusError("");
+        setQrisPayment(null);
+        setQrisStatus(null);
+        await restoreSaleContext(payment.transactionId, "xendit");
+
+        if (status.status === "paid") {
+          clearCart();
+          await Promise.all([
+            loadReceipt(payment.transactionId),
+            reloadProducts(),
+          ]);
+        } else if (
+          status.status === "pending" ||
+          status.status === "creating"
+        ) {
+          void monitorHostedPayment(payment);
+        }
+        return;
+      }
+
       const payment = paymentFromStatus(status);
       persistPayment(payment);
       setQrisPayment(payment);
       setQrisStatus(status.status);
       setQrisStatusError("");
-      await restoreSaleContext(payment.transactionId);
+      setHostedPayment(null);
+      setHostedStatus(null);
+      await restoreSaleContext(payment.transactionId, "qris");
 
       if (status.status === "paid") {
         clearCart();
@@ -376,13 +459,20 @@ export default function TransactionPage() {
         void monitorPayment(payment);
       }
     } catch (error) {
-      setQrisStatusError(
-        `Pembayaran sebelumnya belum dapat dipulihkan. ${getErrorMessage(error)}`
-      );
+      const message =
+        `Pembayaran sebelumnya belum dapat dipulihkan. ${getErrorMessage(error)}`;
+      if (localStorage.getItem(ACTIVE_HOSTED_KEY)) {
+        setHostedStatusError(message);
+      } else {
+        setQrisStatusError(message);
+      }
     }
   }
 
-  async function restoreSaleContext(transactionId: string) {
+  async function restoreSaleContext(
+    transactionId: string,
+    method: "qris" | "xendit" = "qris"
+  ) {
     setSaleContextReady(false);
     setSaleContextError("");
     try {
@@ -395,7 +485,7 @@ export default function TransactionPage() {
       setCustomerId(data.customerId ?? "");
       setDiscount(clampPercent(data.disc));
       setTax(clampPercent(data.tax));
-      setPaymentMethod("qris");
+      setPaymentMethod(method);
       setSaleContextReady(true);
       return true;
     } catch (error) {
@@ -452,6 +542,22 @@ export default function TransactionPage() {
     }
   }
 
+  async function applyFinalHostedStatus(
+    payment: HostedPayment,
+    status: string
+  ) {
+    setHostedStatus((current) => current === "paid" ? current : status);
+    persistHostedPayment({ ...payment, status });
+
+    if (status === "paid") {
+      clearCart();
+      await Promise.all([
+        loadReceipt(payment.transactionId),
+        reloadProducts(),
+      ]);
+    }
+  }
+
   async function cancelQrisPayment() {
     if (!qrisPayment || qrisCancelling) return;
     if (!window.confirm(
@@ -469,7 +575,7 @@ export default function TransactionPage() {
       setQrisPayment(restored);
       setQrisStatus(data.status);
       persistPayment(restored);
-      await restoreSaleContext(restored.transactionId);
+      await restoreSaleContext(restored.transactionId, "qris");
     } catch (error) {
       setQrisStatusError(
         `Pembatalan belum terkonfirmasi. Jangan buat pembayaran baru. ${getErrorMessage(error)}`
@@ -477,6 +583,34 @@ export default function TransactionPage() {
       await refreshPaymentStatus();
     } finally {
       setQrisCancelling(false);
+    }
+  }
+
+  async function cancelHostedPayment() {
+    if (!hostedPayment || hostedCancelling) return;
+    if (!window.confirm(
+      `Batalkan Xendit Checkout ${hostedPayment.providerSessionId}? Link ini tidak dapat dipakai lagi.`
+    )) return;
+
+    setHostedCancelling(true);
+    setHostedStatusError("");
+    try {
+      checkoutAbort.current?.abort();
+      const { data } = await api.post<PaymentStatus>(
+        `/api/payments/${hostedPayment.id}/cancel`
+      );
+      const restored = hostedPaymentFromStatus(data);
+      setHostedPayment(restored);
+      setHostedStatus(data.status);
+      persistHostedPayment(restored);
+      await restoreSaleContext(restored.transactionId, "xendit");
+    } catch (error) {
+      setHostedStatusError(
+        `Pembatalan belum terkonfirmasi. Jangan buat pembayaran baru. ${getErrorMessage(error)}`
+      );
+      await refreshHostedPaymentStatus();
+    } finally {
+      setHostedCancelling(false);
     }
   }
 
@@ -506,6 +640,32 @@ export default function TransactionPage() {
     }
   }
 
+  async function monitorHostedPayment(payment: HostedPayment) {
+    checkoutAbort.current?.abort();
+    const abortController = new AbortController();
+    checkoutAbort.current = abortController;
+    submissionLock.current = true;
+    setSubmitting(true);
+    try {
+      const status = await waitForPaymentStatus(
+        payment.id,
+        abortController.signal,
+        setHostedStatusError
+      );
+      await applyFinalHostedStatus(payment, status);
+    } catch (error) {
+      if (!abortController.signal.aborted) {
+        setHostedStatusError(getErrorMessage(error));
+      }
+    } finally {
+      if (checkoutAbort.current === abortController) {
+        checkoutAbort.current = null;
+        submissionLock.current = false;
+        setSubmitting(false);
+      }
+    }
+  }
+
   async function refreshPaymentStatus() {
     if (!qrisPayment) return;
     setQrisStatusError("");
@@ -516,7 +676,7 @@ export default function TransactionPage() {
       const restored = paymentFromStatus(data);
       setQrisPayment(restored);
       if (data.status !== "paid") {
-        await restoreSaleContext(restored.transactionId);
+        await restoreSaleContext(restored.transactionId, "qris");
       }
       await applyFinalPaymentStatus(restored, data.status);
       if (data.status === "pending" || data.status === "creating") {
@@ -525,6 +685,36 @@ export default function TransactionPage() {
     } catch (error) {
       setQrisStatusError(getErrorMessage(error));
     }
+  }
+
+  async function refreshHostedPaymentStatus() {
+    if (!hostedPayment) return;
+    setHostedStatusError("");
+    try {
+      const { data } = await api.get<PaymentStatus>(
+        `/api/payments/${hostedPayment.id}`
+      );
+      const restored = hostedPaymentFromStatus(data);
+      setHostedPayment(restored);
+      if (data.status !== "paid") {
+        await restoreSaleContext(restored.transactionId, "xendit");
+      }
+      await applyFinalHostedStatus(restored, data.status);
+      if (data.status === "pending" || data.status === "creating") {
+        void monitorHostedPayment(restored);
+      }
+    } catch (error) {
+      setHostedStatusError(getErrorMessage(error));
+    }
+  }
+
+  function resumeHostedCheckout() {
+    if (!hostedPayment?.checkoutUrl) {
+      setHostedStatusError("Link Xendit Checkout belum tersedia.");
+      return;
+    }
+
+    window.location.assign(hostedPayment.checkoutUrl);
   }
 
   function getProduct(productId: string) {
@@ -827,6 +1017,36 @@ export default function TransactionPage() {
         return;
       }
 
+      if (paymentMethod === "xendit") {
+        if (!paymentCapabilities.hostedCheckoutEnabled) {
+          throw new Error("Xendit Checkout sedang tidak tersedia.");
+        }
+
+        const paymentResponse = await api.post<HostedPayment>(
+          "/api/payments/hosted",
+          {
+            ...payload,
+            metodePembayaran: "XENDIT",
+            dibayar: 0,
+            kembalian: 0,
+          }
+        );
+        const payment = paymentResponse.data;
+
+        if (!payment.checkoutUrl) {
+          throw new Error("Link Xendit Checkout belum tersedia.");
+        }
+
+        persistHostedPayment(payment);
+        setHostedPayment(payment);
+        setHostedStatus(payment.status);
+        setHostedStatusError("");
+        setSaleContextReady(true);
+        setSaleContextError("");
+        window.location.assign(payment.checkoutUrl);
+        return;
+      }
+
       const response = await api.post<TransactionResponse>(
         "/api/transactions",
         payload
@@ -885,11 +1105,24 @@ export default function TransactionPage() {
     setSaleContextError("");
   }
 
+  function closeFailedHosted() {
+    removePersistedHostedPayment();
+    setHostedPayment(null);
+    setHostedStatus(null);
+    setHostedStatusError("");
+    setSaleContextReady(false);
+    setSaleContextError("");
+  }
+
   function startNewTransaction() {
     removePersistedPayment();
+    removePersistedHostedPayment();
     setQrisPayment(null);
     setQrisStatus(null);
     setQrisStatusError("");
+    setHostedPayment(null);
+    setHostedStatus(null);
+    setHostedStatusError("");
     setSaleContextReady(false);
     setSaleContextError("");
     setReceipt(null);
@@ -914,11 +1147,12 @@ export default function TransactionPage() {
 
         </div>
 
-        {qrisStatusError && !qrisPayment ? (
+        {(qrisStatusError || hostedStatusError) &&
+        !qrisPayment && !hostedPayment ? (
           <div className="payment-recovery-banner" role="alert">
             <strong>Pembayaran sebelumnya belum dapat diperiksa.</strong>
-            <span>{qrisStatusError}</span>
-            <button type="button" className="btn-secondary" onClick={() => void restoreQrisPayment()}>
+            <span>{hostedStatusError || qrisStatusError}</span>
+            <button type="button" className="btn-secondary" onClick={() => void restorePendingPayment()}>
               Coba Lagi
             </button>
           </div>
@@ -957,7 +1191,11 @@ export default function TransactionPage() {
 
             <CartPanel
               submitting={
-                submitting || qrisStatus === "pending"
+                submitting ||
+                qrisStatus === "pending" ||
+                qrisStatus === "creating" ||
+                hostedStatus === "pending" ||
+                hostedStatus === "creating"
               }
               items={cart}
               customers={customers}
@@ -968,6 +1206,9 @@ export default function TransactionPage() {
               total={total}
               paymentMethod={paymentMethod}
               qrisEnabled={paymentCapabilities.qrisEnabled}
+              hostedCheckoutEnabled={
+                paymentCapabilities.hostedCheckoutEnabled
+              }
               qrisSandbox={paymentCapabilities.isSandbox}
               paid={paid}
               change={change}
@@ -1024,7 +1265,7 @@ export default function TransactionPage() {
           onRetryStatus={() => void refreshPaymentStatus()}
           onRetrySaleContext={() => {
             if (qrisPayment) {
-              void restoreSaleContext(qrisPayment.transactionId);
+              void restoreSaleContext(qrisPayment.transactionId, "qris");
             }
           }}
           receiptLoading={receiptLoading}
@@ -1044,6 +1285,43 @@ export default function TransactionPage() {
             removePersistedPayment();
             setQrisPayment(null);
             setQrisStatus(null);
+            setReceiptOpen(true);
+          }}
+          onNewTransaction={startNewTransaction}
+        />
+
+        <HostedPaymentModal
+          payment={hostedPayment}
+          status={hostedStatus}
+          statusError={hostedStatusError}
+          saleContextReady={saleContextReady}
+          saleContextError={saleContextError}
+          sandbox={paymentCapabilities.isSandbox}
+          receiptLoading={receiptLoading}
+          receiptError={receiptError}
+          receiptReady={
+            receipt?.transactionId === hostedPayment?.transactionId &&
+            !receiptLoading && !receiptError
+          }
+          cancelling={hostedCancelling}
+          onResumeCheckout={resumeHostedCheckout}
+          onRetryStatus={() => void refreshHostedPaymentStatus()}
+          onCancel={() => void cancelHostedPayment()}
+          onCloseFailed={closeFailedHosted}
+          onRetrySaleContext={() => {
+            if (hostedPayment) {
+              void restoreSaleContext(hostedPayment.transactionId, "xendit");
+            }
+          }}
+          onRetryReceipt={() => {
+            if (hostedPayment) {
+              void loadReceipt(hostedPayment.transactionId);
+            }
+          }}
+          onViewReceipt={() => {
+            removePersistedHostedPayment();
+            setHostedPayment(null);
+            setHostedStatus(null);
             setReceiptOpen(true);
           }}
           onNewTransaction={startNewTransaction}

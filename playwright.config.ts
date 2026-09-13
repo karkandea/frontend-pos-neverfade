@@ -3,6 +3,10 @@ import {
   devices,
 } from "@playwright/test";
 
+const baseURL =
+  process.env.PLAYWRIGHT_BASE_URL ??
+  "http://127.0.0.1:5273";
+
 export default defineConfig({
   testDir: "./tests/e2e",
 
@@ -39,7 +43,7 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: "http://127.0.0.1:5273",
+    baseURL,
 
     trace: "retain-on-failure",
 
