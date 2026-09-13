@@ -15,6 +15,8 @@ type Customer = {
   nama: string;
 };
 
+type PaymentMethod = "tunai" | "qris" | "xendit";
+
 type Props = {
   submitting: boolean;
 
@@ -28,8 +30,9 @@ type Props = {
   subtotal: number;
   total: number;
 
-  paymentMethod: "tunai" | "qris";
+  paymentMethod: PaymentMethod;
   qrisEnabled: boolean;
+  hostedCheckoutEnabled: boolean;
   qrisSandbox: boolean;
   paid: number;
   change: number;
@@ -39,7 +42,7 @@ type Props = {
   onDiscountChange: (value: number) => void;
   onTaxChange: (value: number) => void;
   onPaymentMethodChange: (
-    value: "tunai" | "qris"
+    value: PaymentMethod
   ) => void;
   onPaidChange: (value: number) => void;
 
@@ -71,6 +74,7 @@ export default function CartPanel({
 
   paymentMethod,
   qrisEnabled,
+  hostedCheckoutEnabled,
   qrisSandbox,
   paid,
   change,
@@ -384,7 +388,30 @@ export default function CartPanel({
                     QRIS
                   </button>
                 ) : null}
+
+                {hostedCheckoutEnabled ? (
+                  <button
+                    type="button"
+                    className={
+                      paymentMethod === "xendit"
+                        ? "pay-btn active"
+                        : "pay-btn"
+                    }
+                    aria-pressed={paymentMethod === "xendit"}
+                    onClick={() =>
+                      onPaymentMethodChange("xendit")
+                    }
+                  >
+                    XENDIT
+                  </button>
+                ) : null}
               </div>
+
+              {paymentMethod === "xendit" ? (
+                <small>
+                  E-wallet, transfer bank, kartu, dan channel lain dipilih di halaman Xendit.
+                </small>
+              ) : null}
 
               {qrisEnabled && qrisSandbox ? (
                 <div className="payment-sandbox-warning" role="alert">

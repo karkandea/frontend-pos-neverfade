@@ -3,6 +3,7 @@ import { create } from "zustand";
 import api, { TOKEN_KEY } from "../lib/api";
 
 const ACTIVE_QRIS_KEY = "nfpos_active_qris";
+const ACTIVE_HOSTED_KEY = "nfpos_active_xendit";
 
 export type User = {
   id: string;
@@ -52,6 +53,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ACTIVE_QRIS_KEY);
+    localStorage.removeItem(ACTIVE_HOSTED_KEY);
     const storage = remember ? localStorage : sessionStorage;
     storage.setItem(TOKEN_KEY, data.token);
 
@@ -91,6 +93,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         localStorage.removeItem(TOKEN_KEY);
         sessionStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(ACTIVE_QRIS_KEY);
+    localStorage.removeItem(ACTIVE_HOSTED_KEY);
 
         set({
           token: null,
@@ -112,6 +115,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ACTIVE_QRIS_KEY);
+    localStorage.removeItem(ACTIVE_HOSTED_KEY);
 
     set({
       token: null,
