@@ -18,6 +18,7 @@ type Props = {
   onRetryStatus: () => void;
   onCancel: () => void;
   onCloseFailed: () => void;
+  onDismiss: () => void;
   onRetrySaleContext: () => void;
   onRetryReceipt: () => void;
   onViewReceipt: () => void;
@@ -46,6 +47,7 @@ export default function HostedPaymentModal({
   onRetryStatus,
   onCancel,
   onCloseFailed,
+  onDismiss,
   onRetrySaleContext,
   onRetryReceipt,
   onViewReceipt,
@@ -74,7 +76,7 @@ export default function HostedPaymentModal({
       }).format(new Date(payment.expiresAt))
     : null;
 
-  useDialogFocus(Boolean(payment && status), dialogRef, failed ? onCloseFailed : undefined);
+  useDialogFocus(Boolean(payment && status), dialogRef, pending ? onDismiss : failed ? onCloseFailed : undefined);
 
   if (!payment || !status) {
     return null;
@@ -103,6 +105,16 @@ export default function HostedPaymentModal({
                     : "Menunggu pembayaran"}
             </p>
           </div>
+          {pending ? (
+            <button
+              type="button"
+              className="modal-close"
+              aria-label="Tutup pembayaran"
+              onClick={onDismiss}
+            >
+              ×
+            </button>
+          ) : null}
         </div>
 
         <div className="modal-body qris-payment-body">
@@ -191,6 +203,9 @@ export default function HostedPaymentModal({
                 </button>
                 <button type="button" className="btn-danger" onClick={onCancel} disabled={cancelling}>
                   {cancelling ? "Membatalkan…" : "Customer Batal"}
+                </button>
+                <button type="button" className="btn-secondary" onClick={onDismiss} disabled={cancelling}>
+                  Nanti saja
                 </button>
               </div>
             </>

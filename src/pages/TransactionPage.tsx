@@ -250,6 +250,10 @@ export default function TransactionPage() {
   const [hostedStatusError, setHostedStatusError] =
     useState("");
   const [hostedCancelling, setHostedCancelling] = useState(false);
+  const [recoveryPayment, setRecoveryPayment] =
+    useState<PaymentStatus | null>(null);
+  const [recoveryMessage, setRecoveryMessage] = useState("");
+  const [recoveryChecking, setRecoveryChecking] = useState(false);
 
   const submissionLock = useRef(false);
   const checkoutAbort = useRef<AbortController | null>(null);
@@ -410,62 +414,168 @@ export default function TransactionPage() {
           : response.data as PaymentStatus;
       }
 
-      if (!status) return;
-
-      if (status.method === "xendit_hosted") {
-        const payment = hostedPaymentFromStatus(status);
-        persistHostedPayment(payment);
-        setHostedPayment(payment);
-        setHostedStatus(status.status);
-        setHostedStatusError("");
-        setQrisPayment(null);
-        setQrisStatus(null);
-        await restoreSaleContext(payment.transactionId, "xendit");
-
-        if (status.status === "paid") {
-          clearCart();
-          await Promise.all([
-            loadReceipt(payment.transactionId),
-            reloadProducts(),
-          ]);
-        } else if (
-          status.status === "pending" ||
-          status.status === "creating"
-        ) {
-          void monitorHostedPayment(payment);
-        }
+      if (!status) {
+        removePersistedPayment();
+        removePersistedHostedPayment();
+        setRecoveryPayment(null);
         return;
       }
 
-      const payment = paymentFromStatus(status);
-      persistPayment(payment);
-      setQrisPayment(payment);
-      setQrisStatus(status.status);
-      setQrisStatusError("");
-      setHostedPayment(null);
-      setHostedStatus(null);
-      await restoreSaleContext(payment.transactionId, "qris");
-
       if (status.status === "paid") {
-        clearCart();
+        removePersistedPayment();
+        removePersistedHostedPayment();
+        setRecoveryPayment(null);
+        setRecoveryMessage("Pembayaran sebelumnya sudah berhasil dikonfirmasi.");
         await Promise.all([
-          loadReceipt(payment.transactionId),
+          loadReceipt(status.transactionId),
           reloadProducts(),
         ]);
-      } else if (
-        status.status === "pending" ||
-        status.status === "creating"
-      ) {
-        void monitorPayment(payment);
+        return;
+      }
+
+      if (status.status === "failed" || status.status === "expired") {
+        removePersistedPayment();
+        removePersistedHostedPayment();
+        setRecoveryPayment(null);
+        setRecoveryMessage(
+          status.status === "expired"
+            ? "Pembayaran sebelumnya sudah kedaluwarsa dan tidak lagi mengunci kasir."
+            : "Pembayaran sebelumnya sudah ditutup dan tidak lagi mengunci kasir."
+        );
+        return;
+      }
+
+      if (status.method === "xendit_hosted") {
+        persistHostedPayment(hostedPaymentFromStatus(status));
+      } else {
+        persistPayment(paymentFromStatus(status));
+      }
+
+      setRecoveryPayment(status);
+      setRecoveryMessage("");
+    } catch (error) {
+      setRecoveryPayment(null);
+      setRecoveryMessage(
+        `Pembayaran sebelumnya belum dapat diperiksa. Kasir tetap dapat digunakan. ${getErrorMessage(error)}`
+      );
+    }
+  }
+
+  async function resumeRecoveryPayment() {
+    const status = recoveryPayment;
+    if (!status) return;
+
+    setRecoveryPayment(null);
+    setRecoveryMessage("");
+
+    if (status.method === "xendit_hosted") {
+      const payment = hostedPaymentFromStatus(status);
+      setHostedPayment(payment);
+      setHostedStatus(status.status);
+      setHostedStatusError("");
+      setQrisPayment(null);
+      setQrisStatus(null);
+      await restoreSaleContext(payment.transactionId, "xendit");
+      if (status.status === "pending" || status.status === "creating") {
+        void monitorHostedPayment(payment);
+      }
+      return;
+    }
+
+    const payment = paymentFromStatus(status);
+    setQrisPayment(payment);
+    setQrisStatus(status.status);
+    setQrisStatusError("");
+    setHostedPayment(null);
+    setHostedStatus(null);
+    await restoreSaleContext(payment.transactionId, "qris");
+    if (status.status === "pending" || status.status === "creating") {
+      void monitorPayment(payment);
+    }
+  }
+
+  async function checkRecoveryPayment() {
+    const current = recoveryPayment;
+    if (!current || recoveryChecking) return;
+
+    setRecoveryChecking(true);
+    setRecoveryMessage("");
+    try {
+      const { data } = await api.get<PaymentStatus>(
+        `/api/payments/${current.id}`
+      );
+
+      if (data.status === "paid") {
+        removePersistedPayment();
+        removePersistedHostedPayment();
+        setRecoveryPayment(null);
+        setRecoveryMessage("Pembayaran sudah berhasil dikonfirmasi oleh server.");
+        await Promise.all([
+          loadReceipt(data.transactionId),
+          reloadProducts(),
+        ]);
+      } else if (data.status === "failed" || data.status === "expired") {
+        removePersistedPayment();
+        removePersistedHostedPayment();
+        setRecoveryPayment(null);
+        setRecoveryMessage(
+          data.status === "expired"
+            ? "Pembayaran sudah kedaluwarsa. Kasir bebas dipakai untuk transaksi baru."
+            : "Pembayaran sudah ditutup. Kasir bebas dipakai untuk transaksi baru."
+        );
+      } else {
+        setRecoveryPayment(data);
+        setRecoveryMessage("Status terbaru: masih menunggu pembayaran pelanggan.");
       }
     } catch (error) {
-      const message =
-        `Pembayaran sebelumnya belum dapat dipulihkan. ${getErrorMessage(error)}`;
-      if (localStorage.getItem(ACTIVE_HOSTED_KEY)) {
-        setHostedStatusError(message);
-      } else {
-        setQrisStatusError(message);
-      }
+      setRecoveryMessage(
+        `Status belum dapat diperiksa. Kasir tetap dapat digunakan. ${getErrorMessage(error)}`
+      );
+    } finally {
+      setRecoveryChecking(false);
+    }
+  }
+
+  function releaseActivePaymentUi() {
+    checkoutAbort.current?.abort();
+    checkoutAbort.current = null;
+    submissionLock.current = false;
+    setSubmitting(false);
+    setQrisPayment(null);
+    setQrisStatus(null);
+    setQrisStatusError("");
+    setHostedPayment(null);
+    setHostedStatus(null);
+    setHostedStatusError("");
+    setSaleContextReady(false);
+    setSaleContextError("");
+  }
+
+  function deferActivePayment() {
+    releaseActivePaymentUi();
+    void restorePendingPayment();
+  }
+
+  async function cancelRecoveryPayment() {
+    const payment = recoveryPayment;
+    if (!payment || recoveryChecking) return;
+
+    setRecoveryPayment(null);
+    setRecoveryChecking(true);
+    setRecoveryMessage("Permintaan pembatalan dikirim. Kasir tetap dapat digunakan.");
+    removePersistedPayment();
+    removePersistedHostedPayment();
+
+    try {
+      await api.post(`/api/payments/${payment.id}/cancel`);
+      setRecoveryMessage("Pembayaran berhasil dibatalkan.");
+    } catch (error) {
+      setRecoveryPayment(payment);
+      setRecoveryMessage(
+        `Pembatalan belum terkonfirmasi. Kasir tetap dapat digunakan. ${getErrorMessage(error)}`
+      );
+    } finally {
+      setRecoveryChecking(false);
     }
   }
 
@@ -559,56 +669,50 @@ export default function TransactionPage() {
   }
 
   async function cancelQrisPayment() {
-    if (!qrisPayment || qrisCancelling) return;
+    const payment = qrisPayment;
+    if (!payment || qrisCancelling) return;
     if (!window.confirm(
-      `Batalkan QRIS ${qrisPayment.providerPaymentRequestId}? Kode ini tidak dapat dipakai lagi.`
+      `Batalkan QRIS ${payment.providerPaymentRequestId}? Kode ini tidak dapat dipakai lagi.`
     )) return;
 
+    releaseActivePaymentUi();
+    removePersistedPayment();
     setQrisCancelling(true);
-    setQrisStatusError("");
+    setRecoveryMessage("Permintaan pembatalan QRIS dikirim. Kasir tetap dapat digunakan.");
     try {
-      checkoutAbort.current?.abort();
-      const { data } = await api.post<PaymentStatus>(
-        `/api/payments/${qrisPayment.id}/cancel`
-      );
-      const restored = paymentFromStatus(data);
-      setQrisPayment(restored);
-      setQrisStatus(data.status);
-      persistPayment(restored);
-      await restoreSaleContext(restored.transactionId, "qris");
+      await api.post<PaymentStatus>(`/api/payments/${payment.id}/cancel`);
+      setRecoveryPayment(null);
+      setRecoveryMessage("QRIS berhasil dibatalkan.");
     } catch (error) {
-      setQrisStatusError(
-        `Pembatalan belum terkonfirmasi. Jangan buat pembayaran baru. ${getErrorMessage(error)}`
+      setRecoveryMessage(
+        `Pembatalan belum terkonfirmasi. Kasir tetap dapat digunakan. ${getErrorMessage(error)}`
       );
-      await refreshPaymentStatus();
+      await restorePendingPayment();
     } finally {
       setQrisCancelling(false);
     }
   }
 
   async function cancelHostedPayment() {
-    if (!hostedPayment || hostedCancelling) return;
+    const payment = hostedPayment;
+    if (!payment || hostedCancelling) return;
     if (!window.confirm(
-      `Batalkan Xendit Checkout ${hostedPayment.providerSessionId}? Link ini tidak dapat dipakai lagi.`
+      `Batalkan Xendit Checkout ${payment.providerSessionId}? Link ini tidak dapat dipakai lagi.`
     )) return;
 
+    releaseActivePaymentUi();
+    removePersistedHostedPayment();
     setHostedCancelling(true);
-    setHostedStatusError("");
+    setRecoveryMessage("Permintaan pembatalan Xendit dikirim. Kasir tetap dapat digunakan.");
     try {
-      checkoutAbort.current?.abort();
-      const { data } = await api.post<PaymentStatus>(
-        `/api/payments/${hostedPayment.id}/cancel`
-      );
-      const restored = hostedPaymentFromStatus(data);
-      setHostedPayment(restored);
-      setHostedStatus(data.status);
-      persistHostedPayment(restored);
-      await restoreSaleContext(restored.transactionId, "xendit");
+      await api.post<PaymentStatus>(`/api/payments/${payment.id}/cancel`);
+      setRecoveryPayment(null);
+      setRecoveryMessage("Xendit Checkout berhasil dibatalkan.");
     } catch (error) {
-      setHostedStatusError(
-        `Pembatalan belum terkonfirmasi. Jangan buat pembayaran baru. ${getErrorMessage(error)}`
+      setRecoveryMessage(
+        `Pembatalan belum terkonfirmasi. Kasir tetap dapat digunakan. ${getErrorMessage(error)}`
       );
-      await refreshHostedPaymentStatus();
+      await restorePendingPayment();
     } finally {
       setHostedCancelling(false);
     }
@@ -1147,13 +1251,53 @@ export default function TransactionPage() {
 
         </div>
 
-        {(qrisStatusError || hostedStatusError) &&
-        !qrisPayment && !hostedPayment ? (
-          <div className="payment-recovery-banner" role="alert">
-            <strong>Pembayaran sebelumnya belum dapat diperiksa.</strong>
-            <span>{hostedStatusError || qrisStatusError}</span>
-            <button type="button" className="btn-secondary" onClick={() => void restorePendingPayment()}>
-              Coba Lagi
+        {recoveryPayment ? (
+          <div className="payment-recovery-banner" role="status">
+            <strong>Ada pembayaran yang belum selesai.</strong>
+            <span>
+              {recoveryPayment.method === "xendit_hosted" ? "Xendit Checkout" : "QRIS"}
+              {` · ${new Intl.NumberFormat("id-ID", {
+                style: "currency",
+                currency: "IDR",
+                maximumFractionDigits: 0,
+              }).format(recoveryPayment.amount)}`}
+            </span>
+            {recoveryMessage ? <span>{recoveryMessage}</span> : null}
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => void checkRecoveryPayment()}
+              disabled={recoveryChecking}
+            >
+              {recoveryChecking ? "Memeriksa…" : "Periksa Status"}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => void resumeRecoveryPayment()}
+              disabled={recoveryChecking}
+            >
+              Lanjutkan
+            </button>
+            <button
+              type="button"
+              className="btn-danger"
+              onClick={() => void cancelRecoveryPayment()}
+              disabled={recoveryChecking}
+            >
+              Batalkan
+            </button>
+          </div>
+        ) : recoveryMessage ? (
+          <div className="payment-recovery-banner" role="status">
+            <strong>Status pembayaran</strong>
+            <span>{recoveryMessage}</span>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setRecoveryMessage("")}
+            >
+              Tutup
             </button>
           </div>
         ) : null}
@@ -1190,13 +1334,7 @@ export default function TransactionPage() {
             />
 
             <CartPanel
-              submitting={
-                submitting ||
-                qrisStatus === "pending" ||
-                qrisStatus === "creating" ||
-                hostedStatus === "pending" ||
-                hostedStatus === "creating"
-              }
+              submitting={submitting}
               items={cart}
               customers={customers}
               customerId={customerId}
@@ -1262,6 +1400,7 @@ export default function TransactionPage() {
           saleContextError={saleContextError}
           sandbox={paymentCapabilities.isSandbox}
           onCloseFailed={closeFailedQris}
+          onDismiss={deferActivePayment}
           onRetryStatus={() => void refreshPaymentStatus()}
           onRetrySaleContext={() => {
             if (qrisPayment) {
@@ -1308,6 +1447,7 @@ export default function TransactionPage() {
           onRetryStatus={() => void refreshHostedPaymentStatus()}
           onCancel={() => void cancelHostedPayment()}
           onCloseFailed={closeFailedHosted}
+          onDismiss={deferActivePayment}
           onRetrySaleContext={() => {
             if (hostedPayment) {
               void restoreSaleContext(hostedPayment.transactionId, "xendit");

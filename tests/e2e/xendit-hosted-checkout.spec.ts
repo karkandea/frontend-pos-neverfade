@@ -147,8 +147,8 @@ test("creates hosted Xendit checkout and recovers paid status on return", async 
   });
 
   await page.goto("/kasir");
-  await expect(page.getByText("Pembayaran Xendit berhasil")).toBeVisible();
-  await expect(page.getByRole("dialog", { name: "Xendit Checkout" })).toBeVisible();
+  await expect(page.getByText("Pembayaran sebelumnya sudah berhasil dikonfirmasi.")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Xendit Checkout" })).toHaveCount(0);
 });
 
 test("hides hosted Xendit checkout when capability is disabled", async ({ page }) => {

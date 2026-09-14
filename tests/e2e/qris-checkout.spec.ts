@@ -401,48 +401,72 @@ test("elapsed display expiry remains non-terminal until provider confirms", asyn
   }
 });
 
-test("cashier can cancel a pending QRIS through the backend and recover the cart", async ({ page }) => {
+test("customer cancel releases the cashier immediately while backend cancel completes", async ({ page }) => {
   const state = await setupCheckout(page, { statuses: ["pending"] });
   await submitCheckout(page);
   page.on("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Customer Batal" }).click();
-  await expect.poll(() => state.cancelCount).toBe(1);
-  await expect(page.getByText("Pembayaran gagal")).toBeVisible();
-  await page.getByRole("button", { name: "Kembali ke Keranjang" }).click();
+
+  await expect(page.getByRole("dialog", { name: "Pembayaran QRIS" })).toHaveCount(0);
   await expect(page.locator(".cart-item")).toContainText(product.nama);
+  await expect.poll(() => state.cancelCount).toBe(1);
+  await expect(page.getByText("QRIS berhasil dibatalkan.")).toBeVisible();
 });
 
-test("pending QRIS survives refresh without creating another payment", async ({ page }) => {
+test("pending QRIS refresh becomes non-blocking recovery instead of a forced modal", async ({ page }) => {
   const state = await setupCheckout(page, { statuses: ["pending"] });
   await submitCheckout(page);
-  await expect(page.getByText("Menunggu pembayaran")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Pembayaran QRIS" })).toBeVisible();
+
   await page.reload();
-  await expect(page.getByText("Menunggu pembayaran")).toBeVisible();
-  await expect(page.getByText("pr-qa-qris")).toBeVisible();
+
+  await expect(page.getByRole("dialog", { name: "Pembayaran QRIS" })).toHaveCount(0);
+  await expect(page.getByText("Ada pembayaran yang belum selesai.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Lanjutkan" })).toBeVisible();
+
+  await page.getByRole("button", { name: `Tambah ${product.nama} ke keranjang` }).click();
+  await expect(page.locator(".cart-item")).toContainText(product.nama);
   expect(state.createCount).toBe(1);
 });
 
-test("status retry also restores sale context after a transient recovery failure", async ({ page }) => {
-  await setupCheckout(page, {
-    statuses: ["failed"],
-    receiptFailureAt: [1],
-  });
+test("cashier explicitly resumes and can defer a recovered QRIS", async ({ page }) => {
+  await setupCheckout(page, { statuses: ["pending"] });
   await submitCheckout(page);
   await page.reload();
 
-  await expect(page.getByText(/Keranjang transaksi belum dapat dipulihkan/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Kembali ke Keranjang" })).toBeDisabled();
+  await page.getByRole("button", { name: "Lanjutkan" }).click();
+  await expect(page.getByRole("dialog", { name: "Pembayaran QRIS" })).toBeVisible();
+  await expect(page.getByText("pr-qa-qris")).toBeVisible();
 
-  await page.getByRole("button", { name: "Pulihkan Keranjang" }).click();
-  await expect(page.getByRole("button", { name: "Kembali ke Keranjang" })).toBeEnabled();
-  await page.getByRole("button", { name: "Kembali ke Keranjang" }).click();
+  await page.getByRole("button", { name: "Nanti saja" }).click();
+  await expect(page.getByRole("dialog", { name: "Pembayaran QRIS" })).toHaveCount(0);
+  await expect(page.getByText("Ada pembayaran yang belum selesai.")).toBeVisible();
+});
+
+test("Escape closes a pending QRIS without locking the cashier", async ({ page }) => {
+  await setupCheckout(page, { statuses: ["pending"] });
+  await submitCheckout(page);
+  await expect(page.getByRole("dialog", { name: "Pembayaran QRIS" })).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await expect(page.getByRole("dialog", { name: "Pembayaran QRIS" })).toHaveCount(0);
+  await expect(page.getByText("Ada pembayaran yang belum selesai.")).toBeVisible();
   await expect(page.locator(".cart-item")).toContainText(product.nama);
 });
 
-test("payment recovery failure is visible and retryable", async ({ page }) => {
+test("recovery status check gives visible pending feedback", async ({ page }) => {
+  await setupCheckout(page, { statuses: ["pending"] });
+  await submitCheckout(page);
+  await page.reload();
+
+  await page.getByRole("button", { name: "Periksa Status" }).click();
+  await expect(page.getByText("Status terbaru: masih menunggu pembayaran pelanggan.")).toBeVisible();
+});
+
+test("payment recovery failure is visible but never blocks cashier", async ({ page }) => {
   await setupCheckout(page, { currentFailure: true });
-  await expect(page.getByText("Pembayaran sebelumnya belum dapat diperiksa.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Coba Lagi" })).toBeVisible();
+  await expect(page.getByText(/Kasir tetap dapat digunakan/)).toBeVisible();
+  await expect(page.locator(".cart-item")).toContainText(product.nama);
 });
 
 test("TRANSFER is not offered without an approved verification flow", async ({ page }) => {

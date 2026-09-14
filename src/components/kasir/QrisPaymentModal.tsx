@@ -12,6 +12,7 @@ type Props = {
   saleContextError: string;
   sandbox: boolean;
   onCloseFailed: () => void;
+  onDismiss: () => void;
   onRetryStatus: () => void;
   onRetrySaleContext: () => void;
   receiptLoading: boolean;
@@ -39,6 +40,7 @@ export default function QrisPaymentModal({
   saleContextError,
   sandbox,
   onCloseFailed,
+  onDismiss,
   onRetryStatus,
   onRetrySaleContext,
   receiptLoading,
@@ -107,7 +109,7 @@ export default function QrisPaymentModal({
     qrImage?.source === payment?.qrString
       ? qrImage?.value ?? ""
       : "";
-  useDialogFocus(Boolean(payment && status), dialogRef, failed ? onCloseFailed : undefined);
+  useDialogFocus(Boolean(payment && status), dialogRef, pending ? onDismiss : failed ? onCloseFailed : undefined);
 
   if (!payment || !status) {
     return null;
@@ -142,6 +144,16 @@ export default function QrisPaymentModal({
                     : "Menunggu pembayaran"}
             </p>
           </div>
+          {pending ? (
+            <button
+              type="button"
+              className="modal-close"
+              aria-label="Tutup pembayaran"
+              onClick={onDismiss}
+            >
+              ×
+            </button>
+          ) : null}
         </div>
 
         <div className="modal-body qris-payment-body">
@@ -248,6 +260,9 @@ export default function QrisPaymentModal({
                 </button>
                 <button type="button" className="btn-danger" onClick={onCancel} disabled={cancelling}>
                   {cancelling ? "Membatalkan…" : "Customer Batal"}
+                </button>
+                <button type="button" className="btn-secondary" onClick={onDismiss} disabled={cancelling}>
+                  Nanti saja
                 </button>
               </div>
             </>
