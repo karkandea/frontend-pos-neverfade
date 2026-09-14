@@ -6,6 +6,8 @@ import ProductGrid from "../components/kasir/ProductGrid";
 import QrisPaymentModal from "../components/kasir/QrisPaymentModal";
 import ReceiptModal from "../components/kasir/ReceiptModal";
 import PaymentSuccessModal from "../components/kasir/PaymentSuccessModal";
+import { useNavigate } from "react-router-dom";
+
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
 import type {
@@ -181,6 +183,7 @@ function getErrorMessage(error: unknown) {
 }
 
 export default function TransactionPage() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -253,6 +256,7 @@ export default function TransactionPage() {
   const [recoveryPayment, setRecoveryPayment] =
     useState<PaymentStatus | null>(null);
   const [recoveryMessage, setRecoveryMessage] = useState("");
+  const [recoveryTransactionId, setRecoveryTransactionId] = useState<string | null>(null);
   const [recoveryChecking, setRecoveryChecking] = useState(false);
 
   const submissionLock = useRef(false);
@@ -425,6 +429,7 @@ export default function TransactionPage() {
         removePersistedPayment();
         removePersistedHostedPayment();
         setRecoveryPayment(null);
+        setRecoveryTransactionId(status.transactionId);
         setRecoveryMessage("Pembayaran sebelumnya sudah berhasil dikonfirmasi.");
         await Promise.all([
           loadReceipt(status.transactionId),
@@ -437,6 +442,7 @@ export default function TransactionPage() {
         removePersistedPayment();
         removePersistedHostedPayment();
         setRecoveryPayment(null);
+        setRecoveryTransactionId(status.transactionId);
         setRecoveryMessage(
           status.status === "expired"
             ? "Pembayaran sebelumnya sudah kedaluwarsa dan tidak lagi mengunci kasir."
@@ -452,6 +458,7 @@ export default function TransactionPage() {
       }
 
       setRecoveryPayment(status);
+      setRecoveryTransactionId(status.transactionId);
       setRecoveryMessage("");
     } catch (error) {
       setRecoveryPayment(null);
@@ -509,6 +516,7 @@ export default function TransactionPage() {
         removePersistedPayment();
         removePersistedHostedPayment();
         setRecoveryPayment(null);
+        setRecoveryTransactionId(data.transactionId);
         setRecoveryMessage("Pembayaran sudah berhasil dikonfirmasi oleh server.");
         await Promise.all([
           loadReceipt(data.transactionId),
@@ -518,6 +526,7 @@ export default function TransactionPage() {
         removePersistedPayment();
         removePersistedHostedPayment();
         setRecoveryPayment(null);
+        setRecoveryTransactionId(data.transactionId);
         setRecoveryMessage(
           data.status === "expired"
             ? "Pembayaran sudah kedaluwarsa. Kasir bebas dipakai untuk transaksi baru."
@@ -561,6 +570,7 @@ export default function TransactionPage() {
     if (!payment || recoveryChecking) return;
 
     setRecoveryPayment(null);
+    setRecoveryTransactionId(payment.transactionId);
     setRecoveryChecking(true);
     setRecoveryMessage("Permintaan pembatalan dikirim. Kasir tetap dapat digunakan.");
     removePersistedPayment();
@@ -1281,6 +1291,13 @@ export default function TransactionPage() {
             </button>
             <button
               type="button"
+              className="btn-secondary"
+              onClick={() => navigate(`/transaksi?focus=${encodeURIComponent(recoveryPayment.transactionId)}`)}
+            >
+              Lihat Transaksi
+            </button>
+            <button
+              type="button"
               className="btn-danger"
               onClick={() => void cancelRecoveryPayment()}
               disabled={recoveryChecking}
@@ -1292,10 +1309,22 @@ export default function TransactionPage() {
           <div className="payment-recovery-banner" role="status">
             <strong>Status pembayaran</strong>
             <span>{recoveryMessage}</span>
+            {recoveryTransactionId ? (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => navigate(`/transaksi?focus=${encodeURIComponent(recoveryTransactionId)}`)}
+              >
+                Lihat Transaksi
+              </button>
+            ) : null}
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => setRecoveryMessage("")}
+              onClick={() => {
+                setRecoveryMessage("");
+                setRecoveryTransactionId(null);
+              }}
             >
               Tutup
             </button>

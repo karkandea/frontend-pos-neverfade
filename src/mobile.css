@@ -805,10 +805,11 @@
   #sec-transaksi .data-table td:nth-child(3)::before { content: "Pelanggan"; }
   #sec-transaksi .data-table td:nth-child(4)::before { content: "Kasir"; }
   #sec-transaksi .data-table td:nth-child(5)::before { content: "Total"; }
-  #sec-transaksi .data-table td:nth-child(6)::before { content: "Status"; }
-  #sec-transaksi .data-table td:nth-child(7) { grid-column: 1 / -1; }
-  #sec-transaksi .data-table td:nth-child(7)::before { content: "Aksi"; }
-  #sec-transaksi .data-table td:nth-child(7) .btn-secondary { width: 100%; min-height: 44px; }
+  #sec-transaksi .data-table td:nth-child(6)::before { content: "Pembayaran"; }
+  #sec-transaksi .data-table td:nth-child(7)::before { content: "Status"; }
+  #sec-transaksi .data-table td:nth-child(8) { grid-column: 1 / -1; }
+  #sec-transaksi .data-table td:nth-child(8)::before { content: "Aksi"; }
+  #sec-transaksi .data-table td:nth-child(8) .btn-secondary { width: 100%; min-height: 44px; }
 
   #sec-transaksi .data-table td[colspan] {
     grid-column: 1 / -1;

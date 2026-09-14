@@ -5,6 +5,8 @@ import {
   useState,
 } from "react";
 
+import { useSearchParams } from "react-router-dom";
+
 import AppShell from "../components/layout/AppShell";
 import { useDialogFocus } from "../components/kasir/useDialogFocus";
 import api from "../lib/api";
@@ -43,8 +45,26 @@ function transactionStatus(transaction: Transaction) {
   if (transaction.status === "paid") return { label: "Selesai", tone: "success" };
   if (transaction.status === "pending_payment") return { label: "Pending pembayaran", tone: "pending" };
   if (transaction.paymentFailureCode === "PAYMENT_REQUEST_EXPIRED") return { label: "Kedaluwarsa", tone: "failed" };
-  if (transaction.paymentFailureCode === "PAYMENT_REQUEST_CANCELED") return { label: "Dibatalkan", tone: "failed" };
+  if (transaction.paymentFailureCode === "PAYMENT_REQUEST_CANCELED" || transaction.paymentFailureCode === "PAYMENT_SESSION_CANCELED") return { label: "Dibatalkan", tone: "failed" };
+  if (transaction.paymentFailureCode === "PAYMENT_REQUEST_STALE_UNRECONCILABLE" || transaction.paymentFailureCode === "PAYMENT_REQUEST_STALE") return { label: "Ditutup otomatis", tone: "failed" };
   return { label: "Gagal", tone: "failed" };
+}
+
+function paymentMethodLabel(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "qris") return "QRIS";
+  if (normalized === "xendit" || normalized === "xendit_hosted") return "Xendit Checkout";
+  if (normalized === "tunai" || normalized === "cash") return "Tunai";
+  return value || "-";
+}
+
+function paymentFailureLabel(code: string | null) {
+  if (!code) return "-";
+  if (code === "PAYMENT_REQUEST_EXPIRED" || code === "PAYMENT_SESSION_EXPIRED") return "Kedaluwarsa di provider";
+  if (code === "PAYMENT_REQUEST_CANCELED" || code === "PAYMENT_SESSION_CANCELED") return "Dibatalkan";
+  if (code === "PAYMENT_REQUEST_STALE_UNRECONCILABLE") return "Ditutup otomatis karena payment lama tidak lagi tersedia di provider";
+  if (code === "PAYMENT_REQUEST_STALE") return "Ditutup otomatis karena QRIS lama melewati batas recovery";
+  return code;
 }
 
 function getErrorMessage(error: unknown) {
@@ -111,6 +131,8 @@ function csvCell(value: string | number) {
 }
 
 export default function TransaksiPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const focusId = searchParams.get("focus");
   const [transactions, setTransactions] =
     useState<Transaction[]>([]);
 
@@ -162,6 +184,10 @@ export default function TransaksiPage() {
             setTransactions(
               response.data
             );
+            if (focusId) {
+              const focused = response.data.find((transaction) => transaction.id === focusId);
+              if (focused) setSelected(focused);
+            }
           } catch (error) {
             if (
               controller.signal
@@ -189,7 +215,7 @@ export default function TransaksiPage() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [search, reloadKey]);
+  }, [search, reloadKey, focusId]);
 
   const exportRows =
     useMemo(
@@ -378,6 +404,7 @@ export default function TransaksiPage() {
                     </th>
                     <th>Kasir</th>
                     <th>Total</th>
+                    <th>Pembayaran</th>
                     <th>Status</th>
                     <th>Aksi</th>
                   </tr>
@@ -388,7 +415,7 @@ export default function TransaksiPage() {
                   0 ? (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={8}
                         className="text-center"
                       >
                         Belum ada data.
@@ -429,6 +456,10 @@ export default function TransaksiPage() {
                             {rupiah(
                               transaction.total
                             )}
+                          </td>
+
+                          <td>
+                            {paymentMethodLabel(transaction.metodePembayaran)}
                           </td>
 
                           <td>
@@ -494,9 +525,10 @@ export default function TransaksiPage() {
                   type="button"
                   className="modal-close"
                   aria-label="Tutup detail transaksi"
-                  onClick={() =>
-                    setSelected(null)
-                  }
+                  onClick={() => {
+                    setSelected(null);
+                    if (focusId) setSearchParams({}, { replace: true });
+                  }}
                 >
                   ×
                 </button>
@@ -554,10 +586,18 @@ export default function TransaksiPage() {
                     </label>
 
                     <div>
-                      {
-                        selected.metodePembayaran
-                      }
+                      {paymentMethodLabel(selected.metodePembayaran)}
                     </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Status Payment</label>
+                    <div>{selected.paymentStatus ?? "-"}</div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Catatan Payment</label>
+                    <div>{paymentFailureLabel(selected.paymentFailureCode)}</div>
                   </div>
                 </div>
 

@@ -156,6 +156,30 @@ async function setupCheckout(
       });
     }
 
+    if (path === "/api/transactions" && request.method() === "GET") {
+      return json(route, [{
+        id: payment.transactionId,
+        noTrx: "TRX-20260811-0099",
+        tanggal: "2026-08-11T17:45:00Z",
+        kasir: "Owner QA",
+        customerId: null,
+        customerNama: "",
+        subtotal: 25000,
+        disc: 0,
+        tax: 0,
+        discAmt: 0,
+        taxAmt: 0,
+        total: 25000,
+        metodePembayaran: "QRIS",
+        dibayar: 0,
+        kembalian: 0,
+        status: "failed",
+        paymentStatus: "failed",
+        paymentFailureCode: "PAYMENT_REQUEST_STALE_UNRECONCILABLE",
+        items: [{ id: product.id, nama: product.nama, hargaJual: product.hargaJual, qty: 1, subtotal: product.hargaJual }],
+      }]);
+    }
+
     if (path === `/api/transactions/${payment.transactionId}`) {
       state.receiptCount += 1;
       if (
@@ -461,6 +485,20 @@ test("recovery status check gives visible pending feedback", async ({ page }) =>
 
   await page.getByRole("button", { name: "Periksa Status" }).click();
   await expect(page.getByText("Status terbaru: masih menunggu pembayaran pelanggan.")).toBeVisible();
+});
+
+test("closed payment notification deep-links to transaction detail", async ({ page }) => {
+  await setupCheckout(page, { statuses: ["failed"] });
+  await submitCheckout(page);
+  await page.reload();
+
+  await expect(page.getByText(/tidak lagi mengunci kasir/)).toBeVisible();
+  await page.getByRole("button", { name: "Lihat Transaksi" }).click();
+
+  await expect(page).toHaveURL(new RegExp(`/transaksi[?]focus=${payment.transactionId}`));
+  await expect(page.getByRole("dialog", { name: "Detail Transaksi" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Detail Transaksi" }).getByText("Ditutup otomatis", { exact: true })).toBeVisible();
+  await expect(page.getByText(/payment lama tidak lagi tersedia di provider/)).toBeVisible();
 });
 
 test("payment recovery failure is visible but never blocks cashier", async ({ page }) => {
