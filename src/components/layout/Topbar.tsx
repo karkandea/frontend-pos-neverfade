@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuthStore } from "../../stores/auth";
+import OutletSwitcher from "./OutletSwitcher";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -68,27 +69,20 @@ export default function Topbar({ onOpenNavigation }: Props) {
           </svg>
         </button>
 
-        <div
-          className="topbar-title"
-          id="topbar-title"
-        >
+        <div className="topbar-title" id="topbar-title">
           {routeTitles[location.pathname] ?? "NeverFade POS"}
         </div>
       </div>
 
       <div className="topbar-right">
+        <OutletSwitcher />
+
         <div className="topbar-datetime">
-          <div
-            className="topbar-date"
-            id="topbar-date"
-          >
+          <div className="topbar-date" id="topbar-date">
             {date}
           </div>
 
-          <div
-            className="topbar-time"
-            id="topbar-time"
-          >
+          <div className="topbar-time" id="topbar-time">
             {time}
           </div>
         </div>
@@ -96,25 +90,16 @@ export default function Topbar({ onOpenNavigation }: Props) {
         <div className="topbar-divider"></div>
 
         <div className="topbar-user">
-          <div
-            className="user-avatar"
-            id="user-avatar"
-          >
+          <div className="user-avatar" id="user-avatar">
             {user?.nama?.charAt(0).toUpperCase() ?? "?"}
           </div>
 
           <div className="user-info">
-            <div
-              className="user-name"
-              id="user-name"
-            >
+            <div className="user-name" id="user-name">
               {user?.nama ?? "-"}
             </div>
 
-            <div
-              className="user-role"
-              id="user-role"
-            >
+            <div className="user-role" id="user-role">
               {user?.role ?? "-"}
             </div>
           </div>
@@ -140,9 +125,7 @@ export default function Topbar({ onOpenNavigation }: Props) {
             <line x1="21" y1="12" x2="9" y2="12" />
           </svg>
 
-          <span className="btn-logout-text">
-            Keluar
-          </span>
+          <span className="btn-logout-text">Keluar</span>
         </button>
       </div>
     </header>
