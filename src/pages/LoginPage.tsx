@@ -36,6 +36,7 @@ export default function LoginPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const login = useAuthStore((s) => s.login);
+  const demoEnabled = import.meta.env.VITE_DEMO_MODE === "true";
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -269,6 +270,26 @@ export default function LoginPage() {
                 <path d="M12 5l7 7-7 7" />
               </svg>
             </button>
+
+            {demoEnabled ? (
+              <button
+                type="button"
+                className="btn-full"
+                onClick={() => navigate("/demo")}
+                style={{
+                  marginTop: 10,
+                  minHeight: 44,
+                  borderRadius: 8,
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  background: "transparent",
+                  color: "inherit",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Coba Demo Sekarang
+              </button>
+            ) : null}
 
             <div
               id="login-error"
