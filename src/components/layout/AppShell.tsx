@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 
+import { useAuthStore } from "../../stores/auth";
 import MobileNav from "./MobileNav";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
@@ -10,6 +11,7 @@ type Props = {
 
 export default function AppShell({ children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isDemo = useAuthStore((state) => state.isDemo);
 
   return (
     <div id="page-app" className="page page-active" style={{display:"flex"}}>
@@ -32,6 +34,23 @@ export default function AppShell({ children }: Props) {
 
       <div className="main-wrapper">
         <Topbar onOpenNavigation={() => setSidebarOpen(true)} />
+
+        {isDemo ? (
+          <div
+            role="status"
+            style={{
+              padding: "9px 16px",
+              textAlign: "center",
+              fontSize: 13,
+              fontWeight: 600,
+              background: "#fef3c7",
+              color: "#92400e",
+              borderBottom: "1px solid #fde68a",
+            }}
+          >
+            Mode Demo · Data simulasi, bukan transaksi merchant asli
+          </div>
+        ) : null}
 
         <main className="content-area">
           {children}
