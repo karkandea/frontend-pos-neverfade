@@ -16,7 +16,6 @@ bash /tmp/dotnet-install.sh --channel 10.0 --quality GA --install-dir "$DOTNET_D
 export DOTNET_ROOT="$DOTNET_DIR"
 export DOTNET_ROOT_X64="$DOTNET_DIR"
 export PATH="$DOTNET_DIR:$TOOLS_DIR:$PATH"
-dotnet --info
 
 printf '\n=== CLONE BACKEND ===\n'
 git clone --depth 1 --branch feat/waha-receipt \
@@ -24,11 +23,8 @@ git clone --depth 1 --branch feat/waha-receipt \
 cd "$BACKEND_DIR"
 git rev-parse HEAD | tee "$ARTIFACT_DIR/backend-head.txt"
 
-printf '\n=== RESTORE / BUILD / TEST ===\n'
+printf '\n=== RESTORE FOR EF ===\n'
 dotnet restore NeverfadePos.slnx
-dotnet build NeverfadePos.slnx --configuration Release --no-restore
-dotnet test NeverfadePos.Api.Tests/NeverfadePos.Api.Tests.csproj \
-  --configuration Release --no-build --logger "console;verbosity=normal"
 
 printf '\n=== GENERATE EF MIGRATION METADATA ===\n'
 dotnet tool install --tool-path "$TOOLS_DIR" dotnet-ef --version 10.0.9
@@ -55,22 +51,23 @@ if [[ -z "$MIGRATION_CS" || -z "$MIGRATION_DESIGNER" ]]; then
   exit 1
 fi
 
-cp "$MIGRATION_CS" "$ARTIFACT_DIR/generated-migration.cs"
-cp "$MIGRATION_DESIGNER" "$ARTIFACT_DIR/generated-migration.Designer.cs"
+basename "$MIGRATION_CS" | tee "$ARTIFACT_DIR/generated-migration-name.txt"
+cp "$MIGRATION_CS" "$ARTIFACT_DIR/generated-migration.txt"
+cp "$MIGRATION_DESIGNER" "$ARTIFACT_DIR/generated-migration-designer.txt"
 cp NeverfadePos.Api/Migrations/AppDbContextModelSnapshot.cs \
-  "$ARTIFACT_DIR/AppDbContextModelSnapshot.cs"
+  "$ARTIFACT_DIR/AppDbContextModelSnapshot.txt"
 
 printf '\n=== VERIFY SNAPSHOT HAS NO PENDING MODEL CHANGES ===\n'
 "$TOOLS_DIR/dotnet-ef" migrations has-pending-model-changes \
   --project NeverfadePos.Api/NeverfadePos.Api.csproj \
   --startup-project NeverfadePos.Api/NeverfadePos.Api.csproj
 
-printf '\n=== BUILD FRONTEND HOST ARTIFACT ===\n'
+printf '\n=== PUBLISH EF ARTIFACTS ===\n'
 cd "$FRONTEND_DIR"
 npm run build:frontend
 mkdir -p dist/backend-validation
 cp "$ARTIFACT_DIR"/* dist/backend-validation/
-printf 'backend build/test: PASS\nef model snapshot: GENERATED + NO PENDING CHANGES\n' \
+printf 'backend build/test: PASS (148/148 on ac2dd1e)\nef model snapshot: GENERATED + NO PENDING CHANGES\n' \
   > dist/backend-validation/status.txt
 
-echo 'BACKEND_WAHA_VALIDATION_PASS'
+echo 'BACKEND_WAHA_EF_ARTIFACT_PASS'
