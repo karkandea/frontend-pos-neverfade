@@ -66,6 +66,7 @@ type Settings = {
 
 type ReceiptData = {
   transactionId: string;
+  customerId?: string | null;
   transactionDate: string;
   noTrx: string;
   subtotal: number;
@@ -731,6 +732,7 @@ export default function TransactionPage() {
       );
       setReceipt({
         transactionId: data.id,
+        customerId: data.customerId ?? null,
         transactionDate: data.createdAt ?? new Date().toISOString(),
         noTrx: data.noTrx,
         subtotal: data.subtotal,
@@ -1236,6 +1238,7 @@ export default function TransactionPage() {
 
       setReceipt({
         transactionId: response.data.id,
+        customerId: customerId || null,
         transactionDate: response.data.createdAt ?? new Date().toISOString(),
         noTrx: response.data.noTrx,
         subtotal: response.data.subtotal,

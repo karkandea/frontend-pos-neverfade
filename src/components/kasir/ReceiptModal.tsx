@@ -16,6 +16,7 @@ type ReceiptItem = {
 
 type ReceiptData = {
   transactionId: string;
+  customerId?: string | null;
   transactionDate: string;
   noTrx: string;
   total: number;
@@ -34,10 +35,6 @@ type Props = {
   header: string;
   footer: string;
   onClose: () => void;
-};
-
-type TransactionCustomer = {
-  customerId?: string | null;
 };
 
 type Customer = {
@@ -105,16 +102,11 @@ export default function ReceiptModal({
       return () => window.clearTimeout(timer);
     }
 
-    const transactionId = receipt.transactionId;
+    const customerId = receipt.customerId;
     let cancelled = false;
 
     async function loadSuggestedPhone() {
       try {
-        const transaction = await api.get<TransactionCustomer>(
-          `/api/transactions/${transactionId}`
-        );
-
-        const customerId = transaction.data.customerId;
         if (!customerId) return;
 
         const customer = await api.get<Customer>(
