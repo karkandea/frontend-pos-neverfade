@@ -45,7 +45,12 @@ const commonCapabilities: TenantCapability[] = [
 
 export const capabilityPresets: Record<BusinessType, TenantCapability[]> = {
   general_retail: commonCapabilities,
-  fashion_retail: [...commonCapabilities, "product_variants", "multi_pricing"],
+  fashion_retail: [
+    ...commonCapabilities,
+    "product_variants",
+    "multi_pricing",
+    "returns_exchanges",
+  ],
   food_beverage: [...commonCapabilities, "table_orders", "kitchen_queue"],
   laundry: [...commonCapabilities, "work_orders"],
   salon_barbershop: [...commonCapabilities, "appointments"],
@@ -64,4 +69,5 @@ export const capabilityLabels: Record<TenantCapability, string> = {
   appointments: "Appointment",
   product_variants: "Varian produk",
   multi_pricing: "Multi harga",
+  returns_exchanges: "Retur & tukar",
 };
