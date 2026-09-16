@@ -114,10 +114,13 @@ export default function WhatsAppSettingsCard() {
 
   useEffect(() => {
     if (!selectedOutletId) return;
-    setLoading(true);
-    setStatus(null);
-    setQr(null);
-    void loadStatus();
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      setStatus(null);
+      setQr(null);
+      void loadStatus();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [loadStatus, selectedOutletId]);
 
   useEffect(() => {

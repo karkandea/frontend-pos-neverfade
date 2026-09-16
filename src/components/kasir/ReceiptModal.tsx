@@ -96,11 +96,13 @@ export default function ReceiptModal({
 
   useEffect(() => {
     if (!open || !receipt) {
-      setWhatsAppOpen(false);
-      setPhone("");
-      setSendMessage("");
-      setSendError("");
-      return;
+      const timer = window.setTimeout(() => {
+        setWhatsAppOpen(false);
+        setPhone("");
+        setSendMessage("");
+        setSendError("");
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
 
     const transactionId = receipt.transactionId;
