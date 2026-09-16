@@ -4,12 +4,18 @@ import {
   useState,
 } from "react";
 import api from "../../lib/api";
+import {
+  resolveActiveOutlet,
+  type Outlet,
+} from "../../lib/outlet";
 
 type WhatsAppStatus = {
   configured: boolean;
   status: string;
   phoneNumber?: string | null;
   pushName?: string | null;
+  outletId?: string | null;
+  senderId?: string | null;
 };
 
 type QrPayload = {
@@ -47,16 +53,36 @@ function maskPhone(phone?: string | null) {
 }
 
 export default function WhatsAppSettingsCard() {
+  const [outlets, setOutlets] = useState<Outlet[]>([]);
+  const [selectedOutletId, setSelectedOutletId] = useState("");
   const [status, setStatus] = useState<WhatsAppStatus | null>(null);
   const [qr, setQr] = useState<QrPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    void (async () => {
+      try {
+        const response = await api.get<Outlet[]>("/api/outlets");
+        const active = response.data.filter((outlet) => outlet.active);
+        setOutlets(active);
+        const selected = resolveActiveOutlet(active);
+        setSelectedOutletId(selected?.id ?? "");
+      } catch (requestError) {
+        setError(getErrorMessage(requestError));
+        setLoading(false);
+      }
+    })();
+  }, []);
+
   const loadStatus = useCallback(async () => {
+    if (!selectedOutletId) return;
+
     try {
       const response = await api.get<WhatsAppStatus>(
-        "/api/whatsapp/status"
+        "/api/whatsapp/status",
+        { params: { outletId: selectedOutletId } }
       );
       setStatus(response.data);
       setError("");
@@ -69,23 +95,30 @@ export default function WhatsAppSettingsCard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedOutletId]);
 
   const loadQr = useCallback(async () => {
+    if (!selectedOutletId) return;
+
     try {
       const response = await api.get<QrPayload>(
-        "/api/whatsapp/qr"
+        "/api/whatsapp/qr",
+        { params: { outletId: selectedOutletId } }
       );
       setQr(response.data);
       setError("");
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     }
-  }, []);
+  }, [selectedOutletId]);
 
   useEffect(() => {
+    if (!selectedOutletId) return;
+    setLoading(true);
+    setStatus(null);
+    setQr(null);
     void loadStatus();
-  }, [loadStatus]);
+  }, [loadStatus, selectedOutletId]);
 
   useEffect(() => {
     if (!qr || status?.status === "WORKING") return;
@@ -105,12 +138,16 @@ export default function WhatsAppSettingsCard() {
   }, [loadQr, loadStatus, qr, status?.status]);
 
   async function connect() {
+    if (!selectedOutletId) return;
+
     setBusy(true);
     setError("");
 
     try {
       const response = await api.post<WhatsAppStatus>(
-        "/api/whatsapp/connect"
+        "/api/whatsapp/connect",
+        null,
+        { params: { outletId: selectedOutletId } }
       );
       setStatus(response.data);
 
@@ -125,8 +162,11 @@ export default function WhatsAppSettingsCard() {
   }
 
   async function disconnect() {
+    if (!selectedOutletId) return;
+
+    const outlet = outlets.find((item) => item.id === selectedOutletId);
     const confirmed = window.confirm(
-      "Putuskan nomor WhatsApp dari NeverFade? Struk WhatsApp tidak bisa dikirim sampai nomor dihubungkan lagi."
+      `Putuskan WhatsApp ${outlet?.name ?? "outlet ini"} dari NeverFade? Struk WhatsApp outlet ini tidak bisa dikirim sampai nomor dihubungkan lagi.`
     );
     if (!confirmed) return;
 
@@ -134,7 +174,11 @@ export default function WhatsAppSettingsCard() {
     setError("");
 
     try {
-      await api.post("/api/whatsapp/logout");
+      await api.post(
+        "/api/whatsapp/logout",
+        null,
+        { params: { outletId: selectedOutletId } }
+      );
       setQr(null);
       await loadStatus();
     } catch (requestError) {
@@ -145,19 +189,39 @@ export default function WhatsAppSettingsCard() {
   }
 
   const connected = status?.status === "WORKING";
+  const selectedOutlet = outlets.find(
+    (outlet) => outlet.id === selectedOutletId
+  );
 
   return (
     <div className="card-panel">
       <div className="card-header">
-        <h3>WhatsApp Struk</h3>
+        <h3>WhatsApp Struk per Outlet</h3>
       </div>
 
       <div className="settings-form">
         <p style={{ marginTop: 0 }}>
-          Hubungkan satu nomor WhatsApp toko untuk mengirim struk digital langsung dari kasir.
+          Setiap outlet dapat memakai nomor WhatsApp pengirim struk yang berbeda.
         </p>
 
-        {loading ? (
+        <div className="form-group">
+          <label>Outlet</label>
+          <select
+            value={selectedOutletId}
+            onChange={(event) => setSelectedOutletId(event.target.value)}
+            disabled={busy || outlets.length === 0}
+          >
+            {outlets.map((outlet) => (
+              <option key={outlet.id} value={outlet.id}>
+                {outlet.name}{outlet.isDefault ? " · Default" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {outlets.length === 0 ? (
+          <p>Buat outlet terlebih dahulu sebelum menghubungkan WhatsApp.</p>
+        ) : loading ? (
           <p>Memeriksa koneksi WhatsApp...</p>
         ) : connected ? (
           <>
@@ -173,7 +237,7 @@ export default function WhatsAppSettingsCard() {
             >
               <span aria-hidden="true">🟢</span>
               <div>
-                <strong>WhatsApp Terhubung</strong>
+                <strong>WhatsApp {selectedOutlet?.name} Terhubung</strong>
                 <div>
                   {maskPhone(status?.phoneNumber)}
                   {status?.pushName ? ` · ${status.pushName}` : ""}
@@ -199,9 +263,9 @@ export default function WhatsAppSettingsCard() {
                 background: "rgba(148, 163, 184, 0.12)",
               }}
             >
-              <strong>Belum terhubung</strong>
+              <strong>{selectedOutlet?.name}: belum terhubung</strong>
               <div>
-                QR hanya perlu dipindai saat setup nomor, bukan setiap transaksi.
+                QR hanya perlu dipindai saat setup nomor outlet, bukan setiap transaksi.
               </div>
             </div>
 
@@ -222,7 +286,7 @@ export default function WhatsAppSettingsCard() {
 
                 <img
                   src={`data:${qr.mimeType};base64,${qr.data}`}
-                  alt="QR untuk menghubungkan WhatsApp"
+                  alt={`QR WhatsApp ${selectedOutlet?.name ?? "outlet"}`}
                   width={240}
                   height={240}
                   style={{
