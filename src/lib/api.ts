@@ -1,10 +1,26 @@
 import axios from "axios";
 
 export const TOKEN_KEY = "nfpos_token";
+export const DEMO_TOKEN_KEY = "nfpos_demo_token";
+export const DEMO_SESSION_KEY = "nfpos_demo_session";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL?.trim() || undefined;
 const SHARED_SESSION_TOKEN_KEY = "nf_shared_session_token";
 const SHARED_MODE_KEY = "nf_shared_mode";
+
+export function getActiveTenantToken() {
+  const demoSessionActive =
+    sessionStorage.getItem(DEMO_SESSION_KEY) === "1";
+
+  if (demoSessionActive) {
+    return sessionStorage.getItem(DEMO_TOKEN_KEY);
+  }
+
+  return (
+    localStorage.getItem(TOKEN_KEY) ??
+    sessionStorage.getItem(TOKEN_KEY)
+  );
+}
 
 export class ApiNetworkError extends Error {
   code: string;
@@ -27,9 +43,7 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token =
-    localStorage.getItem(TOKEN_KEY) ??
-    sessionStorage.getItem(TOKEN_KEY);
+  const token = getActiveTenantToken();
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -47,9 +61,8 @@ api.interceptors.response.use(
       const sharedSessionActive =
         localStorage.getItem(SHARED_MODE_KEY) === "1" &&
         Boolean(sessionStorage.getItem(SHARED_SESSION_TOKEN_KEY));
-
-      localStorage.removeItem(TOKEN_KEY);
-      sessionStorage.removeItem(TOKEN_KEY);
+      const demoSessionActive =
+        sessionStorage.getItem(DEMO_SESSION_KEY) === "1";
 
       if (sharedSessionActive) {
         sessionStorage.removeItem(SHARED_SESSION_TOKEN_KEY);
@@ -57,6 +70,15 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
+      if (demoSessionActive) {
+        sessionStorage.removeItem(DEMO_TOKEN_KEY);
+        sessionStorage.removeItem(DEMO_SESSION_KEY);
+        window.location.replace("/demo?reason=expired");
+        return Promise.reject(error);
+      }
+
+      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
       window.location.replace("/login");
     }
 
@@ -64,6 +86,16 @@ api.interceptors.response.use(
       status === 403 &&
       error?.response?.data?.code === "TENANT_SUSPENDED"
     ) {
+      const demoSessionActive =
+        sessionStorage.getItem(DEMO_SESSION_KEY) === "1";
+
+      if (demoSessionActive) {
+        sessionStorage.removeItem(DEMO_TOKEN_KEY);
+        sessionStorage.removeItem(DEMO_SESSION_KEY);
+        window.location.replace("/demo");
+        return Promise.reject(error);
+      }
+
       localStorage.removeItem(TOKEN_KEY);
       sessionStorage.removeItem(TOKEN_KEY);
       window.dispatchEvent(new Event("tenant-session-invalidated"));
