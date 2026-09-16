@@ -13,6 +13,8 @@ mkdir -p "$DOTNET_DIR" "$TOOLS_DIR" "$ARTIFACT_DIR"
 printf '\n=== INSTALL DOTNET 10 ===\n'
 curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
 bash /tmp/dotnet-install.sh --channel 10.0 --quality GA --install-dir "$DOTNET_DIR"
+export DOTNET_ROOT="$DOTNET_DIR"
+export DOTNET_ROOT_X64="$DOTNET_DIR"
 export PATH="$DOTNET_DIR:$TOOLS_DIR:$PATH"
 dotnet --info
 
