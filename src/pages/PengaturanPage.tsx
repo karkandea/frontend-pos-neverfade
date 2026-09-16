@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import AppShell from "../components/layout/AppShell";
+import OutletSettingsCard from "../components/settings/OutletSettingsCard";
 import WhatsAppSettingsCard from "../components/settings/WhatsAppSettingsCard";
 import api from "../lib/api";
 
@@ -280,6 +281,7 @@ export default function PengaturanPage() {
               </div>
             </div>
 
+            <OutletSettingsCard />
             <WhatsAppSettingsCard />
 
             <div className="card-panel">
