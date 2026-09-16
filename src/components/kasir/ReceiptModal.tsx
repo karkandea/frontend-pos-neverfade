@@ -103,12 +103,13 @@ export default function ReceiptModal({
       return;
     }
 
+    const transactionId = receipt.transactionId;
     let cancelled = false;
 
     async function loadSuggestedPhone() {
       try {
         const transaction = await api.get<TransactionCustomer>(
-          `/api/transactions/${receipt.transactionId}`
+          `/api/transactions/${transactionId}`
         );
 
         const customerId = transaction.data.customerId;
@@ -135,6 +136,8 @@ export default function ReceiptModal({
 
   if (!open || !receipt) return null;
 
+  const transactionId = receipt.transactionId;
+
   async function sendWhatsAppReceipt() {
     if (!phone.trim()) {
       setSendError("Nomor WhatsApp wajib diisi.");
@@ -147,7 +150,7 @@ export default function ReceiptModal({
 
     try {
       const response = await api.post<SendReceiptResponse>(
-        `/api/transactions/${receipt.transactionId}/receipt/whatsapp`,
+        `/api/transactions/${transactionId}/receipt/whatsapp`,
         { phone: phone.trim() }
       );
 
