@@ -24,7 +24,8 @@ export type TenantCapability =
   | "work_orders"
   | "appointments"
   | "product_variants"
-  | "multi_pricing";
+  | "multi_pricing"
+  | "returns_exchanges";
 
 export type TenantOwnerSummary = {
   id: string;

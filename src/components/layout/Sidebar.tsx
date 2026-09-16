@@ -25,6 +25,7 @@ export default function Sidebar({ open, onClose }: Props) {
   const canKitchenQueue = hasCapability("kitchen_queue");
   const canWorkOrders = hasCapability("work_orders");
   const canProductVariants = hasCapability("product_variants");
+  const canReturnsExchanges = hasCapability("returns_exchanges");
 
   const showManagement =
     user?.role !== "kasir" &&
@@ -251,6 +252,22 @@ export default function Sidebar({ open, onClose }: Props) {
               <circle cx="18" cy="17" r="2" />
             </svg>
             <span>Varian & Harga</span>
+          </NavLink>
+        )}
+
+        {user?.role !== "kasir" && canReturnsExchanges && (
+          <NavLink
+            to="/retail/returns"
+            className={({ isActive }) =>
+              isActive ? "nav-item active" : "nav-item"
+            }
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M9 7H5v4" />
+              <path d="M5 11a7 7 0 1 0 2-5" />
+              <path d="M15 17h4v-4" />
+            </svg>
+            <span>Retur & Tukar</span>
           </NavLink>
         )}
 
