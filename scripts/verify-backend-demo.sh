@@ -32,10 +32,12 @@ printf '\n=== TEST ===\n'
 dotnet test NeverfadePos.Api.Tests/NeverfadePos.Api.Tests.csproj \
   --configuration Release --no-build --logger "console;verbosity=normal"
 
-printf '\n=== BUILD FRONTEND ARTIFACT ===\n'
+printf '\n=== BUILD + LINT FRONTEND ARTIFACT ===\n'
 cd "$FRONTEND_DIR"
 npm run build:frontend
+npm run lint
 mkdir -p dist/backend-validation
-printf 'demo backend restore/build/test: PASS\n' > dist/backend-validation/status.txt
+printf 'demo backend restore/build/test: PASS\nfrontend build/lint: PASS\n' \
+  > dist/backend-validation/status.txt
 
 echo 'BACKEND_DEMO_VALIDATION_PASS'
