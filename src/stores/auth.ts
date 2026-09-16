@@ -1,11 +1,15 @@
 import axios from "axios";
 import { create } from "zustand";
-import api, { TOKEN_KEY } from "../lib/api";
+import api, {
+  DEMO_SESSION_KEY,
+  DEMO_TOKEN_KEY,
+  TOKEN_KEY,
+  getActiveTenantToken,
+} from "../lib/api";
 
 const ACTIVE_QRIS_KEY = "nfpos_active_qris";
 const RESTAURANT_CHECKOUT_KEY = "nfpos_restaurant_checkout";
 const LAUNDRY_CHECKOUT_KEY = "nfpos_laundry_checkout";
-const DEMO_SESSION_KEY = "nfpos_demo_session";
 
 export type User = {
   id: string;
@@ -37,13 +41,15 @@ function clearCheckoutState() {
   localStorage.removeItem(LAUNDRY_CHECKOUT_KEY);
 }
 
+function isDemoSessionActive() {
+  return sessionStorage.getItem(DEMO_SESSION_KEY) === "1";
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
-  token:
-    localStorage.getItem(TOKEN_KEY) ??
-    sessionStorage.getItem(TOKEN_KEY),
+  token: getActiveTenantToken(),
   user: null,
   loading: true,
-  isDemo: sessionStorage.getItem(DEMO_SESSION_KEY) === "1",
+  isDemo: isDemoSessionActive(),
 
   setToken: (token) => {
     if (token) {
@@ -56,6 +62,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   login: async (username, password, remember) => {
+    sessionStorage.removeItem(DEMO_TOKEN_KEY);
+    sessionStorage.removeItem(DEMO_SESSION_KEY);
+
     const { data } = await api.post("/api/auth/login", {
       username,
       password,
@@ -63,7 +72,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     localStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(DEMO_SESSION_KEY);
     clearCheckoutState();
 
     const storage = remember ? localStorage : sessionStorage;
@@ -88,33 +96,40 @@ export const useAuthStore = create<AuthState>((set) => ({
       throw new Error("Credential demo belum dikonfigurasi.");
     }
 
-    const { data } = await api.post("/api/auth/login", {
-      username,
-      password,
-    });
-
-    localStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(TOKEN_KEY);
-    clearCheckoutState();
-
-    sessionStorage.setItem(TOKEN_KEY, data.token);
     sessionStorage.setItem(DEMO_SESSION_KEY, "1");
 
-    set({
-      token: data.token,
-      user: data.user,
-      isDemo: true,
-      loading: false,
-    });
+    try {
+      const { data } = await api.post("/api/auth/login", {
+        username,
+        password,
+      });
+
+      clearCheckoutState();
+      sessionStorage.setItem(DEMO_TOKEN_KEY, data.token);
+
+      set({
+        token: data.token,
+        user: data.user,
+        isDemo: true,
+        loading: false,
+      });
+    } catch (error) {
+      sessionStorage.removeItem(DEMO_TOKEN_KEY);
+      sessionStorage.removeItem(DEMO_SESSION_KEY);
+      throw error;
+    }
   },
 
   restore: async () => {
-    const token =
-      localStorage.getItem(TOKEN_KEY) ??
-      sessionStorage.getItem(TOKEN_KEY);
+    const demoSession = isDemoSessionActive();
+    const token = getActiveTenantToken();
 
     if (!token) {
-      sessionStorage.removeItem(DEMO_SESSION_KEY);
+      if (demoSession) {
+        sessionStorage.removeItem(DEMO_SESSION_KEY);
+        sessionStorage.removeItem(DEMO_TOKEN_KEY);
+      }
+
       set({
         token: null,
         user: null,
@@ -131,16 +146,21 @@ export const useAuthStore = create<AuthState>((set) => ({
         token,
         user: data,
         loading: false,
-        isDemo: sessionStorage.getItem(DEMO_SESSION_KEY) === "1",
+        isDemo: demoSession,
       });
     } catch (error: unknown) {
       if (
         axios.isAxiosError(error) &&
         error.response?.status === 401
       ) {
-        localStorage.removeItem(TOKEN_KEY);
-        sessionStorage.removeItem(TOKEN_KEY);
-        sessionStorage.removeItem(DEMO_SESSION_KEY);
+        if (demoSession) {
+          sessionStorage.removeItem(DEMO_TOKEN_KEY);
+          sessionStorage.removeItem(DEMO_SESSION_KEY);
+        } else {
+          localStorage.removeItem(TOKEN_KEY);
+          sessionStorage.removeItem(TOKEN_KEY);
+        }
+
         clearCheckoutState();
 
         set({
@@ -161,9 +181,16 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
-    localStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(DEMO_SESSION_KEY);
+    const demoSession = isDemoSessionActive();
+
+    if (demoSession) {
+      sessionStorage.removeItem(DEMO_TOKEN_KEY);
+      sessionStorage.removeItem(DEMO_SESSION_KEY);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
+    }
+
     clearCheckoutState();
 
     set({
