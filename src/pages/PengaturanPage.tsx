@@ -5,6 +5,8 @@ import {
 } from "react";
 
 import AppShell from "../components/layout/AppShell";
+import OutletSettingsCard from "../components/settings/OutletSettingsCard";
+import WhatsAppSettingsCard from "../components/settings/WhatsAppSettingsCard";
 import api from "../lib/api";
 
 type Settings = {
@@ -38,10 +40,7 @@ const emptySettings: Settings = {
 };
 
 function getErrorMessage(error: unknown) {
-  if (
-    typeof error !== "object" ||
-    error === null
-  ) {
+  if (typeof error !== "object" || error === null) {
     return "Terjadi kesalahan.";
   }
 
@@ -64,17 +63,10 @@ function getErrorMessage(error: unknown) {
 }
 
 export default function PengaturanPage() {
-  const [settings, setSettings] =
-    useState<Settings>(emptySettings);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [saving, setSaving] =
-    useState(false);
-
-  const [loadError, setLoadError] =
-    useState("");
+  const [settings, setSettings] = useState<Settings>(emptySettings);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     void load();
@@ -85,26 +77,17 @@ export default function PengaturanPage() {
     setLoadError("");
 
     try {
-      const response =
-        await api.get<Settings>(
-          "/api/settings"
-        );
-
+      const response = await api.get<Settings>("/api/settings");
       setSettings(response.data);
     } catch (error) {
-      setLoadError(
-        getErrorMessage(error)
-      );
+      setLoadError(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
   }
 
   function onChange(
-    event: ChangeEvent<
-      | HTMLInputElement
-      | HTMLTextAreaElement
-    >
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) {
     const target = event.target;
 
@@ -112,9 +95,7 @@ export default function PengaturanPage() {
       ...current,
       [target.name]:
         target.type === "checkbox"
-          ? (
-              target as HTMLInputElement
-            ).checked
+          ? (target as HTMLInputElement).checked
           : target.type === "number"
           ? Number(target.value)
           : target.value,
@@ -123,53 +104,33 @@ export default function PengaturanPage() {
 
   async function save() {
     if (!settings.namaToko.trim()) {
-      window.alert(
-        "Nama toko wajib diisi."
-      );
+      window.alert("Nama toko wajib diisi.");
       return;
     }
 
-    if (
-      settings.defaultTax < 0 ||
-      settings.defaultTax > 100
-    ) {
-      window.alert(
-        "Pajak default harus antara 0 sampai 100."
-      );
+    if (settings.defaultTax < 0 || settings.defaultTax > 100) {
+      window.alert("Pajak default harus antara 0 sampai 100.");
       return;
     }
 
     if (settings.minStok < 0) {
-      window.alert(
-        "Minimum stok tidak boleh negatif."
-      );
+      window.alert("Minimum stok tidak boleh negatif.");
       return;
     }
 
     if (settings.poinRate < 0) {
-      window.alert(
-        "Rasio poin tidak boleh negatif."
-      );
+      window.alert("Rasio poin tidak boleh negatif.");
       return;
     }
 
     setSaving(true);
 
     try {
-      await api.put(
-        "/api/settings",
-        settings
-      );
-
-      window.alert(
-        "Pengaturan berhasil disimpan."
-      );
-
+      await api.put("/api/settings", settings);
+      window.alert("Pengaturan berhasil disimpan.");
       await load();
     } catch (error) {
-      window.alert(
-        getErrorMessage(error)
-      );
+      window.alert(getErrorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -180,23 +141,14 @@ export default function PengaturanPage() {
       <section className="content-section active">
         <div className="section-header">
           <div>
-            <h2 className="section-title">
-              Pengaturan
-            </h2>
-
-            <p className="section-sub">
-              Konfigurasi toko dan sistem
-            </p>
+            <h2 className="section-title">Pengaturan</h2>
+            <p className="section-sub">Konfigurasi toko dan sistem</p>
           </div>
 
           <button
             type="button"
             className="btn-primary"
-            disabled={
-              saving ||
-              loading ||
-              Boolean(loadError)
-            }
+            disabled={saving || loading || Boolean(loadError)}
             onClick={() => void save()}
           >
             <svg
@@ -211,10 +163,7 @@ export default function PengaturanPage() {
               <polyline points="17 21 17 13 7 13 7 21" />
               <polyline points="7 3 7 8 15 8" />
             </svg>
-
-            {saving
-              ? "Menyimpan..."
-              : "Simpan"}
+            {saving ? "Menyimpan..." : "Simpan"}
           </button>
         </div>
 
@@ -228,7 +177,6 @@ export default function PengaturanPage() {
           <div className="card-panel">
             <div className="settings-form">
               <p>{loadError}</p>
-
               <button
                 type="button"
                 className="btn-secondary"
@@ -248,7 +196,6 @@ export default function PengaturanPage() {
               <div className="settings-form">
                 <div className="form-group">
                   <label>Nama Toko</label>
-
                   <input
                     type="text"
                     name="namaToko"
@@ -260,7 +207,6 @@ export default function PengaturanPage() {
 
                 <div className="form-group">
                   <label>Alamat</label>
-
                   <textarea
                     name="alamat"
                     rows={3}
@@ -272,7 +218,6 @@ export default function PengaturanPage() {
 
                 <div className="form-group">
                   <label>No. Telepon</label>
-
                   <input
                     type="text"
                     name="telepon"
@@ -284,7 +229,6 @@ export default function PengaturanPage() {
 
                 <div className="form-group">
                   <label>Email</label>
-
                   <input
                     type="email"
                     name="email"
@@ -296,7 +240,6 @@ export default function PengaturanPage() {
 
                 <div className="form-group">
                   <label>Website</label>
-
                   <input
                     type="text"
                     name="website"
@@ -316,33 +259,30 @@ export default function PengaturanPage() {
               <div className="settings-form">
                 <div className="form-group">
                   <label>Header Struk</label>
-
                   <textarea
                     name="headerStruk"
                     rows={4}
                     placeholder="Teks pembuka struk"
-                    value={
-                      settings.headerStruk
-                    }
+                    value={settings.headerStruk}
                     onChange={onChange}
                   />
                 </div>
 
                 <div className="form-group">
                   <label>Footer Struk</label>
-
                   <textarea
                     name="footerStruk"
                     rows={4}
                     placeholder="Teks penutup struk"
-                    value={
-                      settings.footerStruk
-                    }
+                    value={settings.footerStruk}
                     onChange={onChange}
                   />
                 </div>
               </div>
             </div>
+
+            <OutletSettingsCard />
+            <WhatsAppSettingsCard />
 
             <div className="card-panel">
               <div className="card-header">
@@ -351,50 +291,35 @@ export default function PengaturanPage() {
 
               <div className="settings-form">
                 <div className="form-group">
-                  <label>
-                    Default Pajak (%)
-                  </label>
-
+                  <label>Default Pajak (%)</label>
                   <input
                     type="number"
                     name="defaultTax"
                     min={0}
                     max={100}
-                    value={
-                      settings.defaultTax
-                    }
+                    value={settings.defaultTax}
                     onChange={onChange}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>
-                    Stok Minimum Alert
-                  </label>
-
+                  <label>Stok Minimum Alert</label>
                   <input
                     type="number"
                     name="minStok"
                     min={0}
-                    value={
-                      settings.minStok
-                    }
+                    value={settings.minStok}
                     onChange={onChange}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>
-                    Poin per Rp 1.000
-                  </label>
-
+                  <label>Poin per Rp 1.000</label>
                   <input
                     type="number"
                     name="poinRate"
                     min={0}
-                    value={
-                      settings.poinRate
-                    }
+                    value={settings.poinRate}
                     onChange={onChange}
                   />
                 </div>
@@ -403,34 +328,22 @@ export default function PengaturanPage() {
                   <input
                     type="checkbox"
                     name="showTax"
-                    checked={
-                      settings.showTax
-                    }
+                    checked={settings.showTax}
                     onChange={onChange}
                   />
-
                   <span className="checkbox-custom" />
-
-                  <span>
-                    Tampilkan pajak pada transaksi
-                  </span>
+                  <span>Tampilkan pajak pada transaksi</span>
                 </label>
 
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
                     name="showPoint"
-                    checked={
-                      settings.showPoint
-                    }
+                    checked={settings.showPoint}
                     onChange={onChange}
                   />
-
                   <span className="checkbox-custom" />
-
-                  <span>
-                    Aktifkan perhitungan poin
-                  </span>
+                  <span>Aktifkan perhitungan poin</span>
                 </label>
               </div>
             </div>

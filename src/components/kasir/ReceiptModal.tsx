@@ -1,4 +1,9 @@
-import { useRef } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import api from "../../lib/api";
 import { useDialogFocus } from "./useDialogFocus";
 
 type ReceiptItem = {
@@ -11,6 +16,7 @@ type ReceiptItem = {
 
 type ReceiptData = {
   transactionId: string;
+  customerId?: string | null;
   transactionDate: string;
   noTrx: string;
   total: number;
@@ -31,12 +37,43 @@ type Props = {
   onClose: () => void;
 };
 
+type Customer = {
+  hp?: string;
+};
+
+type SendReceiptResponse = {
+  phoneMasked: string;
+};
+
 const rupiah = (value: number) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(value);
+
+function getErrorMessage(error: unknown) {
+  if (typeof error !== "object" || error === null) {
+    return "Gagal mengirim struk. Coba lagi.";
+  }
+
+  const apiError = error as {
+    message?: string;
+    response?: {
+      data?: {
+        message?: string;
+        title?: string;
+      };
+    };
+  };
+
+  return (
+    apiError.response?.data?.message ??
+    apiError.response?.data?.title ??
+    apiError.message ??
+    "Gagal mengirim struk. Coba lagi."
+  );
+}
 
 export default function ReceiptModal({
   open,
@@ -46,8 +83,80 @@ export default function ReceiptModal({
   onClose,
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const [whatsAppOpen, setWhatsAppOpen] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendMessage, setSendMessage] = useState("");
+  const [sendError, setSendError] = useState("");
+
   useDialogFocus(open, dialogRef, onClose);
+
+  useEffect(() => {
+    if (!open || !receipt) {
+      const timer = window.setTimeout(() => {
+        setWhatsAppOpen(false);
+        setPhone("");
+        setSendMessage("");
+        setSendError("");
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }
+
+    const customerId = receipt.customerId;
+    let cancelled = false;
+
+    async function loadSuggestedPhone() {
+      try {
+        if (!customerId) return;
+
+        const customer = await api.get<Customer>(
+          `/api/customers/${customerId}`
+        );
+
+        if (!cancelled && customer.data.hp) {
+          setPhone(customer.data.hp);
+        }
+      } catch {
+        // Phone suggestion is optional. Manual entry remains available.
+      }
+    }
+
+    void loadSuggestedPhone();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, receipt]);
+
   if (!open || !receipt) return null;
+
+  const transactionId = receipt.transactionId;
+
+  async function sendWhatsAppReceipt() {
+    if (!phone.trim()) {
+      setSendError("Nomor WhatsApp wajib diisi.");
+      return;
+    }
+
+    setSending(true);
+    setSendError("");
+    setSendMessage("");
+
+    try {
+      const response = await api.post<SendReceiptResponse>(
+        `/api/transactions/${transactionId}/receipt/whatsapp`,
+        { phone: phone.trim() }
+      );
+
+      setSendMessage(
+        `Struk berhasil dikirim ke ${response.data.phoneMasked}.`
+      );
+    } catch (error) {
+      setSendError(getErrorMessage(error));
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <div className="modal-overlay open">
@@ -159,6 +268,79 @@ export default function ReceiptModal({
               {footer}
             </div>
           </div>
+
+          {whatsAppOpen && (
+            <div
+              style={{
+                marginTop: 16,
+                padding: 16,
+                border: "1px solid var(--border-color, #e5e7eb)",
+                borderRadius: 10,
+              }}
+            >
+              <div className="form-group" style={{ marginBottom: 10 }}>
+                <label htmlFor="receipt-whatsapp-phone">
+                  Nomor WhatsApp customer
+                </label>
+                <input
+                  id="receipt-whatsapp-phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="08xxxxxxxxxx"
+                  value={phone}
+                  onChange={(event) => {
+                    setPhone(event.target.value);
+                    setSendError("");
+                    setSendMessage("");
+                  }}
+                  disabled={sending}
+                />
+              </div>
+
+              <small>
+                Struk akan dikirim sebagai pesan WhatsApp dari nomor toko yang terhubung.
+              </small>
+
+              {sendError && (
+                <p style={{ margin: "10px 0 0", color: "#b91c1c" }}>
+                  {sendError}
+                </p>
+              )}
+
+              {sendMessage && (
+                <p style={{ margin: "10px 0 0" }}>
+                  {sendMessage}
+                </p>
+              )}
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  justifyContent: "flex-end",
+                  marginTop: 12,
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={sending}
+                  onClick={() => setWhatsAppOpen(false)}
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={sending}
+                  onClick={() => void sendWhatsAppReceipt()}
+                >
+                  {sending ? "Mengirim..." : sendMessage ? "Kirim Ulang" : "Kirim"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="modal-footer">
@@ -168,6 +350,17 @@ export default function ReceiptModal({
             onClick={onClose}
           >
             Tutup
+          </button>
+
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              setWhatsAppOpen((current) => !current);
+              setSendError("");
+            }}
+          >
+            Kirim WhatsApp
           </button>
 
           <button

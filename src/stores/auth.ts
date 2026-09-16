@@ -1,6 +1,7 @@
 import axios from "axios";
 import { create } from "zustand";
 import api, { TOKEN_KEY } from "../lib/api";
+import { ACTIVE_OUTLET_KEY } from "../lib/outlet";
 
 const ACTIVE_QRIS_KEY = "nfpos_active_qris";
 const RESTAURANT_CHECKOUT_KEY = "nfpos_restaurant_checkout";
@@ -28,6 +29,13 @@ type AuthState = {
   logout: () => void;
 };
 
+function clearTenantSessionState() {
+  localStorage.removeItem(ACTIVE_QRIS_KEY);
+  localStorage.removeItem(RESTAURANT_CHECKOUT_KEY);
+  localStorage.removeItem(LAUNDRY_CHECKOUT_KEY);
+  localStorage.removeItem(ACTIVE_OUTLET_KEY);
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   token:
     localStorage.getItem(TOKEN_KEY) ??
@@ -53,9 +61,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     localStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(ACTIVE_QRIS_KEY);
-    localStorage.removeItem(RESTAURANT_CHECKOUT_KEY);
-    localStorage.removeItem(LAUNDRY_CHECKOUT_KEY);
+    clearTenantSessionState();
     const storage = remember ? localStorage : sessionStorage;
     storage.setItem(TOKEN_KEY, data.token);
 
@@ -94,9 +100,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       ) {
         localStorage.removeItem(TOKEN_KEY);
         sessionStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(ACTIVE_QRIS_KEY);
-    localStorage.removeItem(RESTAURANT_CHECKOUT_KEY);
-    localStorage.removeItem(LAUNDRY_CHECKOUT_KEY);
+        clearTenantSessionState();
 
         set({
           token: null,
@@ -117,9 +121,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(ACTIVE_QRIS_KEY);
-    localStorage.removeItem(RESTAURANT_CHECKOUT_KEY);
-    localStorage.removeItem(LAUNDRY_CHECKOUT_KEY);
+    clearTenantSessionState();
 
     set({
       token: null,
