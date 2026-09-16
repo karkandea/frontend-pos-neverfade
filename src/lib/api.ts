@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getActiveOutletId } from "./outlet";
 
 export const TOKEN_KEY = "nfpos_token";
 
@@ -33,6 +34,27 @@ api.interceptors.request.use((config) => {
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  const method = config.method?.toLowerCase();
+  const saleCreation =
+    method === "post" &&
+    (config.url === "/api/transactions" ||
+      config.url === "/api/payments/qris");
+
+  if (
+    saleCreation &&
+    config.data &&
+    typeof config.data === "object" &&
+    !Array.isArray(config.data)
+  ) {
+    const outletId = getActiveOutletId();
+    if (outletId && !("outletId" in config.data)) {
+      config.data = {
+        ...config.data,
+        outletId,
+      };
+    }
   }
 
   return config;
