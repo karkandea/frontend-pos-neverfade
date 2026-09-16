@@ -89,20 +89,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       throw new Error("Mode demo tidak aktif pada deployment ini.");
     }
 
-    const username = import.meta.env.VITE_DEMO_USERNAME?.trim() || "demo";
-    const password = import.meta.env.VITE_DEMO_PASSWORD;
-
-    if (!password) {
-      throw new Error("Credential demo belum dikonfigurasi.");
-    }
-
     sessionStorage.setItem(DEMO_SESSION_KEY, "1");
 
     try {
-      const { data } = await api.post("/api/auth/login", {
-        username,
-        password,
-      });
+      const { data } = await api.post("/api/demo/session");
 
       clearCheckoutState();
       sessionStorage.setItem(DEMO_TOKEN_KEY, data.token);
