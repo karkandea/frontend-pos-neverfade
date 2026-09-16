@@ -134,7 +134,7 @@ test("creates hosted Xendit checkout and recovers paid status on return", async 
   const state = await setup(page);
 
   await page.getByRole("button", { name: `Tambah ${product.nama} ke keranjang` }).click();
-  await page.locator(".payment-options").getByRole("button", { name: "XENDIT" }).click();
+  await page.locator(".payment-options").getByRole("button", { name: "E-WALLET & BANK" }).click();
   await page.getByRole("button", { name: "Proses Transaksi" }).click();
 
   await expect(page.getByRole("heading", { name: "Xendit Hosted QA" })).toBeVisible();
@@ -148,12 +148,12 @@ test("creates hosted Xendit checkout and recovers paid status on return", async 
 
   await page.goto("/kasir");
   await expect(page.getByText("Pembayaran sebelumnya sudah berhasil dikonfirmasi.")).toBeVisible();
-  await expect(page.getByRole("dialog", { name: "Xendit Checkout" })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "Pembayaran Online" })).toHaveCount(0);
 });
 
 test("hides hosted Xendit checkout when capability is disabled", async ({ page }) => {
   await setup(page, false);
   await expect(
-    page.locator(".payment-options").getByRole("button", { name: "XENDIT" })
+    page.locator(".payment-options").getByRole("button", { name: "E-WALLET & BANK" })
   ).toHaveCount(0);
 });

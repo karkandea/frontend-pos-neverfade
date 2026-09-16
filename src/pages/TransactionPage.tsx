@@ -707,17 +707,17 @@ export default function TransactionPage() {
     const payment = hostedPayment;
     if (!payment || hostedCancelling) return;
     if (!window.confirm(
-      `Batalkan Xendit Checkout ${payment.providerSessionId}? Link ini tidak dapat dipakai lagi.`
+      `Batalkan pembayaran online ${payment.providerSessionId}? Link ini tidak dapat dipakai lagi.`
     )) return;
 
     releaseActivePaymentUi();
     removePersistedHostedPayment();
     setHostedCancelling(true);
-    setRecoveryMessage("Permintaan pembatalan Xendit dikirim. Kasir tetap dapat digunakan.");
+    setRecoveryMessage("Permintaan pembatalan pembayaran online dikirim. Kasir tetap dapat digunakan.");
     try {
       await api.post<PaymentStatus>(`/api/payments/${payment.id}/cancel`);
       setRecoveryPayment(null);
-      setRecoveryMessage("Xendit Checkout berhasil dibatalkan.");
+      setRecoveryMessage("Pembayaran online berhasil dibatalkan.");
     } catch (error) {
       setRecoveryMessage(
         `Pembatalan belum terkonfirmasi. Kasir tetap dapat digunakan. ${getErrorMessage(error)}`
@@ -824,7 +824,7 @@ export default function TransactionPage() {
 
   function resumeHostedCheckout() {
     if (!hostedPayment?.checkoutUrl) {
-      setHostedStatusError("Link Xendit Checkout belum tersedia.");
+      setHostedStatusError("Link pembayaran online belum tersedia.");
       return;
     }
 
@@ -1133,7 +1133,7 @@ export default function TransactionPage() {
 
       if (paymentMethod === "xendit") {
         if (!paymentCapabilities.hostedCheckoutEnabled) {
-          throw new Error("Xendit Checkout sedang tidak tersedia.");
+          throw new Error("Pembayaran online sedang tidak tersedia.");
         }
 
         const paymentResponse = await api.post<HostedPayment>(
@@ -1148,7 +1148,7 @@ export default function TransactionPage() {
         const payment = paymentResponse.data;
 
         if (!payment.checkoutUrl) {
-          throw new Error("Link Xendit Checkout belum tersedia.");
+          throw new Error("Link pembayaran online belum tersedia.");
         }
 
         persistHostedPayment(payment);
@@ -1265,7 +1265,7 @@ export default function TransactionPage() {
           <div className="payment-recovery-banner" role="status">
             <strong>Ada pembayaran yang belum selesai.</strong>
             <span>
-              {recoveryPayment.method === "xendit_hosted" ? "Xendit Checkout" : "QRIS"}
+              {recoveryPayment.method === "xendit_hosted" ? "E-Wallet & Bank" : "QRIS"}
               {` · ${new Intl.NumberFormat("id-ID", {
                 style: "currency",
                 currency: "IDR",

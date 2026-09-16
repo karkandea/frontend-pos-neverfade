@@ -94,7 +94,7 @@ export default function HostedPaymentModal({
       >
         <div className="modal-header">
           <div>
-            <h3 id="hosted-payment-title">Xendit Checkout</h3>
+            <h3 id="hosted-payment-title">Pembayaran Online</h3>
             <p className={`qris-status ${paid ? "paid" : failed ? "failed" : "pending"}`}>
               {paid
                 ? "Pembayaran berhasil"
@@ -133,7 +133,7 @@ export default function HostedPaymentModal({
           {paid ? (
             <div className="payment-success-state" role="status">
               <div className="payment-success-icon" aria-hidden="true">✓</div>
-              <strong>Pembayaran Xendit berhasil</strong>
+              <strong>Pembayaran online berhasil</strong>
               <span>{rupiah(payment.amount)}</span>
               <small>Transaksi {payment.transactionId}</small>
               {receiptLoading ? (
@@ -180,8 +180,8 @@ export default function HostedPaymentModal({
                 </div>
               ) : (
                 <ol className="qris-instructions">
-                  <li>Buka halaman Xendit Checkout.</li>
-                  <li>Pilih e-wallet, transfer bank, kartu, atau channel aktif lainnya.</li>
+                  <li>Buka halaman pembayaran.</li>
+                  <li>Pilih e-wallet, Virtual Account, transfer bank, kartu, atau metode lain yang tersedia.</li>
                   <li>Selesaikan pembayaran lalu kembali ke NeverFade POS.</li>
                 </ol>
               )}
@@ -195,7 +195,7 @@ export default function HostedPaymentModal({
               <div className="qris-pending-actions">
                 {!displayExpired ? (
                   <button type="button" className="btn-primary" onClick={onResumeCheckout} disabled={cancelling}>
-                    Buka Xendit
+                    Buka Pembayaran
                   </button>
                 ) : null}
                 <button type="button" className="btn-secondary" onClick={onRetryStatus} disabled={cancelling}>

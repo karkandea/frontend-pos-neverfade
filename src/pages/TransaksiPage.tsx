@@ -53,7 +53,7 @@ function transactionStatus(transaction: Transaction) {
 function paymentMethodLabel(value: string) {
   const normalized = value.trim().toLowerCase();
   if (normalized === "qris") return "QRIS";
-  if (normalized === "xendit" || normalized === "xendit_hosted") return "Xendit Checkout";
+  if (normalized === "xendit" || normalized === "xendit_hosted") return "E-Wallet & Bank";
   if (normalized === "tunai" || normalized === "cash") return "Tunai";
   return value || "-";
 }

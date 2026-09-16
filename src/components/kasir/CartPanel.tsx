@@ -402,14 +402,14 @@ export default function CartPanel({
                       onPaymentMethodChange("xendit")
                     }
                   >
-                    XENDIT
+                    E-WALLET & BANK
                   </button>
                 ) : null}
               </div>
 
               {paymentMethod === "xendit" ? (
                 <small>
-                  E-wallet, transfer bank, kartu, dan channel lain dipilih di halaman Xendit.
+                  E-wallet, Virtual Account, transfer bank, kartu, dan metode online lain yang tersedia.
                 </small>
               ) : null}
 
