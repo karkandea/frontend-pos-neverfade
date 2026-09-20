@@ -51,7 +51,21 @@ export default function AppShell({ children }: Props) {
               borderBottom: "1px solid #fde68a",
             }}
           >
-            Mode Demo · {tenantName ?? "Data simulasi"} · Bukan transaksi merchant asli
+            <span>
+              Mode Demo · {tenantName ?? "Data simulasi"} · Bukan transaksi merchant asli
+            </span>
+            <Link
+              to="/demo"
+              style={{
+                marginLeft: 12,
+                color: "inherit",
+                fontWeight: 800,
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+              }}
+            >
+              Ganti jenis bisnis
+            </Link>
           </div>
         ) : null}
 
