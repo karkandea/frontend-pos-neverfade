@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { BusinessType } from "../types/platform";
 import { create } from "zustand";
 import api, {
   DEMO_SESSION_KEY,
@@ -30,7 +31,7 @@ type AuthState = {
     password: string,
     remember: boolean
   ) => Promise<void>;
-  enterDemo: () => Promise<void>;
+  enterDemo: (businessType: BusinessType) => Promise<void>;
   restore: () => Promise<void>;
   logout: () => void;
 };
@@ -84,7 +85,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
   },
 
-  enterDemo: async () => {
+  enterDemo: async (businessType) => {
     if (import.meta.env.VITE_DEMO_MODE !== "true") {
       throw new Error("Mode demo tidak aktif pada deployment ini.");
     }
@@ -92,7 +93,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     sessionStorage.setItem(DEMO_SESSION_KEY, "1");
 
     try {
-      const { data } = await api.post("/api/demo/session");
+      const { data } = await api.post("/api/demo/session", null, {
+        params: { businessType },
+      });
 
       clearCheckoutState();
       sessionStorage.setItem(DEMO_TOKEN_KEY, data.token);

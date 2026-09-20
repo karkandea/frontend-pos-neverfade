@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 
 import { useAuthStore } from "../../stores/auth";
+import { useTenantContextStore } from "../../stores/tenantContext";
 import MobileNav from "./MobileNav";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
@@ -12,6 +14,7 @@ type Props = {
 export default function AppShell({ children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isDemo = useAuthStore((state) => state.isDemo);
+  const tenantName = useTenantContextStore((state) => state.context?.namaToko);
 
   return (
     <div id="page-app" className="page page-active" style={{display:"flex"}}>
@@ -48,7 +51,7 @@ export default function AppShell({ children }: Props) {
               borderBottom: "1px solid #fde68a",
             }}
           >
-            Mode Demo · Data simulasi, bukan transaksi merchant asli
+            Mode Demo · {tenantName ?? "Data simulasi"} · Bukan transaksi merchant asli
           </div>
         ) : null}
 
