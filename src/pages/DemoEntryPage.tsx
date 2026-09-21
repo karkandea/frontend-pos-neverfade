@@ -51,7 +51,7 @@ const demoOptions: DemoOption[] = [
       { label: "Kasir", icon: Receipt },
     ],
     destination: "/meja",
-    image: "/demo/cafe.webp",
+    image: "/demo-assets/cafe.webp",
   },
   {
     key: "general_retail",
@@ -64,7 +64,7 @@ const demoOptions: DemoOption[] = [
       { label: "Laporan", icon: BarChart3 },
     ],
     destination: "/kasir",
-    image: "/demo/minimarket.webp",
+    image: "/demo-assets/minimarket.webp",
   },
   {
     key: "fashion_retail",
@@ -77,7 +77,7 @@ const demoOptions: DemoOption[] = [
       { label: "Checkout", icon: CreditCard },
     ],
     destination: "/kasir",
-    image: "/demo/fashion.webp",
+    image: "/demo-assets/fashion.webp",
   },
   {
     key: "laundry",
@@ -90,7 +90,7 @@ const demoOptions: DemoOption[] = [
       { label: "Pembayaran", icon: Wallet },
     ],
     destination: "/laundry",
-    image: "/demo/laundry.webp",
+    image: "/demo-assets/laundry.webp",
   },
   {
     key: "salon_barbershop",
@@ -103,7 +103,7 @@ const demoOptions: DemoOption[] = [
       { label: "Staff", icon: UserCog },
     ],
     destination: "/kasir",
-    image: "/demo/salon.webp",
+    image: "/demo-assets/salon.webp",
   },
 ];
 
