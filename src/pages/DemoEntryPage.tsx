@@ -202,37 +202,42 @@ export default function DemoEntryPage() {
                     disabled={Boolean(loadingKey)}
                     onClick={() => void chooseDemo(option)}
                   >
-                    <div className="demo-category-shimmer" aria-hidden="true" />
-                    <img
-                      className="demo-category-image"
-                      src={option.image}
-                      srcSet={`${smallImage} 720w, ${option.image} 1448w`}
-                      sizes="(max-width: 720px) 88vw, (max-width: 1000px) 72vw, 560px"
-                      alt=""
-                      loading={index < 2 ? "eager" : "lazy"}
-                      fetchPriority={index < 2 ? "high" : "auto"}
-                      decoding="async"
-                      onLoad={() =>
-                        setLoadedImages((current) =>
-                          current[option.key] ? current : { ...current, [option.key]: true },
-                        )
-                      }
-                    />
-                    <div className="demo-category-overlay" aria-hidden="true" />
                     <div className="demo-category-copy">
                       <span className="demo-category-kicker">{option.kicker}</span>
                       <h3>{option.title}</h3>
                       <p>{option.description}</p>
+                    </div>
+
+                    <div className="demo-category-visual">
+                      <div className="demo-category-shimmer" aria-hidden="true" />
+                      <img
+                        className="demo-category-image"
+                        src={option.image}
+                        srcSet={`${smallImage} 720w, ${option.image} 1448w`}
+                        sizes="(max-width: 720px) 88vw, (max-width: 1000px) 72vw, 560px"
+                        alt=""
+                        loading={index < 2 ? "eager" : "lazy"}
+                        fetchPriority={index < 2 ? "high" : "auto"}
+                        decoding="async"
+                        onLoad={() =>
+                          setLoadedImages((current) =>
+                            current[option.key] ? current : { ...current, [option.key]: true },
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div className="demo-category-footer">
                       <div className="demo-category-tags">
                         {option.features.map(({ label, icon: Icon }) => (
                           <span key={label}><Icon aria-hidden="true" />{label}</span>
                         ))}
                       </div>
+                      <span className="demo-category-cta">
+                        {loading ? "Menyiapkan demo…" : "Coba Demo"}
+                        {!loading ? <ArrowRight aria-hidden="true" /> : null}
+                      </span>
                     </div>
-                    <span className="demo-category-cta">
-                      {loading ? "Menyiapkan demo…" : "Coba Demo"}
-                      {!loading ? <ArrowRight aria-hidden="true" /> : null}
-                    </span>
                   </button>
                 );
               })}
