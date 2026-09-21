@@ -44,7 +44,7 @@ const demoOptions: DemoOption[] = [
     key: "food_beverage",
     kicker: "FOOD & BEVERAGE",
     title: "Cafe, restoran, dan warung",
-    description: "Kelola meja, pesanan, kitchen, pembayaran, dan laporan dalam satu alur.",
+    description: "Atur meja, teruskan pesanan ke dapur, terima pembayaran, dan pantau penjualan dari satu tempat.",
     features: [
       { label: "Meja", icon: Table2 },
       { label: "Kitchen", icon: CookingPot },
@@ -57,7 +57,7 @@ const demoOptions: DemoOption[] = [
     key: "general_retail",
     kicker: "RETAIL",
     title: "Toko dan minimarket",
-    description: "Transaksi cepat dengan stok real-time, produk harian, dan laporan penjualan.",
+    description: "Transaksi lebih cepat, stok otomatis ikut ter-update, laporan tetap rapi.",
     features: [
       { label: "Kasir", icon: Receipt },
       { label: "Stok", icon: Boxes },
@@ -70,7 +70,7 @@ const demoOptions: DemoOption[] = [
     key: "fashion_retail",
     kicker: "FASHION",
     title: "Butik dan distro",
-    description: "Kelola varian ukuran, warna, stok, serta checkout produk fashion dengan rapi.",
+    description: "Kelola ukuran, warna, stok, dan harga tanpa bikin kasir ribet.",
     features: [
       { label: "Varian", icon: SwatchBook },
       { label: "Inventory", icon: Boxes },
@@ -83,7 +83,7 @@ const demoOptions: DemoOption[] = [
     key: "laundry",
     kicker: "LAUNDRY",
     title: "Laundry kiloan dan express",
-    description: "Terima order, pantau proses cucian, pembayaran, dan status pickup pelanggan.",
+    description: "Terima cucian, pantau proses, catat pembayaran, sampai siap diambil.",
     features: [
       { label: "Order", icon: ClipboardList },
       { label: "Status", icon: RefreshCw },
@@ -96,7 +96,7 @@ const demoOptions: DemoOption[] = [
     key: "salon_barbershop",
     kicker: "SERVICE",
     title: "Salon dan barbershop",
-    description: "Kelola layanan, pelanggan, staff, dan transaksi harian dengan workflow yang simpel.",
+    description: "Kelola layanan, pelanggan, staf, dan pembayaran dalam satu alur.",
     features: [
       { label: "Layanan", icon: Scissors },
       { label: "Customer", icon: Users },
@@ -108,15 +108,15 @@ const demoOptions: DemoOption[] = [
 ];
 
 const features: { title: string; copy: string; icon: LucideIcon }[] = [
-  { title: "Kasir & Checkout", copy: "Transaksi cepat, diskon, dan pembayaran", icon: Receipt },
-  { title: "Inventory", copy: "Stok dan pergerakan barang real-time", icon: Boxes },
-  { title: "Reports & Analytics", copy: "Pantau penjualan dan performa bisnis", icon: BarChart3 },
-  { title: "Customer", copy: "Profil, histori, dan data pelanggan", icon: Users },
-  { title: "Staff & Roles", copy: "Atur akses dan aktivitas tim", icon: UserCog },
-  { title: "QRIS & Payments", copy: "Beragam metode pembayaran", icon: Wallet },
-  { title: "Digital Receipt", copy: "Struk yang mudah dibagikan", icon: Receipt },
-  { title: "Multi-price", copy: "Harga satuan, grosir, dan variasi", icon: PackageSearch },
-  { title: "Kitchen Queue", copy: "Alur pesanan kasir ke dapur", icon: CookingPot },
+  { title: "Kasir & Checkout", copy: "Catat transaksi dan terima pembayaran lebih cepat", icon: Receipt },
+  { title: "Inventory", copy: "Stok otomatis bergerak setiap ada transaksi", icon: Boxes },
+  { title: "Reports & Analytics", copy: "Lihat omzet dan performa tanpa rekap manual", icon: BarChart3 },
+  { title: "Customer", copy: "Simpan data dan riwayat pelanggan", icon: Users },
+  { title: "Staff & Roles", copy: "Atur akses tiap staf sesuai peran", icon: UserCog },
+  { title: "QRIS & Payments", copy: "Terima QRIS dan metode pembayaran lain", icon: Wallet },
+  { title: "Digital Receipt", copy: "Kirim struk tanpa harus cetak", icon: Receipt },
+  { title: "Multi-price", copy: "Atur harga satuan, grosir, atau khusus", icon: PackageSearch },
+  { title: "Kitchen Queue", copy: "Pesanan kasir langsung masuk antrean dapur", icon: CookingPot },
 ];
 
 function BrandMark() {
@@ -132,6 +132,7 @@ export default function DemoEntryPage() {
   const navigate = useNavigate();
   const enterDemo = useAuthStore((state) => state.enterDemo);
   const [loadingKey, setLoadingKey] = useState<BusinessType | null>(null);
+  const [loadedImages, setLoadedImages] = useState<Partial<Record<BusinessType, boolean>>>({});
   const [error, setError] = useState("");
 
   async function chooseDemo(option: DemoOption) {
@@ -158,16 +159,16 @@ export default function DemoEntryPage() {
 
         <nav className="demo-nav" aria-label="Demo navigation">
           <a className="active" href="#demo"><LayoutGrid aria-hidden="true" />Demo</a>
-          <a href="#features"><Sparkles aria-hidden="true" />Features</a>
-          <a href="#pricing"><BadgeDollarSign aria-hidden="true" />Pricing</a>
-          <a href="#how-it-works"><PlayCircle aria-hidden="true" />How It Works</a>
+          <a href="#features"><Sparkles aria-hidden="true" />Fitur</a>
+          <a href="#pricing"><BadgeDollarSign aria-hidden="true" />Harga</a>
+          <a href="#how-it-works"><PlayCircle aria-hidden="true" />Cara Kerja</a>
           <a href="#faq"><CircleHelp aria-hidden="true" />FAQ</a>
         </nav>
 
         <div className="demo-sidebar-bottom">
           <Link className="demo-login-link" to="/login"><LogIn aria-hidden="true" /><span>Masuk Merchant</span></Link>
           <a className="demo-start-button" href="#demo">Mulai Demo <ArrowRight aria-hidden="true" /></a>
-          <small>Tanpa menyentuh data asli.</small>
+          <small>Data demo terpisah dari data merchant.</small>
         </div>
       </aside>
 
@@ -176,29 +177,47 @@ export default function DemoEntryPage() {
           <header className="demo-page-header">
             <span className="demo-overline">NEVERFADE POS</span>
             <h1>Demo</h1>
-            <p>Pilih jenis bisnis. Kami akan menyiapkan pengalaman POS yang paling relevan untuk kamu.</p>
+            <p>Pilih jenis usaha. NeverFade langsung menyesuaikan alur kasir dan operasionalnya—tanpa perlu daftar.</p>
           </header>
 
           <section className="demo-showcase" aria-label="Pilih demo bisnis">
             <div className="demo-section-heading">
               <div>
-                <span>COBA SEKARANG</span>
-                <h2>Pilih bisnis kamu</h2>
+                <span>COBA LANGSUNG</span>
+                <h2>Pilih jenis usahamu</h2>
               </div>
             </div>
 
             <div className="demo-card-row">
-              {demoOptions.map((option) => {
+              {demoOptions.map((option, index) => {
                 const loading = loadingKey === option.key;
+                const imageLoaded = Boolean(loadedImages[option.key]);
+                const smallImage = option.image.replace(".webp", "-720.webp");
+
                 return (
                   <button
                     key={option.key}
                     type="button"
-                    className="demo-category-card"
+                    className={`demo-category-card${imageLoaded ? " image-loaded" : ""}`}
                     disabled={Boolean(loadingKey)}
                     onClick={() => void chooseDemo(option)}
                   >
-                    <img className="demo-category-image" src={option.image} alt="" loading="eager" />
+                    <div className="demo-category-shimmer" aria-hidden="true" />
+                    <img
+                      className="demo-category-image"
+                      src={option.image}
+                      srcSet={`${smallImage} 720w, ${option.image} 1448w`}
+                      sizes="(max-width: 720px) 88vw, (max-width: 1000px) 72vw, 560px"
+                      alt=""
+                      loading={index < 2 ? "eager" : "lazy"}
+                      fetchPriority={index < 2 ? "high" : "auto"}
+                      decoding="async"
+                      onLoad={() =>
+                        setLoadedImages((current) =>
+                          current[option.key] ? current : { ...current, [option.key]: true },
+                        )
+                      }
+                    />
                     <div className="demo-category-overlay" aria-hidden="true" />
                     <div className="demo-category-copy">
                       <span className="demo-category-kicker">{option.kicker}</span>
@@ -211,7 +230,7 @@ export default function DemoEntryPage() {
                       </div>
                     </div>
                     <span className="demo-category-cta">
-                      {loading ? "Menyiapkan demo…" : "Buka Demo"}
+                      {loading ? "Menyiapkan demo…" : "Coba Demo"}
                       {!loading ? <ArrowRight aria-hidden="true" /> : null}
                     </span>
                   </button>
@@ -224,8 +243,8 @@ export default function DemoEntryPage() {
 
           <section className="demo-features-section" id="features">
             <div className="demo-list-title">
-              <h2>Yang bisa kamu coba</h2>
-              <span>Semua fitur <ArrowRight aria-hidden="true" /></span>
+              <h2>Coba fitur utamanya</h2>
+              <span>Lihat semua fitur <ArrowRight aria-hidden="true" /></span>
             </div>
             <div className="demo-feature-grid">
               {features.map(({ title, copy, icon: Icon }) => (
@@ -238,29 +257,29 @@ export default function DemoEntryPage() {
           </section>
 
           <section className="demo-simple-section" id="pricing">
-            <span className="demo-overline">PRICING</span>
-            <h2>Sederhana dari awal.</h2>
-            <p>Pilih paket sesuai skala bisnis tanpa mengubah cara tim kamu bekerja.</p>
-            <a href="#faq">Lihat detail pricing <ArrowRight aria-hidden="true" /></a>
+            <span className="demo-overline">HARGA</span>
+            <h2>Pilih yang pas buat usahamu.</h2>
+            <p>Mulai dari kebutuhan inti, lalu tambah fitur saat bisnismu berkembang.</p>
+            <a href="#faq">Lihat detail harga <ArrowRight aria-hidden="true" /></a>
           </section>
 
           <section className="demo-how-section" id="how-it-works">
             <div className="demo-list-title"><h2>Cara kerjanya</h2></div>
             <div className="demo-steps">
-              <div><span>01</span><strong>Pilih bisnis</strong><small>NeverFade menyesuaikan workflow demo.</small></div>
-              <div><span>02</span><strong>Coba transaksi</strong><small>Eksplor kasir, operasional, dan laporan.</small></div>
-              <div><span>03</span><strong>Siap digunakan</strong><small>Setup tenant asli saat kamu siap.</small></div>
+              <div><span>01</span><strong>Pilih jenis usaha</strong><small>Demo langsung menyesuaikan alur operasionalnya.</small></div>
+              <div><span>02</span><strong>Coba langsung</strong><small>Jalankan kasir, operasional, dan laporan seperti kondisi nyata.</small></div>
+              <div><span>03</span><strong>Mulai saat siap</strong><small>Setup akun merchant tanpa membawa data demo.</small></div>
             </div>
           </section>
 
           <section className="demo-faq-section" id="faq">
             <div>
               <span className="demo-overline">FAQ</span>
-              <h2>Demo aman untuk dicoba.</h2>
+              <h2>Coba bebas, data tetap terpisah.</h2>
             </div>
             <div className="demo-faq-copy">
-              <p><strong>Apakah data demo masuk ke data merchant?</strong><br />Tidak. Seluruh transaksi demo menggunakan lingkungan simulasi terpisah.</p>
-              <p><strong>Perlu akun?</strong><br />Tidak. Pilih kategori bisnis dan demo langsung disiapkan.</p>
+              <p><strong>Apakah data demo masuk ke akun merchant?</strong><br />Tidak. Transaksi demo berjalan di lingkungan simulasi terpisah.</p>
+              <p><strong>Perlu daftar dulu?</strong><br />Tidak. Pilih jenis usaha dan demo langsung bisa dicoba.</p>
             </div>
           </section>
         </div>
