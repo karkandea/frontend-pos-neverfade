@@ -1,5 +1,29 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  ArrowRight,
+  BadgeDollarSign,
+  BarChart3,
+  Boxes,
+  CircleHelp,
+  ClipboardList,
+  CookingPot,
+  CreditCard,
+  LayoutGrid,
+  LogIn,
+  PackageSearch,
+  PlayCircle,
+  Receipt,
+  RefreshCw,
+  Scissors,
+  Sparkles,
+  SwatchBook,
+  Table2,
+  UserCog,
+  Users,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 
 import type { BusinessType } from "../types/platform";
 import { useAuthStore } from "../stores/auth";
@@ -10,69 +34,89 @@ type DemoOption = {
   title: string;
   kicker: string;
   description: string;
-  features: string[];
+  features: { label: string; icon: LucideIcon }[];
   destination: string;
-  art: string;
+  image: string;
 };
 
 const demoOptions: DemoOption[] = [
   {
     key: "food_beverage",
     kicker: "FOOD & BEVERAGE",
-    title: "Restaurant, cafe, dan warung",
-    description: "Kelola meja, pesanan, dapur, pembayaran, dan laporan dari satu tempat.",
-    features: ["Meja", "Kitchen queue", "Kasir"],
+    title: "Cafe, restoran, dan warung",
+    description: "Kelola meja, pesanan, kitchen, pembayaran, dan laporan dalam satu alur.",
+    features: [
+      { label: "Meja", icon: Table2 },
+      { label: "Kitchen", icon: CookingPot },
+      { label: "Kasir", icon: Receipt },
+    ],
     destination: "/meja",
-    art: "food",
+    image: "/demo/cafe.webp",
   },
   {
     key: "general_retail",
     kicker: "RETAIL",
-    title: "Toko, minimarket, dan usaha harian",
-    description: "Kasir cepat dengan stok real-time, pelanggan, dan laporan penjualan.",
-    features: ["Kasir", "Inventory", "Laporan"],
+    title: "Toko dan minimarket",
+    description: "Transaksi cepat dengan stok real-time, produk harian, dan laporan penjualan.",
+    features: [
+      { label: "Kasir", icon: Receipt },
+      { label: "Stok", icon: Boxes },
+      { label: "Laporan", icon: BarChart3 },
+    ],
     destination: "/kasir",
-    art: "retail",
+    image: "/demo/minimarket.webp",
   },
   {
     key: "fashion_retail",
     kicker: "FASHION",
-    title: "Butik, distro, dan fashion retail",
-    description: "Atur varian ukuran, warna, stok, harga satuan, dan harga grosir.",
-    features: ["Varian", "Multi harga", "Retur"],
+    title: "Butik dan distro",
+    description: "Kelola varian ukuran, warna, stok, serta checkout produk fashion dengan rapi.",
+    features: [
+      { label: "Varian", icon: SwatchBook },
+      { label: "Inventory", icon: Boxes },
+      { label: "Checkout", icon: CreditCard },
+    ],
     destination: "/kasir",
-    art: "fashion",
+    image: "/demo/fashion.webp",
   },
   {
     key: "laundry",
     kicker: "LAUNDRY",
-    title: "Laundry kiloan sampai express",
-    description: "Terima order, pantau proses cucian, customer, pembayaran, dan status.",
-    features: ["Work order", "Status", "Pembayaran"],
+    title: "Laundry kiloan dan express",
+    description: "Terima order, pantau proses cucian, pembayaran, dan status pickup pelanggan.",
+    features: [
+      { label: "Order", icon: ClipboardList },
+      { label: "Status", icon: RefreshCw },
+      { label: "Pembayaran", icon: Wallet },
+    ],
     destination: "/laundry",
-    art: "laundry",
+    image: "/demo/laundry.webp",
   },
   {
     key: "salon_barbershop",
     kicker: "SERVICE",
     title: "Salon dan barbershop",
-    description: "Kelola transaksi jasa, pelanggan, staff, dan histori layanan.",
-    features: ["Jasa", "Customer", "Staff"],
+    description: "Kelola layanan, pelanggan, staff, dan transaksi harian dengan workflow yang simpel.",
+    features: [
+      { label: "Layanan", icon: Scissors },
+      { label: "Customer", icon: Users },
+      { label: "Staff", icon: UserCog },
+    ],
     destination: "/kasir",
-    art: "salon",
+    image: "/demo/salon.webp",
   },
 ];
 
-const features = [
-  ["Kasir & Checkout", "Transaksi cepat, diskon, dan pembayaran", "⌁"],
-  ["Inventory", "Stok dan pergerakan barang real-time", "◫"],
-  ["Reports & Analytics", "Pantau penjualan dan performa bisnis", "⌗"],
-  ["Customer", "Profil, histori, dan data pelanggan", "◎"],
-  ["Staff & Roles", "Atur akses dan aktivitas tim", "♙"],
-  ["QRIS & Payments", "Beragam metode pembayaran", "▣"],
-  ["Digital Receipt", "Struk yang mudah dibagikan", "▤"],
-  ["Multi-price", "Harga satuan, grosir, dan variasi", "◇"],
-  ["Kitchen Queue", "Alur pesanan kasir ke dapur", "♨"],
+const features: { title: string; copy: string; icon: LucideIcon }[] = [
+  { title: "Kasir & Checkout", copy: "Transaksi cepat, diskon, dan pembayaran", icon: Receipt },
+  { title: "Inventory", copy: "Stok dan pergerakan barang real-time", icon: Boxes },
+  { title: "Reports & Analytics", copy: "Pantau penjualan dan performa bisnis", icon: BarChart3 },
+  { title: "Customer", copy: "Profil, histori, dan data pelanggan", icon: Users },
+  { title: "Staff & Roles", copy: "Atur akses dan aktivitas tim", icon: UserCog },
+  { title: "QRIS & Payments", copy: "Beragam metode pembayaran", icon: Wallet },
+  { title: "Digital Receipt", copy: "Struk yang mudah dibagikan", icon: Receipt },
+  { title: "Multi-price", copy: "Harga satuan, grosir, dan variasi", icon: PackageSearch },
+  { title: "Kitchen Queue", copy: "Alur pesanan kasir ke dapur", icon: CookingPot },
 ];
 
 function BrandMark() {
@@ -81,41 +125,6 @@ function BrandMark() {
       <i />
       <i />
     </span>
-  );
-}
-
-function DemoArt({ type }: { type: string }) {
-  return (
-    <div className={`demo-art demo-art-${type}`} aria-hidden="true">
-      <div className="demo-art-glow" />
-      <div className="demo-device">
-        <div className="demo-device-top">
-          <span className="demo-mini-brand"><BrandMark /> NeverFade</span>
-          <span className="demo-mini-pill" />
-        </div>
-        <div className="demo-device-body">
-          <div className="demo-device-nav">
-            <span />
-            <span />
-            <span />
-            <span />
-          </div>
-          <div className="demo-device-content">
-            <div className="demo-device-search" />
-            <div className="demo-device-grid">
-              <b />
-              <b />
-              <b />
-              <b />
-              <b />
-              <b />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="demo-art-orb demo-art-orb-one" />
-      <div className="demo-art-orb demo-art-orb-two" />
-    </div>
   );
 }
 
@@ -148,16 +157,16 @@ export default function DemoEntryPage() {
         </div>
 
         <nav className="demo-nav" aria-label="Demo navigation">
-          <a className="active" href="#demo"><span>▦</span>Demo</a>
-          <a href="#features"><span>◇</span>Features</a>
-          <a href="#pricing"><span>♢</span>Pricing</a>
-          <a href="#how-it-works"><span>▷</span>How It Works</a>
-          <a href="#faq"><span>?</span>FAQ</a>
+          <a className="active" href="#demo"><LayoutGrid aria-hidden="true" />Demo</a>
+          <a href="#features"><Sparkles aria-hidden="true" />Features</a>
+          <a href="#pricing"><BadgeDollarSign aria-hidden="true" />Pricing</a>
+          <a href="#how-it-works"><PlayCircle aria-hidden="true" />How It Works</a>
+          <a href="#faq"><CircleHelp aria-hidden="true" />FAQ</a>
         </nav>
 
         <div className="demo-sidebar-bottom">
-          <Link className="demo-login-link" to="/login">↗ <span>Masuk Merchant</span></Link>
-          <a className="demo-start-button" href="#demo">Mulai Demo</a>
+          <Link className="demo-login-link" to="/login"><LogIn aria-hidden="true" /><span>Masuk Merchant</span></Link>
+          <a className="demo-start-button" href="#demo">Mulai Demo <ArrowRight aria-hidden="true" /></a>
           <small>Tanpa menyentuh data asli.</small>
         </div>
       </aside>
@@ -176,7 +185,6 @@ export default function DemoEntryPage() {
                 <span>COBA SEKARANG</span>
                 <h2>Pilih bisnis kamu</h2>
               </div>
-              <span className="demo-scroll-note">Geser untuk melihat lainnya →</span>
             </div>
 
             <div className="demo-card-row">
@@ -186,21 +194,25 @@ export default function DemoEntryPage() {
                   <button
                     key={option.key}
                     type="button"
-                    className={`demo-category-card demo-category-${option.art}`}
+                    className="demo-category-card"
                     disabled={Boolean(loadingKey)}
                     onClick={() => void chooseDemo(option)}
                   >
+                    <img className="demo-category-image" src={option.image} alt="" loading="eager" />
+                    <div className="demo-category-overlay" aria-hidden="true" />
                     <div className="demo-category-copy">
                       <span className="demo-category-kicker">{option.kicker}</span>
                       <h3>{option.title}</h3>
                       <p>{option.description}</p>
                       <div className="demo-category-tags">
-                        {option.features.map((feature) => <span key={feature}>{feature}</span>)}
+                        {option.features.map(({ label, icon: Icon }) => (
+                          <span key={label}><Icon aria-hidden="true" />{label}</span>
+                        ))}
                       </div>
                     </div>
-                    <DemoArt type={option.art} />
                     <span className="demo-category-cta">
-                      {loading ? "Menyiapkan demo…" : "Buka demo"} <b>→</b>
+                      {loading ? "Menyiapkan demo…" : "Buka Demo"}
+                      {!loading ? <ArrowRight aria-hidden="true" /> : null}
                     </span>
                   </button>
                 );
@@ -213,14 +225,13 @@ export default function DemoEntryPage() {
           <section className="demo-features-section" id="features">
             <div className="demo-list-title">
               <h2>Yang bisa kamu coba</h2>
-              <span>Semua fitur →</span>
+              <span>Semua fitur <ArrowRight aria-hidden="true" /></span>
             </div>
             <div className="demo-feature-grid">
-              {features.map(([title, copy, icon]) => (
+              {features.map(({ title, copy, icon: Icon }) => (
                 <div className="demo-feature-item" key={title}>
-                  <span className="demo-feature-icon">{icon}</span>
+                  <span className="demo-feature-icon"><Icon aria-hidden="true" /></span>
                   <span className="demo-feature-copy"><strong>{title}</strong><small>{copy}</small></span>
-                  <span className="demo-more">•••</span>
                 </div>
               ))}
             </div>
@@ -230,7 +241,7 @@ export default function DemoEntryPage() {
             <span className="demo-overline">PRICING</span>
             <h2>Sederhana dari awal.</h2>
             <p>Pilih paket sesuai skala bisnis tanpa mengubah cara tim kamu bekerja.</p>
-            <a href="#faq">Lihat detail pricing <b>→</b></a>
+            <a href="#faq">Lihat detail pricing <ArrowRight aria-hidden="true" /></a>
           </section>
 
           <section className="demo-how-section" id="how-it-works">
