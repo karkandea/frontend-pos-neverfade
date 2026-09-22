@@ -1,11 +1,193 @@
 import { NavLink } from "react-router-dom";
+import {
+  BarChart3,
+  Boxes,
+  CalendarCheck,
+  CookingPot,
+  LayoutDashboard,
+  Package,
+  Receipt,
+  Settings,
+  ShieldCheck,
+  Table2,
+  UserRound,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { useAuthStore } from "../../stores/auth";
 import { useTenantContextStore } from "../../stores/tenantContext";
+import {
+  getDemoPersonaLabel,
+  getDemoScope,
+  type DemoPersona,
+} from "../../lib/demoScope";
 
 type Props = {
   open: boolean;
   onClose: () => void;
 };
+
+type ScopedDemoSidebarProps = Props & {
+  persona: DemoPersona;
+  canCorePos: boolean;
+  canInventory: boolean;
+  canCustomers: boolean;
+  canReports: boolean;
+  canAttendance: boolean;
+  canFinance: boolean;
+  canTableOrders: boolean;
+  canKitchenQueue: boolean;
+};
+
+type ScopedLinkProps = {
+  to: string;
+  label: string;
+  icon: typeof Receipt;
+};
+
+function ScopedLink({ to, label, icon: Icon }: ScopedLinkProps) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        isActive ? "nav-item active" : "nav-item"
+      }
+    >
+      <Icon aria-hidden="true" width={18} height={18} strokeWidth={1.5} />
+      <span>{label}</span>
+    </NavLink>
+  );
+}
+
+function ScopedDemoSidebar({
+  open,
+  onClose,
+  persona,
+  canCorePos,
+  canInventory,
+  canCustomers,
+  canReports,
+  canAttendance,
+  canFinance,
+  canTableOrders,
+  canKitchenQueue,
+}: ScopedDemoSidebarProps) {
+  const personaLabel = getDemoPersonaLabel(persona);
+
+  return (
+    <aside
+      className={open ? "sidebar mobile-open" : "sidebar"}
+      id="sidebar"
+      aria-label={"Navigasi demo " + personaLabel}
+    >
+      <div className="sidebar-brand">
+        <div className="sidebar-logo-wrap">
+          <div className="logo-text-wrap logo-text-sm">
+            <span className="logo-never">NEVER</span>
+            <span className="logo-fade">FADE.</span>
+          </div>
+          <span className="sidebar-brand-sub">{personaLabel} Demo</span>
+        </div>
+
+        <button
+          type="button"
+          className="sidebar-close-btn"
+          id="sidebar-close"
+          aria-label="Tutup navigasi"
+          onClick={onClose}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <nav
+        className="sidebar-nav"
+        onClick={(event) => {
+          if ((event.target as HTMLElement).closest("a")) {
+            onClose();
+          }
+        }}
+      >
+        {persona === "cashier" ? (
+          <>
+            <div className="nav-section-label">KASIR</div>
+            {canCorePos ? <ScopedLink to="/kasir" label="Kasir" icon={Receipt} /> : null}
+            {canTableOrders ? <ScopedLink to="/meja" label="Meja" icon={Table2} /> : null}
+            {canCorePos ? <ScopedLink to="/transaksi" label="Transaksi" icon={BarChart3} /> : null}
+          </>
+        ) : null}
+
+        {persona === "kitchen" ? (
+          <>
+            <div className="nav-section-label">KITCHEN</div>
+            {canKitchenQueue ? <ScopedLink to="/dapur" label="Dapur" icon={CookingPot} /> : null}
+          </>
+        ) : null}
+
+        {persona === "owner" ? (
+          <>
+            {canReports ? (
+              <>
+                <div className="nav-section-label">RINGKASAN</div>
+                <ScopedLink to="/dashboard" label="Dashboard" icon={LayoutDashboard} />
+              </>
+            ) : null}
+
+            {(canCorePos || canInventory || canCustomers) ? (
+              <div className="nav-section-label">OPERASIONAL</div>
+            ) : null}
+            {canCorePos ? <ScopedLink to="/produk" label="Produk & Menu" icon={Package} /> : null}
+            {canInventory ? <ScopedLink to="/inventaris" label="Inventaris" icon={Boxes} /> : null}
+            {canCustomers ? <ScopedLink to="/pelanggan" label="Pelanggan" icon={Users} /> : null}
+
+            {(canCorePos || canReports || canFinance) ? (
+              <div className="nav-section-label">ANALITIK</div>
+            ) : null}
+            {canCorePos ? <ScopedLink to="/transaksi" label="Transaksi" icon={Receipt} /> : null}
+            {canReports ? <ScopedLink to="/laporan" label="Laporan" icon={BarChart3} /> : null}
+            {canFinance ? <ScopedLink to="/keuangan" label="Keuangan" icon={Wallet} /> : null}
+
+            {canAttendance ? (
+              <>
+                <div className="nav-section-label nav-admin-section">TIM</div>
+                <ScopedLink to="/karyawan" label="Karyawan" icon={UserRound} />
+                <ScopedLink to="/absensi" label="Absensi" icon={CalendarCheck} />
+              </>
+            ) : null}
+
+            <div className="nav-section-label nav-admin-section">SISTEM</div>
+            <ScopedLink to="/pengguna" label="Pengguna & Akses" icon={ShieldCheck} />
+            <ScopedLink to="/pengaturan" label="Pengaturan" icon={Settings} />
+          </>
+        ) : null}
+      </nav>
+
+      <div className="sidebar-footer">
+        <div className="sidebar-user-info">
+          <div className="sidebar-avatar">{personaLabel.charAt(0)}</div>
+          <div>
+            <div className="sidebar-user-name">Demo Restoran</div>
+            <div className="sidebar-user-role">{personaLabel}</div>
+          </div>
+        </div>
+
+        <div className="sidebar-version">
+          Mode simulasi · Data demo
+        </div>
+      </div>
+    </aside>
+  );
+}
 
 export default function Sidebar({ open, onClose }: Props) {
   const user = useAuthStore((s) => s.user);
@@ -26,6 +208,30 @@ export default function Sidebar({ open, onClose }: Props) {
   const canWorkOrders = hasCapability("work_orders");
   const canProductVariants = hasCapability("product_variants");
   const canReturnsExchanges = hasCapability("returns_exchanges");
+  const isDemo = useAuthStore((s) => s.isDemo);
+  const demoScope = isDemo ? getDemoScope() : null;
+  const restaurantDemoPersona =
+    demoScope?.businessSlug === "restaurant"
+      ? demoScope.persona
+      : null;
+
+  if (restaurantDemoPersona) {
+    return (
+      <ScopedDemoSidebar
+        open={open}
+        onClose={onClose}
+        persona={restaurantDemoPersona}
+        canCorePos={canCorePos}
+        canInventory={canInventory}
+        canCustomers={canCustomers}
+        canReports={canReports}
+        canAttendance={canAttendance}
+        canFinance={canFinance}
+        canTableOrders={canTableOrders}
+        canKitchenQueue={canKitchenQueue}
+      />
+    );
+  }
 
   const showManagement =
     user?.role !== "kasir" &&

@@ -10,7 +10,6 @@ import {
   Receipt,
   Scissors,
   Shirt,
-  Table2,
   UserRound,
   Users,
   WashingMachine,
@@ -18,6 +17,11 @@ import {
 } from "lucide-react";
 
 import DemoShell from "../components/demo/DemoShell";
+import {
+  clearDemoScope,
+  setDemoScope,
+  type DemoPersona,
+} from "../lib/demoScope";
 import type { BusinessType } from "../types/platform";
 import { useAuthStore } from "../stores/auth";
 import "./DemoEntryPage.css";
@@ -28,6 +32,7 @@ type DemoApp = {
   description: string;
   destination: string;
   icon: LucideIcon;
+  persona?: DemoPersona;
 };
 
 type BusinessDemo = {
@@ -43,10 +48,27 @@ const businessDemos: Record<string, BusinessDemo> = {
     title: "Cafe, restoran, dan warung",
     description: "Pilih bagian bisnis yang ingin kamu coba.",
     apps: [
-      { title: "Kasir", description: "Pesanan & pembayaran", destination: "/kasir", icon: Receipt },
-      { title: "Meja & Pelayan", description: "Meja dan pesanan dine-in", destination: "/meja", icon: Table2 },
-      { title: "Dapur", description: "Antrean pesanan", destination: "/dapur", icon: CookingPot },
-      { title: "Owner", description: "Penjualan & laporan", destination: "/dashboard", icon: LayoutDashboard },
+      {
+        title: "Kasir",
+        description: "Kasir, meja, dan transaksi",
+        destination: "/kasir",
+        icon: Receipt,
+        persona: "cashier",
+      },
+      {
+        title: "Kitchen",
+        description: "Antrean dan status pesanan dapur",
+        destination: "/dapur",
+        icon: CookingPot,
+        persona: "kitchen",
+      },
+      {
+        title: "Owner",
+        description: "Operasional, laporan, tim, dan keuangan",
+        destination: "/dashboard",
+        icon: LayoutDashboard,
+        persona: "owner",
+      },
     ],
   },
   retail: {
@@ -120,6 +142,13 @@ export default function DemoBusinessPage() {
 
     try {
       await enterDemo(demo.businessType);
+
+      if (app.persona) {
+        setDemoScope({ persona: app.persona, businessSlug: slug });
+      } else {
+        clearDemoScope();
+      }
+
       navigate(app.destination, { replace: true });
     } catch (cause: unknown) {
       setError(cause instanceof Error ? cause.message : "Demo NeverFade gagal dibuka. Coba lagi.");

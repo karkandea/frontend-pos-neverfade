@@ -1,5 +1,6 @@
 import axios from "axios";
 import type { BusinessType } from "../types/platform";
+import { clearDemoScope } from "../lib/demoScope";
 import { create } from "zustand";
 import api, {
   DEMO_SESSION_KEY,
@@ -65,6 +66,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (username, password, remember) => {
     sessionStorage.removeItem(DEMO_TOKEN_KEY);
     sessionStorage.removeItem(DEMO_SESSION_KEY);
+    clearDemoScope();
 
     const { data } = await api.post("/api/auth/login", {
       username,
@@ -121,6 +123,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (demoSession) {
         sessionStorage.removeItem(DEMO_SESSION_KEY);
         sessionStorage.removeItem(DEMO_TOKEN_KEY);
+        clearDemoScope();
       }
 
       set({
@@ -149,6 +152,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         if (demoSession) {
           sessionStorage.removeItem(DEMO_TOKEN_KEY);
           sessionStorage.removeItem(DEMO_SESSION_KEY);
+          clearDemoScope();
         } else {
           localStorage.removeItem(TOKEN_KEY);
           sessionStorage.removeItem(TOKEN_KEY);
@@ -179,6 +183,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (demoSession) {
       sessionStorage.removeItem(DEMO_TOKEN_KEY);
       sessionStorage.removeItem(DEMO_SESSION_KEY);
+      clearDemoScope();
     } else {
       localStorage.removeItem(TOKEN_KEY);
       sessionStorage.removeItem(TOKEN_KEY);
