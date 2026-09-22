@@ -2,12 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import DemoShell from "../components/demo/DemoShell";
-import type { BusinessType } from "../types/platform";
-import { useAuthStore } from "../stores/auth";
 import "./DemoEntryPage.css";
 
 type DemoOption = {
-  key: BusinessType;
+  key: string;
   title: string;
   description: string;
   destination: string;
@@ -16,62 +14,45 @@ type DemoOption = {
 
 const demoOptions: DemoOption[] = [
   {
-    key: "food_beverage",
+    key: "restaurant",
     title: "Cafe, restoran, dan warung",
     description: "Meja, dapur, kasir, dan pembayaran.",
-    destination: "/meja",
+    destination: "/demo/business/restaurant",
     image: "/demo-assets/cafe.webp",
   },
   {
-    key: "general_retail",
+    key: "retail",
     title: "Toko dan minimarket",
     description: "Kasir cepat, stok otomatis, laporan rapi.",
-    destination: "/kasir",
+    destination: "/demo/business/retail",
     image: "/demo-assets/minimarket.webp",
   },
   {
-    key: "fashion_retail",
+    key: "fashion",
     title: "Butik dan distro",
     description: "Ukuran, warna, stok, dan harga.",
-    destination: "/kasir",
+    destination: "/demo/business/fashion",
     image: "/demo-assets/fashion.webp",
   },
   {
     key: "laundry",
     title: "Laundry kiloan dan express",
     description: "Order, proses cucian, sampai pickup.",
-    destination: "/laundry",
+    destination: "/demo/business/laundry",
     image: "/demo-assets/laundry.webp",
   },
   {
-    key: "salon_barbershop",
+    key: "salon",
     title: "Salon dan barbershop",
     description: "Layanan, staf, pelanggan, dan pembayaran.",
-    destination: "/kasir",
+    destination: "/demo/business/salon",
     image: "/demo-assets/salon.webp",
   },
 ];
 
 export default function DemoEntryPage() {
   const navigate = useNavigate();
-  const enterDemo = useAuthStore((state) => state.enterDemo);
-  const [loadingKey, setLoadingKey] = useState<BusinessType | null>(null);
-  const [loadedImages, setLoadedImages] = useState<Partial<Record<BusinessType, boolean>>>({});
-  const [error, setError] = useState("");
-
-  async function chooseDemo(option: DemoOption) {
-    if (loadingKey) return;
-    setLoadingKey(option.key);
-    setError("");
-
-    try {
-      await enterDemo(option.key);
-      navigate(option.destination, { replace: true });
-    } catch (cause: unknown) {
-      setError(cause instanceof Error ? cause.message : "Demo NeverFade gagal dibuka. Coba lagi.");
-      setLoadingKey(null);
-    }
-  }
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
   return (
     <DemoShell>
@@ -84,7 +65,6 @@ export default function DemoEntryPage() {
       <section className="demo-showcase demo-showcase-clean" aria-label="Pilih demo bisnis">
         <div className="demo-card-row">
           {demoOptions.map((option, index) => {
-            const loading = loadingKey === option.key;
             const imageLoaded = Boolean(loadedImages[option.key]);
             const smallImage = option.image.replace(".webp", "-720.webp");
 
@@ -93,10 +73,8 @@ export default function DemoEntryPage() {
                 key={option.key}
                 type="button"
                 className={`demo-category-card demo-category-card-apple${imageLoaded ? " image-loaded" : ""}`}
-                disabled={Boolean(loadingKey)}
-                aria-busy={loading}
-                aria-label={`Coba demo ${option.title}`}
-                onClick={() => void chooseDemo(option)}
+                aria-label={`Pilih demo ${option.title}`}
+                onClick={() => navigate(option.destination)}
               >
                 <div className="demo-category-shimmer" aria-hidden="true" />
                 <img
@@ -117,14 +95,12 @@ export default function DemoEntryPage() {
                 <div className="demo-category-bottom-fade" aria-hidden="true" />
                 <div className="demo-category-text">
                   <strong>{option.title}</strong>
-                  <span>{loading ? "Menyiapkan demo…" : option.description}</span>
+                  <span>{option.description}</span>
                 </div>
               </button>
             );
           })}
         </div>
-
-        {error ? <div className="demo-picker-error" role="alert">{error}</div> : null}
       </section>
     </DemoShell>
   );
