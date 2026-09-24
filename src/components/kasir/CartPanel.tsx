@@ -235,6 +235,10 @@ export default function CartPanel({
                   </option>
                 ))}
               </select>
+              <small className="cart-customer-hint">
+                Pelanggan Umum untuk pembelian tanpa akun member, berlaku di semua jenis usaha.
+                Pilih pelanggan terdaftar agar transaksi dan poin tercatat ke akun pelanggan.
+              </small>
             </div>
 
             <div className="cart-section-label">Produk</div>

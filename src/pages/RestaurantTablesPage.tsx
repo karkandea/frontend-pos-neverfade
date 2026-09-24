@@ -52,6 +52,7 @@ export default function RestaurantTablesPage() {
   const [success, setSuccess] = useState("");
 
   const [search, setSearch] = useState("");
+  const [tableView, setTableView] = useState<"list" | "map">("list");
   const [noteDraft, setNoteDraft] = useState("");
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
 
@@ -572,10 +573,33 @@ export default function RestaurantTablesPage() {
                 </div>
               </div>
 
+              <div className="restaurant-table-view-switch" role="group" aria-label="Tampilan meja">
+                <button type="button" className={tableView === "list" ? "active" : ""}
+                  aria-pressed={tableView === "list"} onClick={() => setTableView("list")}>Daftar</button>
+                <button type="button" className={tableView === "map" ? "active" : ""}
+                  aria-pressed={tableView === "map"} onClick={() => setTableView("map")}>Denah</button>
+              </div>
+              {tableView === "map" ? (
+                <p className="restaurant-map-hint">Denah skematis mengikuti urutan meja, bukan ukuran ruangan sebenarnya. Owner dapat mengatur posisi melalui kolom Urutan di Ubah Meja.</p>
+              ) : null}
+
               {tables.length === 0 ? (
                 <div className="finance-empty">
                   <strong>Belum ada meja</strong>
                   <p>Owner/admin dapat menambahkan meja terlebih dahulu.</p>
+                </div>
+              ) : tableView === "map" ? (
+                <div className="restaurant-table-map" role="group" aria-label="Denah meja ringkas">
+                  {tables.map((table) => (
+                    <button key={table.id} type="button" onClick={() => setSelectedTableId(table.id)}
+                      className={`restaurant-map-slot ${table.status}${selectedTableId === table.id ? " selected" : ""}`}
+                      aria-label={`${table.code}, ${table.name}, ${table.status === "occupied" ? "terisi" : "kosong"}`}
+                      aria-pressed={selectedTableId === table.id}>
+                      <span className="restaurant-map-slot-code">{table.code}</span>
+                      <small>{table.name}</small>
+                      <span className="restaurant-map-slot-status">{table.status === "occupied" ? "Terisi" : "Kosong"}</span>
+                    </button>
+                  ))}
                 </div>
               ) : (
                 <div className="restaurant-table-grid">
