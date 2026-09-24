@@ -570,63 +570,16 @@ export default function TransaksiPage() {
                   </div>
                 </div>
 
-                <div className="table-card">
-                  <div className="table-scroll">
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>
-                            Item
-                          </th>
-                          <th>
-                            Harga
-                          </th>
-                          <th>
-                            Qty
-                          </th>
-                          <th>
-                            Subtotal
-                          </th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {selected.items.map(
-                          (item) => (
-                            <tr
-                              key={
-                                item.id
-                              }
-                            >
-                              <td>
-                                {
-                                  item.nama
-                                }
-                              </td>
-
-                              <td>
-                                {rupiah(
-                                  item.hargaJual
-                                )}
-                              </td>
-
-                              <td>
-                                {
-                                  item.qty
-                                }
-                              </td>
-
-                              <td>
-                                {rupiah(
-                                  item.subtotal
-                                )}
-                              </td>
-                            </tr>
-                          )
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="transaction-detail-items" aria-label="Item transaksi">
+                  {selected.items.map((item) => (
+                    <div className="transaction-detail-item" key={item.id}>
+                      <div className="transaction-detail-item-info">
+                        <strong>{item.nama}</strong>
+                        <small>{item.qty} × {rupiah(item.hargaJual)}</small>
+                      </div>
+                      <strong className="transaction-detail-subtotal">{rupiah(item.subtotal)}</strong>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="form-grid-2">

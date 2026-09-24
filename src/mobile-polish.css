@@ -260,3 +260,36 @@
     width: 116px;
   }
 }
+
+/* Phase 02: readable transaction detail without horizontal scrolling. */
+.transaction-detail-items { display: grid; gap: 0; margin: 16px 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.transaction-detail-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--surface); }
+.transaction-detail-item + .transaction-detail-item { border-top: 1px solid var(--border); }
+.transaction-detail-item-info { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.transaction-detail-item-info strong { font-size: 13px; }
+.transaction-detail-item-info small { color: var(--text-muted); font-size: 12px; }
+.transaction-detail-subtotal { text-align: right; flex-shrink: 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+@media (max-width: 430px) {
+  .transaction-detail-item { flex-direction: column; gap: 6px; }
+  .transaction-detail-subtotal { align-self: flex-end; }
+}
+
+.receipt-paper-control { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.receipt-paper-control select { min-height: 38px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); padding: 0 6px; }
+@media print {
+  @page { margin: 0; }
+  body > #root { display: block !important; }
+  body > *:not(#root) { display: none !important; }
+  html, body, #root, #root .page, #root .main-wrapper, #root .content-area { overflow: visible !important; width: auto !important; min-height: 0 !important; height: auto !important; background: white !important; }
+  #root * { visibility: hidden !important; }
+  #root .struk-container, #root .struk-container * { visibility: visible !important; }
+  #root .struk-container { position: fixed !important; top: 0 !important; left: 0 !important; margin: 0 !important; width: 54mm !important; max-width: none !important; box-sizing: border-box !important; padding: 2mm !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: white !important; color: #111 !important; font-size: 10px !important; }
+  #root .struk-container[data-paper-width="80"] { width: 76mm !important; font-size: 12px !important; }
+}
+
+.report-date-filters { display: flex; align-items: end; flex-wrap: wrap; gap: 10px 14px; margin: 12px 0 16px; }
+.report-date-filters label { display: grid; gap: 5px; color: var(--text-muted); font-size: 12px; }
+.report-date-filters input { width: min(100%, 180px); min-height: 40px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 13px; }
+.report-date-filters button { min-height: 40px; }
+.report-date-filters [role="alert"] { width: 100%; margin: 0; }
+@media (max-width: 430px) { .report-date-filters label { flex: 1 1 130px; } .report-date-filters input { width: 100%; } }

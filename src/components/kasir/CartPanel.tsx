@@ -13,6 +13,7 @@ type CartItem = {
   qty: number;
   subtotal: number;
   unit?: string;
+  note?: string;
 };
 
 type Customer = {
@@ -52,6 +53,7 @@ type Props = {
   onIncrease: (id: string) => void;
   onDecrease: (id: string) => void;
   onPriceLevelChange: (id: string, priceLevelId: string) => void;
+  onNoteChange: (id: string, note: string) => void;
   onRemove: (id: string) => void;
   onClear: () => void;
   onCheckout: () => void;
@@ -93,6 +95,7 @@ export default function CartPanel({
   onIncrease,
   onDecrease,
   onPriceLevelChange,
+  onNoteChange,
   onRemove,
   onClear,
   onCheckout,
@@ -272,6 +275,19 @@ export default function CartPanel({
                           ))}
                         </select>
                       ) : null}
+
+                      <label className="cart-item-note-label">
+                        Catatan pesanan
+                        <textarea
+                          aria-label={`Catatan ${item.nama}`}
+                          placeholder="Contoh: tanpa gula, ekstra pedas"
+                          rows={2}
+                          maxLength={500}
+                          value={item.note ?? ""}
+                          disabled={locked}
+                          onChange={(event) => onNoteChange(item.id, event.target.value)}
+                        />
+                      </label>
 
                       <div className="cart-item-controls">
                         <button

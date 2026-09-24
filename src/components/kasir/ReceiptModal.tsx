@@ -19,6 +19,7 @@ type ReceiptData = {
   customerId?: string | null;
   transactionDate: string;
   noTrx: string;
+  kasir?: string;
   total: number;
   subtotal: number;
   discAmt: number;
@@ -95,6 +96,7 @@ export default function ReceiptModal({
   const [sending, setSending] = useState(false);
   const [sendMessage, setSendMessage] = useState("");
   const [sendError, setSendError] = useState("");
+  const [paperWidth, setPaperWidth] = useState<58 | 80>(80);
 
   useDialogFocus(open, dialogRef, onClose);
 
@@ -189,7 +191,7 @@ export default function ReceiptModal({
         </div>
 
         <div className="modal-body">
-          <div className="struk-container">
+          <div className="struk-container" data-paper-width={paperWidth} style={{ maxWidth: paperWidth === 58 ? 219 : 302 }}>
             <div style={{ textAlign: "center" }}>
               <strong>{header}</strong>
 
@@ -202,6 +204,7 @@ export default function ReceiptModal({
                   timeZone: "Asia/Jakarta",
                 })}
               </div>
+              {receipt.kasir ? <div>Kasir: {receipt.kasir}</div> : null}
             </div>
 
             <hr />
@@ -369,6 +372,14 @@ export default function ReceiptModal({
           >
             Kirim WhatsApp
           </button>
+
+          <label className="receipt-paper-control" htmlFor="receipt-paper-width">
+            Ukuran
+            <select id="receipt-paper-width" aria-label="Ukuran kertas struk" value={paperWidth} onChange={(event) => setPaperWidth(Number(event.target.value) as 58 | 80)}>
+              <option value={58}>58 mm</option>
+              <option value={80}>80 mm</option>
+            </select>
+          </label>
 
           <button
             type="button"
