@@ -436,14 +436,14 @@ export default function CartPanel({
 
                 <input
                   id="cash-received"
-                  type="number"
-                  min={0}
+                  type="text"
                   inputMode="numeric"
                   enterKeyHint="done"
-                  value={paid}
+                  placeholder="0"
+                  value={paid > 0 ? String(paid) : ""}
                   onChange={(e) =>
                     onPaidChange(
-                      Number(e.target.value)
+                      Number(e.target.value.replace(/\D/g, ""))
                     )
                   }
                 />

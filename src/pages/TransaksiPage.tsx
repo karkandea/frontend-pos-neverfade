@@ -211,7 +211,7 @@ export default function TransaksiPage() {
       [transactions]
     );
 
-  function exportCsv() {
+  async function exportCsv() {
     if (
       exportRows.length === 0
     ) {
@@ -245,17 +245,26 @@ export default function TransaksiPage() {
         )
         .join("\n");
 
-    const blob =
-      new Blob(
-        [`\uFEFF${csv}`],
-        {
-          type:
-            "text/csv;charset=utf-8",
-        }
-      );
+    const file = new File(
+      [`\uFEFF${csv}`],
+      `transaksi-${new Date().toISOString().slice(0, 10)}.csv`,
+      { type: "text/csv;charset=utf-8" }
+    );
+
+    // iPad/iPhone browsers may not initiate a Blob download from a hidden link.
+    // Use the native share/save sheet when file sharing is supported.
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: "Riwayat transaksi" });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        // Fallback to direct download when sharing fails for another reason.
+      }
+    }
 
     const url =
-      URL.createObjectURL(blob);
+      URL.createObjectURL(file);
 
     const anchor =
       document.createElement("a");
@@ -276,7 +285,7 @@ export default function TransaksiPage() {
     anchor.click();
     anchor.remove();
 
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
   }
 
   return (

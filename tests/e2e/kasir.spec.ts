@@ -73,11 +73,12 @@ test(
       totalText?.replace(/\D/g, "") ?? 0
     );
 
-    await page
-      .getByText("Uang Diterima")
-      .locator("..")
-      .getByRole("spinbutton")
-      .fill(String(total));
+    const cashInput = page.locator("#cash-received");
+    await expect(cashInput).toHaveValue("");
+    await cashInput.fill("050000");
+    await expect(cashInput).toHaveValue("50000");
+    await cashInput.fill(String(total));
+    await expect(cashInput).toHaveValue(String(total));
 
     const checkoutResponse =
       page.waitForResponse(

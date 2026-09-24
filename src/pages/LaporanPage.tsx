@@ -126,7 +126,8 @@ export default function LaporanPage() {
             }
           ),
           api.get<ChartItem[]>(
-            "/api/laporan/chart"
+            "/api/laporan/chart",
+            { params: { period: appliedPeriod } }
           ),
           api.get<TopProduct[]>(
             "/api/laporan/top-products",
@@ -312,11 +313,11 @@ export default function LaporanPage() {
                 <div className="card-header">
                   <div>
                     <h3>
-                      Tren Penjualan 7 Hari
+                      Tren Penjualan {periodLabels[appliedPeriod]}
                     </h3>
 
                     <p>
-                      Grafik ini selalu menampilkan 7 hari terakhir dan tidak mengikuti filter periode di atas.
+                      Grafik mengikuti periode laporan yang dipilih (WIB).
                     </p>
                   </div>
                 </div>
