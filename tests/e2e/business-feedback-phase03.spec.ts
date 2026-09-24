@@ -26,6 +26,7 @@ async function setup(page: Page) {
     if (path === "/api/payments/capabilities") return json(route, { qrisEnabled: false, mode: "disabled", isSandbox: false });
     if (path === "/api/payments/current") return route.fulfill({ status: 204, body: "" });
     if (path === "/api/transactions" && route.request().method() === "POST") return json(route, receipt);
+    if (path.endsWith("/receipt/whatsapp/status")) return json(route, { configured: true, connected: true, status: "WORKING" });
     if (path.endsWith("/receipt/whatsapp")) return json(route, { message: "WhatsApp outlet belum dikonfigurasi." }, 409);
     return json(route, []);
   });
@@ -101,4 +102,22 @@ test("restaurant table map displays occupancy and links to selected order panel"
   await expect(map.getByRole("button", { name: /A2, Teras/ })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Daftar", exact: true }).click();
   await expect(page.locator(".restaurant-table-grid")).toBeVisible();
+});
+
+
+test("unconfigured outlet shows manual option before failing auto send", async ({ page }) => {
+  await setup(page);
+  await page.route("**/api/transactions/*/receipt/whatsapp/status", route =>
+    json(route, { configured: false, connected: false, status: "NOT_CONFIGURED" }));
+  await page.goto("/kasir");
+  await page.getByRole("button", { name: "Tambah Kopi QA ke keranjang" }).click();
+  await page.locator("#cash-received").fill("25000");
+  await page.getByRole("button", { name: "Proses Transaksi" }).click();
+  await page.getByRole("button", { name: "Lihat Struk" }).click();
+  await page.getByRole("button", { name: "Kirim WhatsApp" }).click();
+  await page.locator("#receipt-whatsapp-phone").fill("081234567890");
+  await expect(page.getByRole("status")).toContainText("WhatsApp outlet belum tersambung");
+  await expect(page.getByRole("button", { name: "Kirim Otomatis" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Buka WhatsApp (manual)" })).toBeEnabled();
+  await expect(page.getByText(/Struk berhasil dikirim/)).toHaveCount(0);
 });

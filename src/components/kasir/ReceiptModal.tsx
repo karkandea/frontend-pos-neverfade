@@ -47,6 +47,12 @@ type SendReceiptResponse = {
   phoneMasked: string;
 };
 
+type ReceiptAvailability = {
+  configured: boolean;
+  connected: boolean;
+  status: string;
+};
+
 const rupiah = (value: number) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -97,6 +103,7 @@ export default function ReceiptModal({
   const [sending, setSending] = useState(false);
   const [sendMessage, setSendMessage] = useState("");
   const [sendError, setSendError] = useState("");
+  const [readiness, setReadiness] = useState<"idle" | "checking" | "connected" | "unavailable" | "unknown">("idle");
   const [paperWidth, setPaperWidth] = useState<58 | 80>(80);
 
   useDialogFocus(open, dialogRef, onClose);
@@ -143,9 +150,26 @@ export default function ReceiptModal({
   const transactionId = receipt.transactionId;
   const manualWhatsAppUrl = buildReceiptWhatsAppUrl(receipt, phone, header, footer);
 
+  async function checkReceiptReadiness() {
+    setReadiness("checking");
+    try {
+      const result = await api.get<ReceiptAvailability>(
+        `/api/transactions/${transactionId}/receipt/whatsapp/status`
+      );
+      setReadiness(result.data.connected ? "connected" : "unavailable");
+    } catch {
+      // Do not claim readiness when the status endpoint is unreachable.
+      setReadiness("unknown");
+    }
+  }
+
   async function sendWhatsAppReceipt() {
-    if (!phone.trim()) {
-      setSendError("Nomor WhatsApp wajib diisi.");
+    if (!manualWhatsAppUrl) {
+      setSendError("Nomor WhatsApp customer tidak valid.");
+      return;
+    }
+    if (readiness === "unavailable") {
+      setSendError("WhatsApp outlet belum terhubung. Gunakan kirim manual atau hubungkan nomor outlet di Pengaturan → WhatsApp.");
       return;
     }
 
@@ -311,9 +335,18 @@ export default function ReceiptModal({
               </div>
 
               <small>
-                Kirim otomatis memakai nomor WhatsApp outlet yang terhubung.
-                Jika belum terhubung, buka pesan manual di WhatsApp perangkat ini lalu tekan Kirim.
+                Kirim otomatis memakai nomor outlet yang terhubung; kirim manual membuka draft
+                di WhatsApp perangkat ini dan tetap perlu menekan Kirim.
               </small>
+              {readiness === "checking" ? <p role="status">Memeriksa WhatsApp outlet...</p> : null}
+              {readiness === "unavailable" ? (
+                <p role="status">WhatsApp outlet belum tersambung. Kirim manual tetap bisa dipakai.
+                  Owner/admin dapat menghubungkan nomor lewat Pengaturan → WhatsApp.</p>
+              ) : null}
+              {readiness === "unknown" ? (
+                <p role="status">Status WhatsApp outlet belum dapat diperiksa. Kirim manual tetap tersedia.</p>
+              ) : null}
+
 
               {sendError && (
                 <p style={{ margin: "10px 0 0", color: "#b91c1c" }}>
@@ -358,7 +391,7 @@ export default function ReceiptModal({
                 <button
                   type="button"
                   className="btn-primary"
-                  disabled={sending}
+                  disabled={sending || readiness === "checking" || readiness === "unavailable" || !manualWhatsAppUrl}
                   onClick={() => void sendWhatsAppReceipt()}
                 >
                   {sending ? "Mengirim..." : sendMessage ? "Kirim Ulang Otomatis" : "Kirim Otomatis"}
@@ -381,6 +414,7 @@ export default function ReceiptModal({
             type="button"
             className="btn-secondary"
             onClick={() => {
+              if (!whatsAppOpen) void checkReceiptReadiness();
               setWhatsAppOpen((current) => !current);
               setSendError("");
             }}
