@@ -22,6 +22,23 @@ async function setup(page: Page) {
   await mockTenantContext(page);
 }
 
+test("Chromium tablet landscape keeps cash input and checkout reachable", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Desktop Chromium", "Tablet Chrome layout runs once.");
+  await page.setViewportSize({ width: 1024, height: 600 });
+  await setup(page);
+  await page.goto("/kasir");
+  await page.getByRole("button", { name: `Tambah ${product.nama} ke keranjang` }).click();
+
+  const cashInput = page.locator("#cash-received");
+  await cashInput.scrollIntoViewIfNeeded();
+  await expect(cashInput).toBeInViewport();
+  await cashInput.fill("025000");
+  await expect(cashInput).toHaveValue("25000");
+  await expect(page.getByRole("button", { name: "Proses Transaksi" })).toBeInViewport();
+  const dimensions = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }));
+  expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.width + 1);
+});
+
 for (const viewport of [{ width: 667, height: 375 }, { width: 844, height: 390 }]) {
   test(`cashier phone landscape ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "Desktop Chromium", "Landscape matrix runs once.");

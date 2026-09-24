@@ -66,7 +66,7 @@ async function getBackendReport(page: Page, token: string, period: string) {
       page.request.get(`${API_URL}/api/laporan/summary?period=${period}`, {
         headers,
       }),
-      page.request.get(`${API_URL}/api/laporan/chart`, {
+      page.request.get(`${API_URL}/api/laporan/chart?period=${period}`, {
         headers,
       }),
       page.request.get(`${API_URL}/api/laporan/top-products?period=${period}`, {
@@ -98,7 +98,7 @@ test("BUG-008 displays real summary, chart, and top products", async ({
 
   expect(backend.summary.transaksi).toBeGreaterThanOrEqual(0);
 
-  expect(backend.chart.length).toBe(7);
+  expect(backend.chart.length).toBe(24); // Harian = 24 hourly WIB buckets.
 
   const summaryResponse = page.waitForResponse((response) => {
     const url = new URL(response.url());
@@ -115,6 +115,7 @@ test("BUG-008 displays real summary, chart, and top products", async ({
 
     return (
       url.pathname === "/api/laporan/chart" &&
+      url.searchParams.get("period") === "harian" &&
       response.request().method() === "GET"
     );
   });
@@ -210,10 +211,16 @@ test("BUG-008 Generate reloads report using selected period", async ({
       url.searchParams.get("period") === "mingguan"
     );
   });
+  const chartResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/laporan/chart" && url.searchParams.get("period") === "mingguan";
+  });
 
   await page.locator("#btn-generate-laporan").click();
 
   expect((await summaryResponse).status()).toBe(200);
+  expect((await chartResponse).status()).toBe(200);
+  await expect(page.getByRole("heading", { name: "Tren Penjualan Mingguan" })).toBeVisible();
 
   expect((await topResponse).status()).toBe(200);
 

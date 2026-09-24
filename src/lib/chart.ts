@@ -166,6 +166,7 @@ export function drawChart(
     ctx.restore();
   }
 
+  const labelInterval = Math.max(1, Math.ceil(count / (width <= 520 ? 5 : 9)));
   safeValues.slice(0, count).forEach((_, index) => {
     const point = pointAt(index);
     const isActive = index === activeIndex;
@@ -182,10 +183,12 @@ export function drawChart(
     ctx.fillStyle = "#19191B";
     ctx.fill();
 
-    ctx.fillStyle = index === count - 1 ? "#4A4A4F" : "#85858B";
-    ctx.font = `${index === count - 1 ? "600" : "500"} 9.5px DM Sans, sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-    ctx.fillText(labels[index] ?? "", point.x, height - 7);
+    if (index % labelInterval === 0 || index === count - 1) {
+      ctx.fillStyle = index === count - 1 ? "#4A4A4F" : "#85858B";
+      ctx.font = `${index === count - 1 ? "600" : "500"} 9.5px DM Sans, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText(labels[index] ?? "", point.x, height - 7);
+    }
   });
 }

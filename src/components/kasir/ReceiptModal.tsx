@@ -67,12 +67,19 @@ function getErrorMessage(error: unknown) {
     };
   };
 
-  return (
+  const message =
     apiError.response?.data?.message ??
     apiError.response?.data?.title ??
     apiError.message ??
-    "Gagal mengirim struk. Coba lagi."
-  );
+    "Gagal mengirim struk. Coba lagi.";
+
+  if (message === "WhatsApp outlet belum dikonfigurasi.") {
+    return "Nomor WhatsApp outlet belum dikonfigurasi. Minta owner/admin menghubungkan nomor toko di Pengaturan → WhatsApp pada outlet yang sama.";
+  }
+  if (message === "WhatsApp outlet belum terhubung.") {
+    return "Nomor WhatsApp outlet terputus. Minta owner/admin menghubungkannya kembali di Pengaturan → WhatsApp.";
+  }
+  return message;
 }
 
 export default function ReceiptModal({
