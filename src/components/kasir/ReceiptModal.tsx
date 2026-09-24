@@ -4,6 +4,7 @@ import {
   useState,
 } from "react";
 import api from "../../lib/api";
+import { buildReceiptWhatsAppUrl } from "../../lib/receiptWhatsapp";
 import { useDialogFocus } from "./useDialogFocus";
 
 type ReceiptItem = {
@@ -140,6 +141,7 @@ export default function ReceiptModal({
   if (!open || !receipt) return null;
 
   const transactionId = receipt.transactionId;
+  const manualWhatsAppUrl = buildReceiptWhatsAppUrl(receipt, phone, header, footer);
 
   async function sendWhatsAppReceipt() {
     if (!phone.trim()) {
@@ -309,7 +311,8 @@ export default function ReceiptModal({
               </div>
 
               <small>
-                Struk akan dikirim sebagai pesan WhatsApp dari nomor toko yang terhubung.
+                Kirim otomatis memakai nomor WhatsApp outlet yang terhubung.
+                Jika belum terhubung, buka pesan manual di WhatsApp perangkat ini lalu tekan Kirim.
               </small>
 
               {sendError && (
@@ -342,11 +345,23 @@ export default function ReceiptModal({
                 </button>
                 <button
                   type="button"
+                  className="btn-secondary"
+                  disabled={sending || !manualWhatsAppUrl}
+                  onClick={() => {
+                    if (manualWhatsAppUrl) {
+                      window.open(manualWhatsAppUrl, "_blank", "noopener,noreferrer");
+                    }
+                  }}
+                >
+                  Buka WhatsApp (manual)
+                </button>
+                <button
+                  type="button"
                   className="btn-primary"
                   disabled={sending}
                   onClick={() => void sendWhatsAppReceipt()}
                 >
-                  {sending ? "Mengirim..." : sendMessage ? "Kirim Ulang" : "Kirim"}
+                  {sending ? "Mengirim..." : sendMessage ? "Kirim Ulang Otomatis" : "Kirim Otomatis"}
                 </button>
               </div>
             </div>

@@ -407,9 +407,6 @@ export default function ProductPage() {
                           <span aria-hidden="true">•••</span>
                         </summary>
                         <div className="product-action-popover">
-                          <button type="button" onClick={() => openEdit(p)}>
-                            Edit produk
-                          </button>
                           <button
                             type="button"
                             className="danger"
@@ -465,9 +462,6 @@ export default function ProductPage() {
                       <span aria-hidden="true">•••</span>
                     </summary>
                     <div className="product-action-popover">
-                      <button type="button" onClick={() => openEdit(p)}>
-                        Edit produk
-                      </button>
                       <button
                         type="button"
                         className="danger"
