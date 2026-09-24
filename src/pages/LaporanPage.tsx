@@ -85,6 +85,9 @@ export default function LaporanPage() {
 
   const [appliedPeriod, setAppliedPeriod] =
     useState<Period>("harian");
+  const [dateRange, setDateRange] = useState({ startDate: "", endDate: "" });
+  const [appliedDateRange, setAppliedDateRange] = useState({ startDate: "", endDate: "" });
+  const [dateRangeError, setDateRangeError] = useState("");
 
   const [reloadKey, setReloadKey] =
     useState(0);
@@ -112,6 +115,10 @@ export default function LaporanPage() {
       setLoadError("");
 
       try {
+        const params = {
+          period: appliedPeriod,
+          ...(appliedDateRange.startDate && appliedDateRange.endDate ? appliedDateRange : {}),
+        };
         const [
           summaryResponse,
           chartResponse,
@@ -120,21 +127,17 @@ export default function LaporanPage() {
           api.get<Summary>(
             "/api/laporan/summary",
             {
-              params: {
-                period: appliedPeriod,
-              },
+              params,
             }
           ),
           api.get<ChartItem[]>(
             "/api/laporan/chart",
-            { params: { period: appliedPeriod } }
+            { params }
           ),
           api.get<TopProduct[]>(
             "/api/laporan/top-products",
             {
-              params: {
-                period: appliedPeriod,
-              },
+              params,
             }
           ),
         ]);
@@ -176,6 +179,7 @@ export default function LaporanPage() {
     };
   }, [
     appliedPeriod,
+    appliedDateRange,
     reloadKey,
   ]);
 
@@ -212,20 +216,26 @@ export default function LaporanPage() {
   }, [chart]);
 
   function generate() {
-    if (
-      selectedPeriod ===
-      appliedPeriod
-    ) {
-      setReloadKey(
-        (value) => value + 1
-      );
-
+    const { startDate, endDate } = dateRange;
+    if (Boolean(startDate) !== Boolean(endDate)) {
+      setDateRangeError("Isi tanggal mulai dan tanggal selesai.");
       return;
     }
-
-    setAppliedPeriod(
-      selectedPeriod
-    );
+    if (startDate && endDate) {
+      const days = (Date.parse(`${endDate}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) / 86_400_000;
+      if (days < 0 || days > 365) {
+        setDateRangeError(days < 0 ? "Tanggal mulai harus sebelum tanggal selesai." : "Rentang maksimal 366 hari.");
+        return;
+      }
+    }
+    setDateRangeError("");
+    if (selectedPeriod === appliedPeriod &&
+        startDate === appliedDateRange.startDate && endDate === appliedDateRange.endDate) {
+      setReloadKey((value) => value + 1);
+      return;
+    }
+    setAppliedPeriod(selectedPeriod);
+    setAppliedDateRange({ startDate, endDate });
   }
 
   return (
@@ -287,6 +297,21 @@ export default function LaporanPage() {
           </div>
         </div>
 
+        <div className="report-date-filters" aria-label="Filter tanggal laporan">
+          <label htmlFor="laporan-start-date">Dari tanggal
+            <input id="laporan-start-date" type="date" value={dateRange.startDate} onChange={(event) => setDateRange((previous) => ({ ...previous, startDate: event.target.value }))} />
+          </label>
+          <label htmlFor="laporan-end-date">Sampai tanggal
+            <input id="laporan-end-date" type="date" value={dateRange.endDate} onChange={(event) => setDateRange((previous) => ({ ...previous, endDate: event.target.value }))} />
+          </label>
+          <button type="button" className="btn-secondary" disabled={loading || (!dateRange.startDate && !dateRange.endDate && !appliedDateRange.startDate)} onClick={() => {
+            setDateRange({ startDate: "", endDate: "" });
+            setAppliedDateRange({ startDate: "", endDate: "" });
+            setDateRangeError("");
+          }}>Reset Tanggal</button>
+          {dateRangeError ? <p role="alert" className="financial-validation-error">{dateRangeError}</p> : null}
+        </div>
+
         {loadError ? (
           <div className="table-card">
             <div className="table-empty">
@@ -313,7 +338,7 @@ export default function LaporanPage() {
                 <div className="card-header">
                   <div>
                     <h3>
-                      Tren Penjualan {periodLabels[appliedPeriod]}
+                      Tren Penjualan {appliedDateRange.startDate ? "Rentang Tanggal" : periodLabels[appliedPeriod]}
                     </h3>
 
                     <p>
@@ -338,7 +363,7 @@ export default function LaporanPage() {
                         Ringkasan
                       </h3>
                       <p>
-                        Periode: {periodLabels[appliedPeriod]}
+                        Periode: {appliedDateRange.startDate ? `${appliedDateRange.startDate} s.d. ${appliedDateRange.endDate}` : periodLabels[appliedPeriod]}
                       </p>
                     </div>
                   </div>

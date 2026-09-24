@@ -56,6 +56,7 @@ type CartItem = {
   quantityPrecision?: number;
   unit?: string;
   quantity?: number;
+  note?: string;
 };
 
 type Settings = {
@@ -69,6 +70,7 @@ type ReceiptData = {
   customerId?: string | null;
   transactionDate: string;
   noTrx: string;
+  kasir?: string;
   subtotal: number;
   discAmt: number;
   taxAmt: number;
@@ -446,6 +448,7 @@ export default function TransactionPage() {
           hargaJual: product.hargaJual,
           qty: item.qty,
           subtotal: product.hargaJual * item.qty,
+          note: item.note,
         };
       });
 
@@ -735,6 +738,7 @@ export default function TransactionPage() {
         customerId: data.customerId ?? null,
         transactionDate: data.createdAt ?? new Date().toISOString(),
         noTrx: data.noTrx,
+        kasir: data.kasir,
         subtotal: data.subtotal,
         discAmt: data.discAmt,
         taxAmt: data.taxAmt,
@@ -910,6 +914,12 @@ export default function TransactionPage() {
         quantityPrecision: product.quantityPrecision, unit: product.satuan,
       }];
     });
+  }
+
+  function changeNote(productId: string, note: string) {
+    if (restaurantCheckout || laundryCheckout) return;
+    setCart((current) => current.map((item) =>
+      item.id === productId ? { ...item, note: note.slice(0, 500) } : item));
   }
 
   function increase(productId: string) {
@@ -1151,6 +1161,7 @@ export default function TransactionPage() {
               : Math.trunc(item.qty),
           quantity: item.qty,
           subtotal: item.subtotal,
+          note: item.note?.trim() ?? "",
         })),
         subtotal,
         disc: discount,
@@ -1241,6 +1252,7 @@ export default function TransactionPage() {
         customerId: customerId || null,
         transactionDate: response.data.createdAt ?? new Date().toISOString(),
         noTrx: response.data.noTrx,
+        kasir: response.data.kasir,
         subtotal: response.data.subtotal,
         discAmt: response.data.discAmt,
         taxAmt: response.data.taxAmt,
@@ -1460,6 +1472,7 @@ export default function TransactionPage() {
               onIncrease={increase}
               onDecrease={decrease}
               onPriceLevelChange={changePriceLevel}
+              onNoteChange={changeNote}
               onRemove={remove}
               onClear={requestClearCart}
               onCheckout={() => void checkout()}
