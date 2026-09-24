@@ -1,105 +1,52 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import DemoShell from "../components/demo/DemoShell";
 import "./DemoEntryPage.css";
 
-type DemoOption = {
-  key: string;
-  title: string;
+type Category = {
+  slug: string;
+  label: string;
   description: string;
-  destination: string;
-  image: string;
+  icon: string;
 };
 
-const demoOptions: DemoOption[] = [
-  {
-    key: "restaurant",
-    title: "Cafe, restoran, dan warung",
-    description: "Meja, dapur, kasir, dan pembayaran.",
-    destination: "/demo/business/restaurant",
-    image: "/demo-assets/cafe.webp",
-  },
-  {
-    key: "retail",
-    title: "Toko dan minimarket",
-    description: "Kasir cepat, stok otomatis, laporan rapi.",
-    destination: "/demo/business/retail",
-    image: "/demo-assets/minimarket.webp",
-  },
-  {
-    key: "fashion",
-    title: "Butik dan distro",
-    description: "Ukuran, warna, stok, dan harga.",
-    destination: "/demo/business/fashion",
-    image: "/demo-assets/fashion.webp",
-  },
-  {
-    key: "laundry",
-    title: "Laundry kiloan dan express",
-    description: "Order, proses cucian, sampai pickup.",
-    destination: "/demo/business/laundry",
-    image: "/demo-assets/laundry.webp",
-  },
-  {
-    key: "salon",
-    title: "Salon dan barbershop",
-    description: "Layanan, staf, pelanggan, dan pembayaran.",
-    destination: "/demo/business/salon",
-    image: "/demo-assets/salon.webp",
-  },
+const categories: Category[] = [
+  { slug: "restaurant", label: "Restoran", description: "Restoran, kafe, dan warung", icon: "restaurant" },
+  { slug: "retail", label: "Minimarket", description: "Toko dan minimarket", icon: "minimarket" },
+  { slug: "fashion", label: "Fashion", description: "Butik dan distro", icon: "fashion" },
+  { slug: "laundry", label: "Laundry", description: "Laundry kiloan dan express", icon: "laundry" },
+  { slug: "salon", label: "Salon", description: "Layanan salon", icon: "salon" },
+  { slug: "barbershop", label: "Barbershop", description: "Layanan barbershop", icon: "barbershop" },
 ];
 
 export default function DemoEntryPage() {
   const navigate = useNavigate();
-  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
   return (
     <DemoShell>
       <header className="demo-page-header">
         <span className="demo-overline">NEVERFADE POS</span>
         <h1>Demo</h1>
-        <p>Pilih jenis usaha, lalu coba alur POS-nya langsung.</p>
+        <p>Pilih jenis usaha untuk mencoba NeverFade POS.</p>
       </header>
 
-      <section className="demo-showcase demo-showcase-clean" aria-label="Pilih demo bisnis">
-        <div className="demo-card-row">
-          {demoOptions.map((option, index) => {
-            const imageLoaded = Boolean(loadedImages[option.key]);
-            const smallImage = option.image.replace(".webp", "-720.webp");
-
-            return (
-              <button
-                key={option.key}
-                type="button"
-                className={`demo-category-card demo-category-card-apple${imageLoaded ? " image-loaded" : ""}`}
-                aria-label={`Pilih demo ${option.title}`}
-                onClick={() => navigate(option.destination)}
-              >
-                <div className="demo-category-shimmer" aria-hidden="true" />
-                <img
-                  className="demo-category-image"
-                  src={option.image}
-                  srcSet={`${smallImage} 720w, ${option.image} 1448w`}
-                  sizes="(max-width: 720px) 86vw, (max-width: 1000px) 68vw, 510px"
-                  alt=""
-                  loading={index < 2 ? "eager" : "lazy"}
-                  fetchPriority={index < 2 ? "high" : "auto"}
-                  decoding="async"
-                  onLoad={() =>
-                    setLoadedImages((current) =>
-                      current[option.key] ? current : { ...current, [option.key]: true },
-                    )
-                  }
-                />
-                <div className="demo-category-bottom-fade" aria-hidden="true" />
-                <div className="demo-category-text">
-                  <strong>{option.title}</strong>
-                  <span>{option.description}</span>
-                </div>
-              </button>
-            );
-          })}
+      <section className="nf-category-section" aria-label="Pilih jenis usaha">
+        <div className="nf-category-grid">
+          {categories.map(({ slug, label, description, icon }) => (
+            <button
+              key={slug}
+              type="button"
+              className="nf-category-option"
+              aria-label={description}
+              onClick={() => navigate("/demo/business/" + slug)}
+            >
+              <span className="nf-category-art" aria-hidden="true">
+                <img className="nf-category-icon nf-category-icon-idle" src={"/demo-icons/" + icon + "-idle.png"} alt="" width="82" height="82" />
+                <img className="nf-category-icon nf-category-icon-active" src={"/demo-icons/" + icon + "-active.png"} alt="" width="82" height="82" />
+              </span>
+              <span className="nf-category-label">{label}</span>
+            </button>
+          ))}
         </div>
       </section>
     </DemoShell>

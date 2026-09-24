@@ -116,6 +116,8 @@ const businessDemos: Record<string, BusinessDemo> = {
   },
 };
 
+businessDemos.barbershop = { ...businessDemos.salon, title: "Barbershop" };
+
 export default function DemoBusinessPage() {
   const { slug = "" } = useParams();
   const navigate = useNavigate();

@@ -1193,3 +1193,98 @@
     font-size: 9.5px;
   }
 }
+
+/* Minimalist icon-based demo category selector */
+.nf-category-section {
+  width: 100%;
+  max-width: 620px;
+}
+
+.nf-category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.nf-category-option {
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  border: 1px solid #e1e1e5;
+  border-radius: 10px;
+  background: #fff;
+  color: #54545a;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 17px 10px 14px;
+  cursor: pointer;
+  font: inherit;
+  transition: background .16s ease, border-color .16s ease, color .16s ease;
+}
+
+.nf-category-art {
+  position: relative;
+  display: block;
+  width: 82px;
+  height: 82px;
+  flex: none;
+}
+
+.nf-category-icon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.nf-category-icon-active {
+  opacity: 0;
+}
+
+.nf-category-label {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.nf-category-option:hover,
+.nf-category-option:focus-visible {
+  border-color: #111;
+  background: #f8f8f8;
+  color: #111;
+}
+
+.nf-category-option:hover .nf-category-icon-idle,
+.nf-category-option:focus-visible .nf-category-icon-idle {
+  opacity: 0;
+}
+
+.nf-category-option:hover .nf-category-icon-active,
+.nf-category-option:focus-visible .nf-category-icon-active {
+  opacity: 1;
+}
+
+.nf-category-option:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 3px;
+}
+
+@media (max-width: 700px) {
+  .nf-category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .nf-category-art {
+    width: 76px;
+    height: 76px;
+  }
+  .nf-category-option {
+    gap: 10px;
+    padding: 14px 8px;
+  }
+}
