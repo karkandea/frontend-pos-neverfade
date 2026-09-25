@@ -1,5 +1,6 @@
-import { useNavigate } from "react-router-dom";
-
+import { useEffect } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, Check } from "lucide-react";
 import DemoShell from "../components/demo/DemoShell";
 import "./DemoEntryPage.css";
 
@@ -8,47 +9,115 @@ type Category = {
   label: string;
   description: string;
   icon: string;
+  highlights: [string, string, string];
 };
 
 const categories: Category[] = [
-  { slug: "restaurant", label: "Restoran", description: "Restoran, kafe, dan warung", icon: "restaurant" },
-  { slug: "retail", label: "Minimarket", description: "Toko dan minimarket", icon: "minimarket" },
-  { slug: "fashion", label: "Fashion", description: "Butik dan distro", icon: "fashion" },
-  { slug: "laundry", label: "Laundry", description: "Laundry kiloan dan express", icon: "laundry" },
-  { slug: "salon", label: "Salon", description: "Layanan salon", icon: "salon" },
-  { slug: "barbershop", label: "Barbershop", description: "Layanan barbershop", icon: "barbershop" },
+  {
+    slug: "restaurant",
+    label: "F&B",
+    description: "Restoran · Kafe · Coffee shop",
+    icon: "restaurant",
+    highlights: ["Meja & pesanan", "Antrean dapur", "Kasir & laporan"],
+  },
+  {
+    slug: "retail",
+    label: "Retail & Minimarket",
+    description: "Warung · Toko · Minimarket",
+    icon: "minimarket",
+    highlights: ["Kasir cepat", "Stok & inventaris", "Laporan penjualan"],
+  },
+  {
+    slug: "fashion",
+    label: "Fashion",
+    description: "Butik · Distro · Thrift",
+    icon: "fashion",
+    highlights: ["Varian ukuran & warna", "Harga satuan & grosir", "Retur & tukar"],
+  },
+  {
+    slug: "laundry",
+    label: "Laundry",
+    description: "Kiloan · Satuan · Express",
+    icon: "laundry",
+    highlights: ["Penerimaan order", "Status cucian", "Pembayaran & struk"],
+  },
+  {
+    slug: "salon",
+    label: "Salon & Barbershop",
+    description: "Salon · Barber · Hair studio",
+    icon: "salon",
+    highlights: ["Kasir layanan", "Pelanggan & riwayat", "Tim & laporan"],
+  },
 ];
 
 export default function DemoEntryPage() {
-  const navigate = useNavigate();
+  useEffect(() => {
+    // The merchant POS globally locks page scrolling. Only the marketing demo
+    // picker needs document scrolling on compact screens.
+    document.documentElement.classList.add("nf-demo-picker-active");
+    document.body.classList.add("nf-demo-picker-active");
+    return () => {
+      document.documentElement.classList.remove("nf-demo-picker-active");
+      document.body.classList.remove("nf-demo-picker-active");
+    };
+  }, []);
 
   return (
-    <DemoShell>
-      <header className="demo-page-header">
-        <span className="demo-overline">NEVERFADE POS</span>
-        <h1>Demo</h1>
-        <p>Pilih jenis usaha untuk mencoba NeverFade POS.</p>
-      </header>
+    <DemoShell cinematic>
+      <div className="nf-cinematic-picker">
+        <header className="nf-cinematic-header">
+          <span className="nf-cinematic-eyebrow">NEVERFADE POS · DEMO INTERAKTIF</span>
+          <h1>POS untuk bisnis kamu.</h1>
+          <p>Pilih jenis usaha, lalu coba alur kerja yang sesuai—langsung dengan data simulasi.</p>
+        </header>
 
-      <section className="nf-category-section" aria-label="Pilih jenis usaha">
-        <div className="nf-category-grid">
-          {categories.map(({ slug, label, description, icon }) => (
-            <button
-              key={slug}
-              type="button"
-              className="nf-category-option"
-              aria-label={description}
-              onClick={() => navigate("/demo/business/" + slug)}
-            >
-              <span className="nf-category-art" aria-hidden="true">
-                <img className="nf-category-icon nf-category-icon-idle" src={"/demo-icons/" + icon + "-idle.png"} alt="" width="82" height="82" />
-                <img className="nf-category-icon nf-category-icon-active" src={"/demo-icons/" + icon + "-active.png"} alt="" width="82" height="82" />
-              </span>
-              <span className="nf-category-label">{label}</span>
-            </button>
-          ))}
-        </div>
-      </section>
+        <section className="nf-cinematic-panel" aria-label="Pilih jenis usaha">
+          <div className="nf-cinematic-panel-head">
+            <span>PILIH JENIS USAHA</span>
+            <span>5 pilihan demo</span>
+          </div>
+
+          <div className="nf-cinematic-grid">
+            {categories.map(({ slug, label, description, icon, highlights }) => (
+              <Link
+                key={slug}
+                to={`/demo/business/${slug}`}
+                className="nf-cinematic-card"
+                aria-label={`Coba gratis demo ${label}`}
+              >
+                <span className="nf-cinematic-card-header">
+                  <span className="nf-cinematic-icon" aria-hidden="true">
+                    <img
+                      src={`/demo-icons/${icon}-idle.png`}
+                      width="56"
+                      height="56"
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </span>
+                  <span className="nf-cinematic-card-title">
+                    <strong>{label}</strong>
+                    <small>{description}</small>
+                  </span>
+                </span>
+
+                <ul className="nf-cinematic-features">
+                  {highlights.map((feature) => (
+                    <li key={feature}><Check aria-hidden="true" />{feature}</li>
+                  ))}
+                </ul>
+
+                <span className="nf-cinematic-cta">
+                  Coba Gratis <ArrowRight size={17} aria-hidden="true" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <p className="nf-cinematic-note">Tanpa registrasi · Data demo terpisah dari data merchant</p>
+      </div>
     </DemoShell>
   );
 }

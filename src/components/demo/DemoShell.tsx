@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import DemoAmbient from "./DemoAmbient";
 import { Link, NavLink } from "react-router-dom";
 import {
   ArrowRight,
@@ -10,7 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-type DemoShellProps = { children: ReactNode };
+type DemoShellProps = { children: ReactNode; cinematic?: boolean };
 
 function BrandMark() {
   return (
@@ -21,9 +22,9 @@ function BrandMark() {
   );
 }
 
-export default function DemoShell({ children }: DemoShellProps) {
+export default function DemoShell({ children, cinematic = false }: DemoShellProps) {
   return (
-    <main className="demo-home">
+    <main className={cinematic ? "demo-home demo-home--cinematic" : "demo-home"}>
       <aside className="demo-sidebar">
         <div className="demo-sidebar-brand">
           <BrandMark />
@@ -46,6 +47,7 @@ export default function DemoShell({ children }: DemoShellProps) {
       </aside>
 
       <section className="demo-main">
+        {cinematic ? <DemoAmbient /> : null}
         <div className="demo-content">{children}</div>
       </section>
     </main>
