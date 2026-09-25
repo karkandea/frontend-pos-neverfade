@@ -36,6 +36,18 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
+  // Selection is validated against the authenticated user's outlet assignment on the API.
+  // Omitting the header preserves the server-resolved default outlet for older clients.
+  const activeOutletId = getActiveOutletId();
+  if (activeOutletId && (
+    config.url === "/api/transactions" || config.url?.startsWith("/api/transactions/") ||
+    config.url === "/api/payments/current" || config.url?.startsWith("/api/payments/") ||
+    config.url?.startsWith("/api/restaurant/") ||
+    config.url?.startsWith("/api/laundry/")
+  )) {
+    config.headers.set("X-Outlet-Id", activeOutletId);
+  }
+
   const method = config.method?.toLowerCase();
   const saleCreation =
     method === "post" &&
