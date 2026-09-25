@@ -77,6 +77,21 @@ function TenantContextErrorPage({ retry }: { retry: () => void }) {
   );
 }
 
+const pagePermissions: Record<string, string> = {
+  "/dashboard": "reports.read",
+  "/produk": "products.manage",
+  "/kasir": "pos.sell",
+  "/inventaris": "inventory.manage",
+  "/pelanggan": "customers.manage",
+  "/laporan": "reports.read",
+  "/keuangan": "finance.read",
+  "/meja": "restaurant.tables.read",
+  "/dapur": "restaurant.kitchen.operate",
+  "/laundry": "laundry.orders.operate",
+  "/pengguna": "users.manage",
+  "/pengaturan": "settings.manage",
+};
+
 const pageTitles: Record<string, string> = {
   "/login": "Masuk",
   "/dashboard": "Dashboard",
@@ -183,6 +198,7 @@ export default function App() {
   const isAdmin =
     user?.role === "owner" ||
     user?.role === "admin";
+  const roleLanding = isAdmin ? "/dashboard" : "/kasir";
 
   function protectedPage(
     page: ReactNode,
@@ -203,18 +219,24 @@ export default function App() {
     }
 
     if (adminOnly && !isAdmin) {
-      return <Navigate replace to="/dashboard" />;
+      return <Navigate replace to={roleLanding} />;
     }
 
     if (ownerOnly && user?.role !== "owner") {
-      return <Navigate replace to="/dashboard" />;
+      return <Navigate replace to={roleLanding} />;
     }
 
     if (
       capability &&
       !tenantContext?.capabilities.includes(capability)
     ) {
-      return <Navigate replace to="/dashboard" />;
+      return <Navigate replace to={roleLanding} />;
+    }
+
+    const requiredPermission = pagePermissions[location.pathname];
+    if (requiredPermission && tenantContext?.effectivePermissions &&
+        !tenantContext.effectivePermissions.includes(requiredPermission)) {
+      return <Navigate replace to={roleLanding} />;
     }
 
     return page;
@@ -238,7 +260,7 @@ export default function App() {
           path="/login"
           element={
             token ? (
-              <Navigate replace to="/dashboard" />
+              <Navigate replace to={roleLanding} />
             ) : (
               <LoginPage />
             )
@@ -278,12 +300,12 @@ export default function App() {
 
         <Route
           path="/dashboard"
-          element={protectedPage(<DashboardPage />, false, false, "reports")}
+          element={protectedPage(<DashboardPage />, true, false, "reports")}
         />
 
         <Route
           path="/produk"
-          element={protectedPage(<ProductPage />, false, false, "core_pos")}
+          element={protectedPage(<ProductPage />, true, false, "core_pos")}
         />
 
         <Route
@@ -303,12 +325,12 @@ export default function App() {
 
         <Route
           path="/inventaris"
-          element={protectedPage(<InventarisPage />, false, false, "inventory")}
+          element={protectedPage(<InventarisPage />, true, false, "inventory")}
         />
 
         <Route
           path="/pelanggan"
-          element={protectedPage(<PelangganPage />, false, false, "customers")}
+          element={protectedPage(<PelangganPage />, true, false, "customers")}
         />
 
         <Route
@@ -318,7 +340,7 @@ export default function App() {
 
         <Route
           path="/laporan"
-          element={protectedPage(<LaporanPage />, false, false, "reports")}
+          element={protectedPage(<LaporanPage />, true, false, "reports")}
         />
 
         <Route
@@ -382,7 +404,7 @@ export default function App() {
                     ? "/platform/tenants"
                     : "/platform/login"
                   : token
-                  ? "/dashboard"
+                  ? roleLanding
                   : "/login"
               }
             />

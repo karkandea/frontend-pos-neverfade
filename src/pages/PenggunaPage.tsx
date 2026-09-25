@@ -88,6 +88,45 @@ export default function PenggunaPage() {
   const [saving, setSaving] =
     useState(false);
 
+  const [assignmentUser, setAssignmentUser] = useState<ManagedUser | null>(null);
+  const [assignmentOutlets, setAssignmentOutlets] = useState<{ id: string; name: string; active: boolean }[]>([]);
+  const [assignedIds, setAssignedIds] = useState<string[]>([]);
+  const [assignmentLoading, setAssignmentLoading] = useState(false);
+  const [assignmentBusy, setAssignmentBusy] = useState(false);
+  const [assignmentError, setAssignmentError] = useState("");
+
+  async function openAssignments(user: ManagedUser) {
+    setAssignmentUser(user);
+    setAssignmentLoading(true);
+    setAssignmentError("");
+    try {
+      const [outlets, assigned] = await Promise.all([
+        api.get<{ id: string; name: string; active: boolean }[]>("/api/outlets"),
+        api.get<string[]>(`/api/users/${user.id}/outlets`),
+      ]);
+      setAssignmentOutlets(outlets.data.filter((outlet) => outlet.active));
+      setAssignedIds(assigned.data);
+    } catch (error) {
+      setAssignmentError(getErrorMessage(error));
+    } finally {
+      setAssignmentLoading(false);
+    }
+  }
+
+  async function saveAssignments() {
+    if (!assignmentUser) return;
+    setAssignmentBusy(true);
+    setAssignmentError("");
+    try {
+      await api.put(`/api/users/${assignmentUser.id}/outlets`, { outletIds: assignedIds });
+      setAssignmentUser(null);
+    } catch (error) {
+      setAssignmentError(getErrorMessage(error));
+    } finally {
+      setAssignmentBusy(false);
+    }
+  }
+
   const filteredUsers = useMemo(() => {
     const query = search
       .trim()
@@ -420,16 +459,24 @@ export default function PenggunaPage() {
                                     user
                                   )
                                 }
+                                disabled={user.role === "owner" && currentUser?.role !== "owner"}
                               >
                                 Edit
                               </button>
+
+                              {user.role !== "owner" ? (
+                                <button type="button" className="btn-secondary"
+                                  onClick={() => void openAssignments(user)}>
+                                  Outlet
+                                </button>
+                              ) : null}
 
                               <button
                                 type="button"
                                 className="btn-danger"
                                 disabled={
-                                  user.id ===
-                                  currentUser?.id
+                                  user.id === currentUser?.id ||
+                                  user.role === "owner"
                                 }
                                 onClick={() =>
                                   void removeUser(
@@ -534,9 +581,9 @@ export default function PenggunaPage() {
                     value={form.role}
                     onChange={onChange}
                   >
-                    <option value="owner">
-                      Owner
-                    </option>
+                    {currentUser?.role === "owner" && !editingId ? (
+                      <option value="owner">Owner</option>
+                    ) : null}
 
                     <option value="admin">
                       Admin
@@ -597,6 +644,41 @@ export default function PenggunaPage() {
             </div>
           </div>
         </div>
+        {assignmentUser ? (
+          <div className="modal-overlay open" role="dialog" aria-modal="true" aria-label="Penugasan outlet">
+            <div className="modal">
+              <div className="modal-header">
+                <h3>Outlet untuk {assignmentUser.nama}</h3>
+                <button type="button" className="modal-close" aria-label="Tutup"
+                  disabled={assignmentBusy} onClick={() => setAssignmentUser(null)}>×</button>
+              </div>
+              <div className="modal-body" style={{ display: "grid", gap: 12 }}>
+                <p>Pilih outlet yang boleh diakses akun ini. Kosongkan semua untuk mencabut akses outlet.</p>
+                {assignmentError ? <p role="alert" className="finance-error">{assignmentError}</p> : null}
+                {assignmentLoading ? <p>Memuat outlet...</p> : assignmentOutlets.length ? (
+                  assignmentOutlets.map((outlet) => (
+                    <label key={outlet.id} style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                      <input type="checkbox" checked={assignedIds.includes(outlet.id)}
+                        disabled={assignmentBusy}
+                        onChange={(event) => setAssignedIds((previous) =>
+                          event.target.checked ? [...previous, outlet.id] : previous.filter((id) => id !== outlet.id))} />
+                      {outlet.name}
+                    </label>
+                  ))
+                ) : <p>Belum ada outlet aktif yang dapat ditugaskan.</p>}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" disabled={assignmentBusy}
+                  onClick={() => setAssignmentUser(null)}>Batal</button>
+                <button type="button" className="btn-primary"
+                  disabled={assignmentBusy || assignmentLoading || Boolean(assignmentError && !assignmentOutlets.length)}
+                  onClick={() => void saveAssignments()}>
+                  {assignmentBusy ? "Menyimpan..." : "Simpan Penugasan"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </section>
     </AppShell>
   );

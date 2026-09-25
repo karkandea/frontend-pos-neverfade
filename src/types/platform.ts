@@ -62,6 +62,9 @@ export type TenantContext = {
   businessType: BusinessType;
   capabilities: TenantCapability[];
   role: "owner" | "admin" | "kasir";
+  effectivePermissions?: string[];
+  assignedOutletIds?: string[];
+  tenantStatus?: string;
 };
 
 export type PlatformApiError = {

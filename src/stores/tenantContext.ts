@@ -43,6 +43,12 @@ function isTenantContext(value: unknown): value is TenantContext {
     typeof candidate.namaToko === "string" &&
     validBusinessType &&
     validCapabilities &&
+    (candidate.effectivePermissions === undefined ||
+      (Array.isArray(candidate.effectivePermissions) && candidate.effectivePermissions.every(
+        (permission) => typeof permission === "string"))) &&
+    (candidate.assignedOutletIds === undefined ||
+      (Array.isArray(candidate.assignedOutletIds) && candidate.assignedOutletIds.every(
+        (outletId) => typeof outletId === "string"))) &&
     (candidate.role === "owner" ||
       candidate.role === "admin" ||
       candidate.role === "kasir")
