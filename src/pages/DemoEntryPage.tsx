@@ -74,7 +74,6 @@ export default function DemoEntryPage() {
         <section className="nf-cinematic-panel" aria-label="Pilih jenis usaha">
           <div className="nf-cinematic-panel-head">
             <span>PILIH JENIS USAHA</span>
-            <span>5 pilihan demo</span>
           </div>
 
           <div className="nf-cinematic-grid">

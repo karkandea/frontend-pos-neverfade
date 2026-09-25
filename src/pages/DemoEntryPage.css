@@ -1439,12 +1439,6 @@
   letter-spacing: .11em;
 }
 
-.nf-cinematic-panel-head span:last-child {
-  color: #8a8a91;
-  font-weight: 500;
-  letter-spacing: 0;
-}
-
 .nf-cinematic-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -1555,15 +1549,15 @@
   justify-content: center;
   gap: 8px;
   border-radius: 999px;
-  background: #e20c35;
-  color: #fff;
+  background: #fff;
+  color: #0a0a0a;
   font-size: 12px;
   font-weight: 750;
   transition: background .18s ease;
 }
 
 .nf-cinematic-card:hover .nf-cinematic-cta,
-.nf-cinematic-card:focus-visible .nf-cinematic-cta { background: #f21e49; }
+.nf-cinematic-card:focus-visible .nf-cinematic-cta { background: #e8e8e8; }
 
 .nf-cinematic-note {
   margin: 15px 0 0;
@@ -1619,3 +1613,18 @@ body.nf-demo-picker-active {
   overflow-x: hidden;
   overflow-y: auto;
 }
+
+
+/* NeverFade login brand DNA: monochrome (black / white / neutral gray). */
+.demo-home--cinematic {
+  --nf-red: #f5f5f7;
+  --nf-red-dark: #d1d1d6;
+}
+.demo-home--cinematic .nf-brand-mark i { background: #f5f5f7; }
+.demo-home--cinematic .demo-nav a.active > svg { color: #f5f5f7; }
+.demo-home--cinematic .demo-start-button {
+  background: #f5f5f7;
+  color: #0a0a0a;
+  box-shadow: none;
+}
+.demo-home--cinematic .demo-start-button:hover { background: #e8e8e8; }
