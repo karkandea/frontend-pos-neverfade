@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import PlatformShell from "../../components/platform/PlatformShell";
@@ -31,6 +31,8 @@ export default function PlatformTenantCreatePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // Preserve the key across network retries, rotate it when form contents change.
+  const pendingRequest = useRef<{ body: string; key: string } | null>(null);
 
   const selectedMode =
     businessModeOptions.find((option) => option.key === form.businessType) ??
@@ -53,9 +55,14 @@ export default function PlatformTenantCreatePage() {
     setError("");
 
     try {
+      const body = JSON.stringify(form);
+      if (pendingRequest.current?.body !== body) {
+        pendingRequest.current = { body, key: crypto.randomUUID() };
+      }
       const { data } = await platformApi.post<PlatformTenant>(
         "/api/platform/tenants",
-        form
+        form,
+        { headers: { "Idempotency-Key": pendingRequest.current.key } }
       );
       navigate(`/platform/tenants/${data.id}`, {
         replace: true,
