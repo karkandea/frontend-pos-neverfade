@@ -18,6 +18,8 @@ import type {
 const initialForm: CreatePlatformTenantRequest = {
   namaToko: "",
   businessType: "general_retail",
+  mode: "live",
+  timeZoneId: "Asia/Jakarta",
   owner: {
     nama: "",
     username: "",
@@ -143,6 +145,31 @@ export default function PlatformTenantCreatePage() {
                 ))}
               </select>
               <small>{selectedMode.description}</small>
+            </label>
+          </div>
+
+          <div className="platform-form-grid">
+            <label className="platform-field" htmlFor="tenant-mode">
+              <span>Mode tenant</span>
+              <select id="tenant-mode" value={form.mode}
+                onChange={(event) => setForm((current) => ({
+                  ...current, mode: event.target.value as "live" | "demo",
+                }))}>
+                <option value="live">Live — mulai dengan data kosong</option>
+                <option value="demo">Demo — katalog contoh terpisah</option>
+              </select>
+              <small>{form.mode === "demo"
+                ? "Data contoh hanya dibuat untuk tenant demo baru, bukan tenant live."
+                : "Tidak ada katalog atau meja contoh yang otomatis dibuat."}</small>
+            </label>
+            <label className="platform-field" htmlFor="tenant-timezone">
+              <span>Zona waktu</span>
+              <select id="tenant-timezone" value={form.timeZoneId}
+                onChange={(event) => setForm((current) => ({ ...current, timeZoneId: event.target.value }))}>
+                <option value="Asia/Jakarta">WIB — Asia/Jakarta</option>
+                <option value="Asia/Makassar">WITA — Asia/Makassar</option>
+                <option value="Asia/Jayapura">WIT — Asia/Jayapura</option>
+              </select>
             </label>
           </div>
 
