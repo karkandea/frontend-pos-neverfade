@@ -240,3 +240,32 @@ test("isolated PostgreSQL denies outlet selection across tenants", async ({ page
   }, restaurantBranchId!);
   expect(result).toEqual({ step: "verify", own: 200, foreign: 404, distinct: true });
 });
+
+test("isolated public QA kitchen operator is restricted to assigned tickets", async ({ page }) => {
+  test.skip(process.env.NF_S1_KITCHEN_OPERATOR_SMOKE !== "1", "Requires dedicated kitchen QA fixture");
+  await page.goto("/login");
+  await page.getByLabel("Username").fill("qa.resto.dapur");
+  await page.getByLabel("Password", { exact: true }).fill("owner123");
+  await page.getByRole("button", { name: "Masuk" }).click();
+  await expect(page).toHaveURL(/\/dapur$/);
+  await expect(page.getByRole("heading", { name: "Dapur" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Kasir", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Transaksi", exact: true })).toHaveCount(0);
+  const access = await page.evaluate(async () => {
+    const token = sessionStorage.getItem("nfpos_token") ?? localStorage.getItem("nfpos_token");
+    const headers = { Authorization: `Bearer ${token}` };
+    const queue = await fetch("/api/restaurant/kitchen/operator", { headers });
+    const raw = await queue.text();
+    const legacy = await fetch("/api/restaurant/kitchen", { headers });
+    const products = await fetch("/api/products", { headers });
+    const transactions = await fetch("/api/transactions", { headers });
+    const users = await fetch("/api/users", { headers });
+    return { queue: queue.status, safe: !/hargaJual|subtotal/i.test(raw),
+      legacy: legacy.status, products: products.status,
+      transactions: transactions.status, users: users.status };
+  });
+  expect(access).toEqual({ queue: 200, safe: true, legacy: 403,
+    products: 403, transactions: 403, users: 403 });
+  await page.goto("/kasir");
+  await expect(page).toHaveURL(/\/dapur$/);
+});
