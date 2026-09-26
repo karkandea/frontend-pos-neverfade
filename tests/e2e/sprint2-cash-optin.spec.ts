@@ -18,6 +18,8 @@ type Options = {
   uncertainFirst?: boolean; quoteTotal?: number; terminalRetry?: boolean;
   committedAfterUnknown?: boolean; lookupUnavailable?: boolean;
   preflightDelay?: number;
+  prepareReplyLost?: boolean;
+  prepareRejected?: boolean;
 };
 async function setup(page: Page, options: Options = {}) {
   const state = {
@@ -90,9 +92,13 @@ async function setup(page: Page, options: Options = {}) {
       const body = request.postDataJSON() as { amountReceived: number };
       const key = request.headers()["idempotency-key"] ?? "";
       state.prepares.push({ key, body });
+      if (options.prepareRejected)
+        return respond(route, { code: "QUOTE_EXPIRED", message: "Quote sudah kedaluwarsa" }, 409);
       if (state.serverPrepared && state.serverPrepared.key !== key)
         return respond(route, { code: "CASH_ATTEMPT_ALREADY_PREPARED", message: "Attempt lain aktif" }, 409);
       state.serverPrepared = { key, amount: body.amountReceived };
+      if (options.prepareReplyLost && state.prepares.length === 1)
+        return respond(route, { code: "TEMPORARY_UNAVAILABLE", message: "Prepare response lost" }, 503);
       return respond(route, {
         quoteId, quoteVersion, outletId, idempotencyKey: key,
         amountReceived: body.amountReceived, total: 25000,
@@ -103,7 +109,7 @@ async function setup(page: Page, options: Options = {}) {
     if (path === "/api/v2/sales/cash/abandon" && request.method() === "POST") {
       const key = request.headers()["idempotency-key"] ?? "";
       state.abandons.push(key);
-      if (state.serverPrepared?.key !== key)
+      if (state.serverPrepared?.key !== key && !options.prepareRejected)
         return respond(route, { code: "CASH_ATTEMPT_NOT_FOUND", message: "Not found" }, 404);
       state.serverPrepared = null;
       return respond(route, { quoteId, quoteVersion, outletId,
@@ -323,5 +329,40 @@ test("two rapid clicks while checking server create only one cash attempt", asyn
   expect(state.quotes).toBe(1);
   expect(state.prepares).toHaveLength(1);
   expect(state.commits).toHaveLength(1);
+  expect(state.legacySales).toBe(0);
+});
+
+
+test("lost prepare response recovers on a new session without a second quote", async ({ page }) => {
+  const state = await setup(page, { prepareReplyLost: true });
+  page.on("dialog", async (dialog) => { await dialog.accept(); });
+  await beginSale(page);
+  await expect(page.getByText("Transaksi tunai belum terkonfirmasi.")).toBeVisible();
+  await expect.poll(() => state.prepares.length).toBe(1);
+  expect(state.commits).toHaveLength(0);
+  await page.evaluate(() => sessionStorage.clear());
+  await page.reload();
+  await expect(page.getByText("Transaksi tunai belum terkonfirmasi.")).toBeVisible();
+  const mobileClose = page.getByRole("button", { name: "Tutup keranjang" });
+  if (await mobileClose.isVisible().catch(() => false)) await mobileClose.click();
+  await page.getByRole("button", { name: "Pulihkan Transaksi Tunai" }).click();
+  await expect(page.getByRole("heading", { name: "Transaksi Berhasil" })).toBeVisible();
+  expect(state.quotes).toBe(1);
+  expect(state.prepares).toHaveLength(2);
+  expect(state.prepares[1]).toEqual(state.prepares[0]);
+  expect(state.commits).toHaveLength(1);
+  expect(state.commits[0].key).toBe(state.prepares[0].key);
+  expect(state.legacySales).toBe(0);
+});
+
+test("definite expired quote before prepare is fenced on server without writing a sale", async ({ page }) => {
+  const state = await setup(page, { prepareRejected: true });
+  page.on("dialog", async (dialog) => { await dialog.accept(); });
+  await beginSale(page);
+  await expect(page.getByText("Status transaksi tunai perlu perhatian.")).toBeVisible();
+  await expect(page.getByText("Transaksi tunai belum terkonfirmasi.")).toHaveCount(0);
+  expect(state.prepares).toHaveLength(1);
+  expect(state.abandons).toEqual([state.prepares[0].key]);
+  expect(state.commits).toHaveLength(0);
   expect(state.legacySales).toBe(0);
 });

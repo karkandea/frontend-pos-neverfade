@@ -1263,9 +1263,6 @@ export default function TransactionPage() {
         return;
       }
     }
-    } finally {
-      cashPreflightLock.current = false;
-    }
     if (
       restaurantCheckout?.transactionId ||
       laundryCheckout?.transactionId
@@ -1519,6 +1516,9 @@ export default function TransactionPage() {
       checkoutAbort.current = null;
       submissionLock.current = false;
       setSubmitting(false);
+    }
+    } finally {
+      cashPreflightLock.current = false;
     }
   }
 
