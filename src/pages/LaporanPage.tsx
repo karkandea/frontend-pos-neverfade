@@ -6,6 +6,8 @@ import {
 
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
+import type { Outlet } from "../lib/outlet";
+import { useAuthStore } from "../stores/auth";
 import { drawChart } from "../lib/chart";
 
 type Period =
@@ -75,6 +77,20 @@ function getErrorMessage(error: unknown) {
 }
 
 export default function LaporanPage() {
+  const role = useAuthStore((state) => state.user?.role);
+  const [availableOutlets, setAvailableOutlets] = useState<Outlet[]>([]);
+  const [selectedReportOutlet, setSelectedReportOutlet] = useState("");
+  const [appliedReportOutlet, setAppliedReportOutlet] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    void api.get<Outlet[]>("/api/outlets").then((response) => {
+      if (active) setAvailableOutlets(response.data);
+    }).catch(() => {
+      if (active) setAvailableOutlets([]);
+    });
+    return () => { active = false; };
+  }, []);
   const canvasRef =
     useRef<HTMLCanvasElement | null>(
       null
@@ -115,6 +131,9 @@ export default function LaporanPage() {
       setLoadError("");
 
       try {
+        const reportOptions = appliedReportOutlet
+          ? { headers: { "X-Outlet-Id": appliedReportOutlet } }
+          : {};
         const params = {
           period: appliedPeriod,
           ...(appliedDateRange.startDate && appliedDateRange.endDate ? appliedDateRange : {}),
@@ -127,17 +146,17 @@ export default function LaporanPage() {
           api.get<Summary>(
             "/api/laporan/summary",
             {
-              params,
+              params, ...reportOptions,
             }
           ),
           api.get<ChartItem[]>(
             "/api/laporan/chart",
-            { params }
+            { params, ...reportOptions }
           ),
           api.get<TopProduct[]>(
             "/api/laporan/top-products",
             {
-              params,
+              params, ...reportOptions,
             }
           ),
         ]);
@@ -180,6 +199,7 @@ export default function LaporanPage() {
   }, [
     appliedPeriod,
     appliedDateRange,
+    appliedReportOutlet,
     reloadKey,
   ]);
 
@@ -230,11 +250,13 @@ export default function LaporanPage() {
     }
     setDateRangeError("");
     if (selectedPeriod === appliedPeriod &&
+        selectedReportOutlet === appliedReportOutlet &&
         startDate === appliedDateRange.startDate && endDate === appliedDateRange.endDate) {
       setReloadKey((value) => value + 1);
       return;
     }
     setAppliedPeriod(selectedPeriod);
+    setAppliedReportOutlet(selectedReportOutlet);
     setAppliedDateRange({ startDate, endDate });
   }
 
@@ -256,6 +278,18 @@ export default function LaporanPage() {
           </div>
 
           <div className="section-actions">
+            <label htmlFor="laporan-outlet" style={{ fontSize: 12 }}>Cakupan outlet</label>
+            <select
+              id="laporan-outlet"
+              aria-label="Cakupan outlet laporan"
+              value={selectedReportOutlet}
+              onChange={(event) => setSelectedReportOutlet(event.target.value)}
+            >
+              <option value="">{role === "owner" ? "Semua outlet" : "Semua outlet tugas"}</option>
+              {availableOutlets.map((outlet) => (
+                <option key={outlet.id} value={outlet.id}>{outlet.name}</option>
+              ))}
+            </select>
             <select
               id="laporan-period"
               value={selectedPeriod}

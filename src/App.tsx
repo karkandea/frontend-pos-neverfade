@@ -21,10 +21,12 @@ import LaporanPage from "./pages/LaporanPage";
 import FinancePage from "./pages/FinancePage";
 import RestaurantTablesPage from "./pages/RestaurantTablesPage";
 import KitchenQueuePage from "./pages/KitchenQueuePage";
+import LaundryOperatorQueuePage from "./pages/LaundryOperatorQueuePage";
 import LaundryWorkOrdersPage from "./pages/LaundryWorkOrdersPage";
 import LoginPage from "./pages/LoginPage";
 import PelangganPage from "./pages/PelangganPage";
 import PengaturanPage from "./pages/PengaturanPage";
+import OnboardingPage from "./pages/OnboardingPage";
 import PenggunaPage from "./pages/PenggunaPage";
 import ProductPage from "./pages/ProductPage";
 import RetailVariantPricingPage from "./pages/RetailVariantPricingPage";
@@ -77,6 +79,23 @@ function TenantContextErrorPage({ retry }: { retry: () => void }) {
   );
 }
 
+const pagePermissions: Record<string, string> = {
+  "/dashboard": "reports.read",
+  "/produk": "products.manage",
+  "/kasir": "pos.sell",
+  "/inventaris": "inventory.manage",
+  "/pelanggan": "customers.manage",
+  "/laporan": "reports.read",
+  "/keuangan": "finance.read",
+  "/meja": "restaurant.tables.read",
+  "/dapur": "restaurant.kitchen.operate",
+  "/laundry": "laundry.orders.operate",
+  "/laundry/antrean": "laundry.work.operate",
+  "/pengguna": "users.manage",
+  "/pengaturan": "settings.manage",
+  "/mulai": "settings.manage",
+};
+
 const pageTitles: Record<string, string> = {
   "/login": "Masuk",
   "/dashboard": "Dashboard",
@@ -92,12 +111,14 @@ const pageTitles: Record<string, string> = {
   "/meja": "Meja & Pesanan",
   "/dapur": "Dapur",
   "/laundry": "Pesanan Laundry",
+  "/laundry/antrean": "Antrean Laundry",
   "/karyawan": "Karyawan",
   "/absensi": "Absensi",
   "/absensi/kelola": "Kelola Absensi",
   "/shared-pos": "Shared POS",
   "/pengguna": "Pengguna",
   "/pengaturan": "Pengaturan",
+  "/mulai": "Setup Usaha",
   "/qa/qris-scanner": "QA QRIS Scanner",
   "/platform/login": "Platform Login",
   "/platform/tenants": "Tenant Platform",
@@ -183,6 +204,9 @@ export default function App() {
   const isAdmin =
     user?.role === "owner" ||
     user?.role === "admin";
+  const roleLanding = user?.role === "dapur" ? "/dapur" :
+    user?.role === "laundry_operator" ? "/laundry/antrean" :
+    (isAdmin ? "/dashboard" : "/kasir");
 
   function protectedPage(
     page: ReactNode,
@@ -203,18 +227,24 @@ export default function App() {
     }
 
     if (adminOnly && !isAdmin) {
-      return <Navigate replace to="/dashboard" />;
+      return <Navigate replace to={roleLanding} />;
     }
 
     if (ownerOnly && user?.role !== "owner") {
-      return <Navigate replace to="/dashboard" />;
+      return <Navigate replace to={roleLanding} />;
     }
 
     if (
       capability &&
       !tenantContext?.capabilities.includes(capability)
     ) {
-      return <Navigate replace to="/dashboard" />;
+      return <Navigate replace to={roleLanding} />;
+    }
+
+    const requiredPermission = pagePermissions[location.pathname];
+    if (requiredPermission && tenantContext?.effectivePermissions &&
+        !tenantContext.effectivePermissions.includes(requiredPermission)) {
+      return <Navigate replace to={roleLanding} />;
     }
 
     return page;
@@ -238,7 +268,7 @@ export default function App() {
           path="/login"
           element={
             token ? (
-              <Navigate replace to="/dashboard" />
+              <Navigate replace to={roleLanding} />
             ) : (
               <LoginPage />
             )
@@ -278,12 +308,12 @@ export default function App() {
 
         <Route
           path="/dashboard"
-          element={protectedPage(<DashboardPage />, false, false, "reports")}
+          element={protectedPage(<DashboardPage />, true, false, "reports")}
         />
 
         <Route
           path="/produk"
-          element={protectedPage(<ProductPage />, false, false, "core_pos")}
+          element={protectedPage(<ProductPage />, true, false, "core_pos")}
         />
 
         <Route
@@ -303,12 +333,12 @@ export default function App() {
 
         <Route
           path="/inventaris"
-          element={protectedPage(<InventarisPage />, false, false, "inventory")}
+          element={protectedPage(<InventarisPage />, true, false, "inventory")}
         />
 
         <Route
           path="/pelanggan"
-          element={protectedPage(<PelangganPage />, false, false, "customers")}
+          element={protectedPage(<PelangganPage />, true, false, "customers")}
         />
 
         <Route
@@ -318,7 +348,7 @@ export default function App() {
 
         <Route
           path="/laporan"
-          element={protectedPage(<LaporanPage />, false, false, "reports")}
+          element={protectedPage(<LaporanPage />, true, false, "reports")}
         />
 
         <Route
@@ -339,6 +369,10 @@ export default function App() {
         <Route
           path="/laundry"
           element={protectedPage(<LaundryWorkOrdersPage />, false, false, "work_orders")}
+        />
+        <Route
+          path="/laundry/antrean"
+          element={protectedPage(<LaundryOperatorQueuePage />, false, false, "work_orders")}
         />
 
         <Route
@@ -365,6 +399,10 @@ export default function App() {
           path="/pengaturan"
           element={protectedPage(<PengaturanPage />, true)}
         />
+        <Route
+          path="/mulai"
+          element={protectedPage(<OnboardingPage />, true)}
+        />
 
         <Route
           path="/qa/qris-scanner"
@@ -382,7 +420,7 @@ export default function App() {
                     ? "/platform/tenants"
                     : "/platform/login"
                   : token
-                  ? "/dashboard"
+                  ? roleLanding
                   : "/login"
               }
             />

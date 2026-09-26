@@ -84,7 +84,7 @@ export default function LoginPage() {
       );
 
       navigate(
-        returnTo ?? (user?.role === "kasir" ? "/kasir" : "/produk"),
+        returnTo ?? (user?.role === "dapur" ? "/dapur" : user?.role === "laundry_operator" ? "/laundry/antrean" : user?.role === "kasir" ? "/kasir" : "/produk"),
         { replace: true }
       );
     } catch (error: unknown) {

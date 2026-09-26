@@ -21,9 +21,7 @@ export default function OutletSwitcher() {
       setOutlets(active);
       setSelectedId(selected?.id ?? "");
 
-      if (selected) {
-        setActiveOutletId(selected.id);
-      }
+      setActiveOutletId(selected?.id ?? "");
     } catch {
       setOutlets([]);
       setSelectedId("");
@@ -53,8 +51,10 @@ export default function OutletSwitcher() {
     };
   }, []);
 
-  if (loading || outlets.length === 0) {
-    return null;
+  if (loading) return null;
+
+  if (outlets.length === 0) {
+    return <span aria-live="polite" style={{ fontSize: 12 }}>Belum ditugaskan ke outlet aktif. Hubungi owner.</span>;
   }
 
   if (outlets.length === 1) {

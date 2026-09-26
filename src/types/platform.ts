@@ -40,6 +40,8 @@ export type PlatformTenant = {
   slug: string;
   status: "active" | "suspended";
   businessType: BusinessType;
+  mode: "live" | "demo";
+  timeZoneId: string;
   capabilities: TenantCapability[];
   owner: TenantOwnerSummary | null;
   createdAt: string;
@@ -49,6 +51,8 @@ export type PlatformTenant = {
 export type CreatePlatformTenantRequest = {
   namaToko: string;
   businessType: BusinessType;
+  mode: "live" | "demo";
+  timeZoneId: string;
   owner: {
     nama: string;
     username: string;
@@ -60,8 +64,13 @@ export type TenantContext = {
   tenantId: string;
   namaToko: string;
   businessType: BusinessType;
+  mode?: "live" | "demo";
+  timeZoneId?: string;
   capabilities: TenantCapability[];
   role: "owner" | "admin" | "kasir";
+  effectivePermissions?: string[];
+  assignedOutletIds?: string[];
+  tenantStatus?: string;
 };
 
 export type PlatformApiError = {

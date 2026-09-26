@@ -6,6 +6,8 @@ type Tenant = {
   slug: string;
   status: "active" | "suspended";
   businessType: "general_retail" | "food_beverage" | "laundry" | "salon_barbershop";
+  mode: "live" | "demo";
+  timeZoneId: string;
   capabilities: string[];
   owner: {
     id: string;
@@ -39,6 +41,8 @@ const existingTenant: Tenant = {
   slug: "existing-tenant",
   status: "active",
   businessType: "general_retail",
+  mode: "live",
+  timeZoneId: "Asia/Jakarta",
   capabilities: commonCapabilities,
   owner: {
     id: "22222222-2222-2222-2222-222222222222",
@@ -119,15 +123,21 @@ test("super admin provisions business mode, updates profile, and controls tenant
       const payload = request.postDataJSON() as {
         namaToko: string;
         businessType: Tenant["businessType"];
+        mode: Tenant["mode"];
+        timeZoneId: string;
         owner: { nama: string; username: string };
       };
       expect(payload.businessType).toBe("food_beverage");
+      expect(payload.mode).toBe("demo");
+      expect(payload.timeZoneId).toBe("Asia/Makassar");
       createdTenant = {
         id: "33333333-3333-3333-3333-333333333333",
         namaToko: payload.namaToko,
         slug: "qa-platform-coffee",
         status: "active",
         businessType: payload.businessType,
+        mode: payload.mode,
+        timeZoneId: payload.timeZoneId,
         capabilities: [...commonCapabilities, "table_orders", "kitchen_queue"],
         owner: {
           id: "44444444-4444-4444-4444-444444444444",
@@ -244,6 +254,8 @@ test("super admin provisions business mode, updates profile, and controls tenant
   await page.getByRole("link", { name: "Buat Tenant" }).first().click();
   await page.getByLabel("Nama Toko").fill("QA Platform Coffee");
   await page.getByLabel("Tipe Bisnis").selectOption("food_beverage");
+  await page.getByLabel("Mode tenant").selectOption("demo");
+  await page.getByLabel("Zona waktu").selectOption("Asia/Makassar");
   await expect(page.getByText("Pesanan meja", { exact: true })).toBeVisible();
   await expect(page.getByText("Antrean dapur", { exact: true })).toBeVisible();
   await page.getByLabel("Nama Owner").fill("QA Owner Platform");

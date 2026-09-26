@@ -212,6 +212,8 @@ export default function PlatformTenantDetailPage() {
                 <div><dt>Nama Toko</dt><dd>{tenant.namaToko}</dd></div>
                 <div><dt>Slug</dt><dd className="platform-mono">{tenant.slug}</dd></div>
                 <div><dt>Tipe Bisnis</dt><dd>{businessLabel}</dd></div>
+                <div><dt>Mode</dt><dd>{tenant.mode === "demo" ? "Demo — data contoh" : "Live — data merchant"}</dd></div>
+                <div><dt>Zona Waktu</dt><dd>{tenant.timeZoneId}</dd></div>
                 <div><dt>Status</dt><dd><TenantStatusBadge status={tenant.status} /></dd></div>
                 <div><dt>Dibuat</dt><dd>{dateTimeFormatter.format(new Date(tenant.createdAt))}</dd></div>
                 <div><dt>Diperbarui</dt><dd>{dateTimeFormatter.format(new Date(tenant.updatedAt))}</dd></div>

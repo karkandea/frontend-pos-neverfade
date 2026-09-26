@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import AppShell from "../components/layout/AppShell";
+import { useAuthStore } from "../stores/auth";
 import api from "../lib/api";
 import { getApiError } from "../lib/apiError";
 import type {
   KitchenQueueOrder,
   KitchenStatus,
-  RestaurantOrderItem,
+  KitchenQueueItem,
 } from "../types/restaurant";
 
 const statusLabel: Record<KitchenStatus, string> = {
@@ -48,6 +49,8 @@ const timeFormat = new Intl.DateTimeFormat("id-ID", {
 });
 
 export default function KitchenQueuePage() {
+  const isKitchenOperator = useAuthStore((state) => state.user?.role === "dapur");
+  const kitchenEndpoint = isKitchenOperator ? "/api/restaurant/kitchen/operator" : "/api/restaurant/kitchen";
   const [orders, setOrders] = useState<KitchenQueueOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -68,7 +71,7 @@ export default function KitchenQueuePage() {
 
     try {
       const { data } = await api.get<KitchenQueueOrder[]>(
-        "/api/restaurant/kitchen"
+        kitchenEndpoint
       );
       setOrders(data);
     } catch (requestError: unknown) {
@@ -77,7 +80,7 @@ export default function KitchenQueuePage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [kitchenEndpoint]);
 
   useEffect(() => {
     // Async network loader is intentionally started once on mount.
@@ -119,7 +122,7 @@ export default function KitchenQueuePage() {
       .filter((order) => order.items.length > 0);
   }, [orders, filter]);
 
-  async function advance(item: RestaurantOrderItem) {
+  async function advance(item: KitchenQueueItem) {
     const action = nextAction[item.kitchenStatus];
 
     if (!action || busyItemId) return;
@@ -129,7 +132,7 @@ export default function KitchenQueuePage() {
 
     try {
       await api.post(
-        `/api/restaurant/kitchen/items/${item.id}/status`,
+        `${kitchenEndpoint}/items/${item.id}/status`,
         { status: action.status }
       );
 

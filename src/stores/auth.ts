@@ -11,7 +11,7 @@ export type User = {
   id: string;
   nama: string;
   username: string;
-  role: "owner" | "admin" | "kasir";
+  role: "owner" | "admin" | "kasir" | "dapur" | "laundry_operator";
 };
 
 type AuthState = {

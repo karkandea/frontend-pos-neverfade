@@ -586,7 +586,16 @@ export default function RestaurantTablesPage() {
               {tables.length === 0 ? (
                 <div className="finance-empty">
                   <strong>Belum ada meja</strong>
-                  <p>Owner/admin dapat menambahkan meja terlebih dahulu.</p>
+                  {isAdmin ? (
+                    <>
+                      <p>Buat meja pertama agar kasir dapat menerima pesanan dine-in.</p>
+                      <button type="button" className="btn btn-primary" onClick={() => setShowTableForm(true)}>
+                        Tambah Meja
+                      </button>
+                    </>
+                  ) : (
+                    <p>Hubungi owner/admin untuk menambahkan meja terlebih dahulu.</p>
+                  )}
                 </div>
               ) : tableView === "map" ? (
                 <div className="restaurant-table-map" role="group" aria-label="Denah meja ringkas">
