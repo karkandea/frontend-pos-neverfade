@@ -7,6 +7,7 @@ export type SaleQuoteLineInput = {
   variantId?: string | null;
   priceLevelId?: string | null;
   quantity: number;
+  note?: string | null;
 };
 
 export type CreateSaleQuoteRequest = {
@@ -21,12 +22,14 @@ export type SaleQuoteLine = {
   productId: string;
   variantId: string | null;
   priceLevelId: string | null;
+  requestedPriceLevelId: string | null;
   productName: string;
   unit: string;
   priceLevelName: string;
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  note: string;
 };
 
 export type SaleQuote = {
@@ -63,4 +66,48 @@ export async function getSaleQuote(quoteId: string, outletId: string): Promise<S
     headers: { "X-Outlet-Id": outletId },
   });
   return response.data.data;
+}
+
+export type CashSaleCommitRequest = {
+  outletId: string;
+  quoteId: string;
+  quoteVersion: string;
+  amountReceived: number;
+  /** Must remain identical for all retries of the same checkout. */
+  idempotencyKey: string;
+};
+
+export type CashSaleCommitResponse = {
+  data: {
+    id: string;
+    noTrx: string;
+    status: "paid";
+    metodePembayaran: "tunai";
+    total: number;
+    dibayar: number;
+    kembalian: number;
+  };
+  meta: {
+    correlationId: string;
+    replayed: boolean;
+    quoteId: string;
+    quoteVersion: string;
+  };
+};
+
+export async function commitCashSale(input: CashSaleCommitRequest): Promise<CashSaleCommitResponse> {
+  if (!input.outletId || !input.quoteId || !input.quoteVersion || !input.idempotencyKey) {
+    throw new Error("Outlet, quote, versi, dan kunci idempotency wajib diisi.");
+  }
+  const { data } = await api.post<CashSaleCommitResponse>("/api/v2/sales/cash", {
+    quoteId: input.quoteId,
+    quoteVersion: input.quoteVersion,
+    amountReceived: input.amountReceived,
+  }, {
+    headers: {
+      "X-Outlet-Id": input.outletId,
+      "Idempotency-Key": input.idempotencyKey,
+    },
+  });
+  return data;
 }
