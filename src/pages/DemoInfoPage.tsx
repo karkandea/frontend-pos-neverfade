@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import DemoShell from "../components/demo/DemoShell";
+import DemoPricingSection from "./DemoPricingSection";
 import "./DemoEntryPage.css";
 
 type DemoInfoKind = "features" | "pricing" | "how-it-works" | "faq";
@@ -54,19 +55,7 @@ export default function DemoInfoPage({ kind }: DemoInfoPageProps) {
         </>
       ) : null}
 
-      {kind === "pricing" ? (
-        <>
-          <header className="demo-page-header demo-info-header">
-            <span className="demo-overline">NEVERFADE POS</span>
-            <h1>Harga</h1>
-            <p>Pilih paket sesuai kebutuhan dan skala usahamu.</p>
-          </header>
-          <section className="demo-simple-section demo-info-section">
-            <h2>Pilih yang pas buat usahamu.</h2>
-            <p>Mulai dari kebutuhan inti, lalu tambah fitur saat bisnis berkembang.</p>
-          </section>
-        </>
-      ) : null}
+      {kind === "pricing" ? <DemoPricingSection /> : null}
 
       {kind === "how-it-works" ? (
         <>

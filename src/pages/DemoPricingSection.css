@@ -1,0 +1,29 @@
+/* Pricing route stays monochrome and independent of the POS application UI. */
+.demo-pricing-page { max-width: 1170px; margin: 0 auto; }
+.demo-pricing-header { margin: 0 0 22px; }
+.demo-pricing-header h1 { max-width: 770px; font-size: clamp(29px, 3.2vw, 42px); line-height: 1.13; letter-spacing: -.047em; margin: 9px 0 10px; }
+.demo-pricing-header > p { margin: 0; max-width: 660px; color: #777780; font-size: 13px; line-height: 1.55; }
+.demo-pricing-notice { margin-top: 16px; display: inline-flex; gap: 8px; align-items: center; max-width: 760px; padding: 10px 13px; border: 1px solid #e6e6ea; border-radius: 9px; background: #f8f8f9; color: #56565e; font-size: 11px; line-height: 1.45; }
+.demo-pricing-notice svg { flex: 0 0 auto; }
+.demo-pricing-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.demo-pricing-card { display: flex; flex-direction: column; min-width: 0; min-height: 355px; padding: 22px; border: 1px solid #e5e5e8; border-radius: 17px; background: #fff; }
+.demo-pricing-card-head { min-height: 99px; }
+.demo-pricing-plan-index { font-size: 10px; letter-spacing: .1em; font-weight: 750; color: #777780; }
+.demo-pricing-card h2 { margin: 9px 0 5px; color: #18181a; font-size: 22px; letter-spacing: -.04em; line-height: 1.2; }
+.demo-pricing-card-head p { margin: 0; color: #81818a; font-size: 12px; line-height: 1.5; }
+.demo-pricing-amount { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin: 10px 0 19px; padding-bottom: 18px; border-bottom: 1px solid #ebebee; }
+.demo-pricing-amount strong { color: #18181a; font-size: clamp(26px, 2.5vw, 31px); letter-spacing: -.055em; font-weight: 750; line-height: 1.16; }
+.demo-pricing-amount small { color: #777781; font-size: 11px; }
+.demo-pricing-features > span { color: #7b7b84; font-size: 10px; font-weight: 750; letter-spacing: .075em; }
+.demo-pricing-features ul { display: grid; gap: 10px; padding: 0; margin: 13px 0 22px; list-style: none; }
+.demo-pricing-features li { display: flex; gap: 9px; align-items: flex-start; color: #51515a; font-size: 12px; line-height: 1.4; }
+.demo-pricing-features li svg { color: #3b3b42; flex: 0 0 auto; margin-top: 1px; }
+.demo-pricing-card-actions { margin-top: auto; }
+.demo-pricing-main-cta { min-height: 42px; padding: 10px 14px; border-radius: 9px; display: flex; align-items: center; justify-content: center; gap: 8px; color: #fff; background: #0a0a0a; text-decoration: none; font-size: 12px; font-weight: 750; }
+.demo-pricing-main-cta:hover { background: #303034; }
+.demo-pricing-main-cta:focus-visible { outline: 2px solid #171719; outline-offset: 3px; }
+.demo-pricing-footer { margin-top: 19px; display: flex; justify-content: space-between; gap: 16px; align-items: center; color: #82828b; font-size: 11px; }
+.demo-pricing-footer a { display: inline-flex; align-items: center; gap: 6px; color: #1b1b1d; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.demo-pricing-footer a:hover { text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 1000px) { .demo-pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .demo-pricing-card { min-height: 335px; } }
+@media (max-width: 720px) { .demo-pricing-header { margin-bottom: 19px; } .demo-pricing-grid { grid-template-columns: 1fr; gap: 11px; } .demo-pricing-card { min-height: auto; padding: 20px; } .demo-pricing-card-head { min-height: 0; } .demo-pricing-footer { align-items: flex-start; flex-direction: column; } }
