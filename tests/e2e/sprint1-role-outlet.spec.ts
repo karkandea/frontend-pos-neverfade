@@ -102,3 +102,31 @@ test("dedicated kitchen account only navigates to price-free operator ticket rou
   await page.goto("/kasir");
   await expect(page).toHaveURL(/\/dapur$/);
 });
+
+test("reports default to aggregate and explicitly filter all report requests by outlet", async ({ page }) => {
+  await session(page, "owner");
+  const selectedHeaders: Record<string, string | null> = {};
+  await page.route("**/api/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    if (path === "/api/outlets") return respond(route, [
+      { id: mainId, name: "Utama", active: true, isDefault: true },
+      { id: branchId, name: "Cabang Dua", active: true, isDefault: false },
+    ]);
+    if (path.startsWith("/api/laporan/")) {
+      selectedHeaders[path] = route.request().headers()["x-outlet-id"] ?? null;
+      if (path.endsWith("/summary")) return respond(route, { omzet: 100, transaksi: 1, avg: 100, pelanggan: 1 });
+      return respond(route, []);
+    }
+    return respond(route, []);
+  });
+  await page.goto("/laporan");
+  await expect(page.getByLabel("Cakupan outlet laporan")).toBeVisible();
+  await expect(page.getByLabel("Cakupan outlet laporan")).toHaveValue("");
+  await expect.poll(() => selectedHeaders["/api/laporan/summary"]).toBeNull();
+  await page.getByLabel("Cakupan outlet laporan").selectOption(branchId);
+  await page.getByRole("button", { name: "Terapkan" }).click();
+  await expect.poll(() => selectedHeaders["/api/laporan/summary"]).toBe(branchId);
+  await expect.poll(() => selectedHeaders["/api/laporan/chart"]).toBe(branchId);
+  await expect.poll(() => selectedHeaders["/api/laporan/top-products"]).toBe(branchId);
+});
