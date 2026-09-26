@@ -1281,6 +1281,16 @@ export default function TransactionPage() {
         return;
       }
 
+      const apiCode = (error as { response?: { data?: { code?: string } } })
+        ?.response?.data?.code;
+      if (paymentMethod === "qris" && apiCode === "PAYMENT_CREATION_UNCERTAIN") {
+        // Server has persisted the original attempt. Restore that exact attempt
+        // instead of returning to a checkout button that could look retryable.
+        setQrisStatusError(getErrorMessage(error));
+        await restoreQrisPayment();
+        return;
+      }
+
       window.alert(getErrorMessage(error));
 
       try {
