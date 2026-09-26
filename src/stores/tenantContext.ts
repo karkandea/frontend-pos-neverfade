@@ -52,7 +52,8 @@ function isTenantContext(value: unknown): value is TenantContext {
     (candidate.role === "owner" ||
       candidate.role === "admin" ||
       candidate.role === "kasir" ||
-      candidate.role === "dapur")
+      candidate.role === "dapur" ||
+      candidate.role === "laundry_operator")
   );
 }
 

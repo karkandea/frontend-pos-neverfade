@@ -21,6 +21,7 @@ import LaporanPage from "./pages/LaporanPage";
 import FinancePage from "./pages/FinancePage";
 import RestaurantTablesPage from "./pages/RestaurantTablesPage";
 import KitchenQueuePage from "./pages/KitchenQueuePage";
+import LaundryOperatorQueuePage from "./pages/LaundryOperatorQueuePage";
 import LaundryWorkOrdersPage from "./pages/LaundryWorkOrdersPage";
 import LoginPage from "./pages/LoginPage";
 import PelangganPage from "./pages/PelangganPage";
@@ -88,6 +89,7 @@ const pagePermissions: Record<string, string> = {
   "/meja": "restaurant.tables.read",
   "/dapur": "restaurant.kitchen.operate",
   "/laundry": "laundry.orders.operate",
+  "/laundry/antrean": "laundry.work.operate",
   "/pengguna": "users.manage",
   "/pengaturan": "settings.manage",
 };
@@ -107,6 +109,7 @@ const pageTitles: Record<string, string> = {
   "/meja": "Meja & Pesanan",
   "/dapur": "Dapur",
   "/laundry": "Pesanan Laundry",
+  "/laundry/antrean": "Antrean Laundry",
   "/karyawan": "Karyawan",
   "/absensi": "Absensi",
   "/absensi/kelola": "Kelola Absensi",
@@ -198,7 +201,9 @@ export default function App() {
   const isAdmin =
     user?.role === "owner" ||
     user?.role === "admin";
-  const roleLanding = user?.role === "dapur" ? "/dapur" : (isAdmin ? "/dashboard" : "/kasir");
+  const roleLanding = user?.role === "dapur" ? "/dapur" :
+    user?.role === "laundry_operator" ? "/laundry/antrean" :
+    (isAdmin ? "/dashboard" : "/kasir");
 
   function protectedPage(
     page: ReactNode,
@@ -361,6 +366,10 @@ export default function App() {
         <Route
           path="/laundry"
           element={protectedPage(<LaundryWorkOrdersPage />, false, false, "work_orders")}
+        />
+        <Route
+          path="/laundry/antrean"
+          element={protectedPage(<LaundryOperatorQueuePage />, false, false, "work_orders")}
         />
 
         <Route

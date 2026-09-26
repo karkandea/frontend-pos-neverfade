@@ -15,6 +15,8 @@ export default function Sidebar({ open, onClose }: Props) {
     user?.role === "owner" ||
     user?.role === "admin";
   const isKitchenOperator = user?.role === "dapur";
+  const isLaundryOperator = user?.role === "laundry_operator";
+  const isRestrictedOperator = isKitchenOperator || isLaundryOperator;
 
   const canCorePos = hasCapability("core_pos");
   const canInventory = hasCapability("inventory");
@@ -29,11 +31,11 @@ export default function Sidebar({ open, onClose }: Props) {
   const canReturnsExchanges = hasCapability("returns_exchanges");
 
   const showManagement =
-    !isKitchenOperator && user?.role !== "kasir" &&
+    !isRestrictedOperator && user?.role !== "kasir" &&
     (canCorePos || canInventory || canCustomers);
 
   const showAnalytics =
-    !isKitchenOperator && (canCorePos ||
+    !isRestrictedOperator && (canCorePos ||
     (user?.role !== "kasir" && canReports) ||
     (user?.role === "owner" && canFinance));
 
@@ -84,13 +86,13 @@ export default function Sidebar({ open, onClose }: Props) {
           }
         }}
       >
-        {(canCorePos || (user?.role !== "kasir" && canReports)) && (
+        {!isRestrictedOperator && (canCorePos || (user?.role !== "kasir" && canReports)) && (
           <div className="nav-section-label">
             UTAMA
           </div>
         )}
 
-        {!isKitchenOperator && canCorePos && (
+        {!isRestrictedOperator && canCorePos && (
           <NavLink
             to="/kasir"
             className={({ isActive }) =>
@@ -115,7 +117,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {!isKitchenOperator && canTableOrders && (
+        {!isRestrictedOperator && canTableOrders && (
           <NavLink
             to="/meja"
             className={({ isActive }) =>
@@ -137,7 +139,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {!isKitchenOperator && canWorkOrders && (
+        {!isRestrictedOperator && canWorkOrders && (
           <NavLink
             to="/laundry"
             className={({ isActive }) =>
@@ -156,6 +158,12 @@ export default function Sidebar({ open, onClose }: Props) {
               <path d="M8 8h8M9 13h6" />
             </svg>
             <span>Laundry</span>
+          </NavLink>
+        )}
+
+        {isLaundryOperator && canWorkOrders && (
+          <NavLink to="/laundry/antrean" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+            <span>Antrean Laundry</span>
           </NavLink>
         )}
 
@@ -180,7 +188,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {!isKitchenOperator && user?.role !== "kasir" && canReports && (
+        {!isRestrictedOperator && user?.role !== "kasir" && canReports && (
           <NavLink
             to="/dashboard"
             className={({ isActive }) =>
@@ -218,7 +226,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </div>
         )}
 
-        {!isKitchenOperator && user?.role !== "kasir" && canCorePos && (
+        {!isRestrictedOperator && user?.role !== "kasir" && canCorePos && (
           <NavLink
             to="/produk"
             className={({ isActive }) =>
@@ -241,7 +249,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {!isKitchenOperator && user?.role !== "kasir" && canProductVariants && (
+        {!isRestrictedOperator && user?.role !== "kasir" && canProductVariants && (
           <NavLink
             to="/retail/variants-pricing"
             className={({ isActive }) =>
@@ -256,7 +264,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {!isKitchenOperator && user?.role !== "kasir" && canReturnsExchanges && (
+        {!isRestrictedOperator && user?.role !== "kasir" && canReturnsExchanges && (
           <NavLink
             to="/retail/returns"
             className={({ isActive }) =>
@@ -272,7 +280,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {!isKitchenOperator && user?.role !== "kasir" && canInventory && (
+        {!isRestrictedOperator && user?.role !== "kasir" && canInventory && (
           <NavLink
             to="/inventaris"
             className={({ isActive }) =>
@@ -296,7 +304,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {!isKitchenOperator && user?.role !== "kasir" && canCustomers && (
+        {!isRestrictedOperator && user?.role !== "kasir" && canCustomers && (
           <NavLink
             to="/pelanggan"
             className={({ isActive }) =>
@@ -326,7 +334,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </div>
         )}
 
-        {!isKitchenOperator && canCorePos && (
+        {!isRestrictedOperator && canCorePos && (
           <NavLink
             to="/transaksi"
             className={({ isActive }) =>
@@ -351,7 +359,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {!isKitchenOperator && user?.role !== "kasir" && canReports && (
+        {!isRestrictedOperator && user?.role !== "kasir" && canReports && (
           <NavLink
             to="/laporan"
             className={({ isActive }) =>

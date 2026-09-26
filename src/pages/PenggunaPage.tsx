@@ -9,7 +9,7 @@ import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
 import { useAuthStore } from "../stores/auth";
 
-type UserRole = "owner" | "admin" | "kasir" | "dapur";
+type UserRole = "owner" | "admin" | "kasir" | "dapur" | "laundry_operator";
 
 type ManagedUser = {
   id: string;
@@ -593,6 +593,7 @@ export default function PenggunaPage() {
                       Kasir
                     </option>
                     <option value="dapur">Operator Dapur</option>
+                    <option value="laundry_operator">Operator Laundry</option>
                   </select>
                 </div>
 

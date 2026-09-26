@@ -8,7 +8,7 @@ function respond(route: Route, body: unknown) {
   return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
 }
 
-async function session(page: Page, role: "owner" | "kasir" | "dapur", fnb = false) {
+async function session(page: Page, role: "owner" | "kasir" | "dapur" | "laundry_operator", fnb = false, laundry = false) {
   await page.addInitScript(() => localStorage.setItem("nfpos_token", "s1-test-token"));
   const user = {
     id: role === "owner" ? "11111111-1111-1111-1111-111111111111" : cashierId,
@@ -17,13 +17,15 @@ async function session(page: Page, role: "owner" | "kasir" | "dapur", fnb = fals
   await page.route("**/api/auth/me", (route) => respond(route, user));
   await page.route("**/api/tenant/context", (route) => respond(route, {
     tenantId: "99999999-9999-9999-9999-999999999999",
-    namaToko: "S1 QA", businessType: fnb ? "food_beverage" : "general_retail",
+    namaToko: "S1 QA", businessType: fnb ? "food_beverage" : laundry ? "laundry" : "general_retail",
     capabilities: ["core_pos", "inventory", "customers", "reports", "attendance", "finance_withdrawal",
-      ...(fnb ? ["table_orders", "kitchen_queue"] : [])],
+      ...(fnb ? ["table_orders", "kitchen_queue"] : []), ...(laundry ? ["work_orders"] : [])],
     role, tenantStatus: "active", assignedOutletIds: [mainId],
     effectivePermissions: role === "owner"
       ? ["users.manage", "restaurant.tables.read", "restaurant.tables.manage", "pos.sell", "reports.read"]
-      : role === "dapur" ? ["outlets.read", "restaurant.kitchen.operate"] : ["restaurant.tables.read", "pos.sell"],
+      : role === "dapur" ? ["outlets.read", "restaurant.kitchen.operate"]
+      : role === "laundry_operator" ? ["outlets.read", "laundry.work.operate"]
+      : ["restaurant.tables.read", "pos.sell"],
   }));
 }
 
@@ -129,4 +131,36 @@ test("reports default to aggregate and explicitly filter all report requests by 
   await expect.poll(() => selectedHeaders["/api/laporan/summary"]).toBe(branchId);
   await expect.poll(() => selectedHeaders["/api/laporan/chart"]).toBe(branchId);
   await expect.poll(() => selectedHeaders["/api/laporan/top-products"]).toBe(branchId);
+});
+
+
+test("laundry operator only sees price-free work queue and cannot navigate to checkout", async ({ page }) => {
+  await session(page, "laundry_operator", false, true);
+  const calls: Array<{ path: string; method: string }> = [];
+  await page.route("**/api/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    calls.push({ path, method: route.request().method() });
+    if (path === "/api/laundry/operator") return respond(route, [{
+      id: mainId, orderNumber: "LDR-QA-01", customerName: "Pelanggan QA",
+      status: "received", notes: "Pisahkan warna", receivedAt: new Date().toISOString(),
+      promisedAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      items: [{ nama: "Cuci Kering", unit: "kg", quantity: 2 }],
+    }]);
+    if (path === `/api/laundry/operator/${mainId}/status`) return respond(route, {
+      id: mainId, status: "in_progress",
+    });
+    return respond(route, []);
+  });
+  await page.goto("/laundry/antrean");
+  await expect(page.getByRole("heading", { name: "Antrean Laundry" })).toBeVisible();
+  await expect(page.getByText("LDR-QA-01")).toBeVisible();
+  await expect(page.getByText("Cuci Kering — 2 kg")).toBeVisible();
+  await expect(page.getByText(/Rp\s*30/)).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Kasir", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Mulai kerja" }).click();
+  await expect.poll(() => calls.some((entry) => entry.path === `/api/laundry/operator/${mainId}/status` && entry.method === "POST")).toBe(true);
+  await page.goto("/kasir");
+  await expect(page).toHaveURL(/\/laundry\/antrean$/);
+  expect(calls.some((entry) => entry.path.startsWith("/api/laundry/work-orders"))).toBe(false);
 });
