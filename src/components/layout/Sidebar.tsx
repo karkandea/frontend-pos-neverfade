@@ -98,6 +98,12 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
+        {isAdmin && canCorePos && (
+          <NavLink to="/pembayaran/perlu-perhatian" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+            <span>Status Pembayaran</span>
+          </NavLink>
+        )}
+
         {!isRestrictedOperator && canCorePos && (
           <NavLink
             to="/kasir"

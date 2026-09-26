@@ -195,3 +195,47 @@ test("cashier cannot directly open owner setup checklist", async ({ page }) => {
   await expect(page).toHaveURL(/\/kasir$/);
   await expect(page.getByRole("link", { name: "Setup Usaha" })).toHaveCount(0);
 });
+
+test("owner payment triage shows unresolved provider reference without charge or cancel actions", async ({ page }) => {
+  await session(page, "owner");
+  let requestedOutlet: string | null = null;
+  await page.route("**/api/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    if (path === "/api/outlets") return respond(route, [
+      { id: mainId, name: "Utama", active: true, isDefault: true },
+    ]);
+    if (path === "/api/payments/attention") {
+      requestedOutlet = route.request().headers()["x-outlet-id"] ?? null;
+      return respond(route, {
+        outletId: mainId, total: 1, hasMore: false,
+        items: [{
+          paymentId: "77777777-7777-7777-7777-777777777777",
+          transactionId: "88888888-8888-8888-8888-888888888888",
+          providerReferenceId: "nf-77777777777777777777777777777777",
+          providerPaymentRequestId: null, status: "creating",
+          reason: "provider_request_unknown", amount: 25000,
+          currency: "IDR", createdAt: "2026-09-26T12:00:00Z", expiresAt: null,
+        }],
+      });
+    }
+    return respond(route, []);
+  });
+  await page.goto("/pembayaran/perlu-perhatian");
+  await expect(page.getByRole("heading", { name: "Status Pembayaran" })).toBeVisible();
+  await expect(page.getByText("1 pembayaran belum final")).toBeVisible();
+  await expect(page.getByText("nf-77777777777777777777777777777777")).toBeVisible();
+  await expect(page.getByText(/jangan buat QRIS baru/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /buat qr|cancel|batal/i })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Status Pembayaran" })).toBeVisible();
+  await expect.poll(() => requestedOutlet).toBe(mainId);
+  await page.getByRole("button", { name: "Periksa Lagi" }).click();
+  await expect(page.getByText("1 pembayaran belum final")).toBeVisible();
+});
+
+test("cashier cannot open payment triage page or see its navigation", async ({ page }) => {
+  await session(page, "kasir");
+  await page.goto("/pembayaran/perlu-perhatian");
+  await expect(page).toHaveURL(/\/kasir$/);
+  await expect(page.getByRole("link", { name: "Status Pembayaran" })).toHaveCount(0);
+});
