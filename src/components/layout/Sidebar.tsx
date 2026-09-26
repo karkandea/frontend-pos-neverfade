@@ -14,6 +14,7 @@ export default function Sidebar({ open, onClose }: Props) {
   const isAdmin =
     user?.role === "owner" ||
     user?.role === "admin";
+  const isKitchenOperator = user?.role === "dapur";
 
   const canCorePos = hasCapability("core_pos");
   const canInventory = hasCapability("inventory");
@@ -28,13 +29,13 @@ export default function Sidebar({ open, onClose }: Props) {
   const canReturnsExchanges = hasCapability("returns_exchanges");
 
   const showManagement =
-    user?.role !== "kasir" &&
+    !isKitchenOperator && user?.role !== "kasir" &&
     (canCorePos || canInventory || canCustomers);
 
   const showAnalytics =
-    canCorePos ||
+    !isKitchenOperator && (canCorePos ||
     (user?.role !== "kasir" && canReports) ||
-    (user?.role === "owner" && canFinance);
+    (user?.role === "owner" && canFinance));
 
   return (
     <aside
@@ -89,7 +90,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </div>
         )}
 
-        {canCorePos && (
+        {!isKitchenOperator && canCorePos && (
           <NavLink
             to="/kasir"
             className={({ isActive }) =>
@@ -114,7 +115,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {canTableOrders && (
+        {!isKitchenOperator && canTableOrders && (
           <NavLink
             to="/meja"
             className={({ isActive }) =>
@@ -136,7 +137,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {canWorkOrders && (
+        {!isKitchenOperator && canWorkOrders && (
           <NavLink
             to="/laundry"
             className={({ isActive }) =>
@@ -179,7 +180,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {user?.role !== "kasir" && canReports && (
+        {!isKitchenOperator && user?.role !== "kasir" && canReports && (
           <NavLink
             to="/dashboard"
             className={({ isActive }) =>
@@ -217,7 +218,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </div>
         )}
 
-        {user?.role !== "kasir" && canCorePos && (
+        {!isKitchenOperator && user?.role !== "kasir" && canCorePos && (
           <NavLink
             to="/produk"
             className={({ isActive }) =>
@@ -240,7 +241,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {user?.role !== "kasir" && canProductVariants && (
+        {!isKitchenOperator && user?.role !== "kasir" && canProductVariants && (
           <NavLink
             to="/retail/variants-pricing"
             className={({ isActive }) =>
@@ -255,7 +256,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {user?.role !== "kasir" && canReturnsExchanges && (
+        {!isKitchenOperator && user?.role !== "kasir" && canReturnsExchanges && (
           <NavLink
             to="/retail/returns"
             className={({ isActive }) =>
@@ -271,7 +272,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {user?.role !== "kasir" && canInventory && (
+        {!isKitchenOperator && user?.role !== "kasir" && canInventory && (
           <NavLink
             to="/inventaris"
             className={({ isActive }) =>
@@ -295,7 +296,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {user?.role !== "kasir" && canCustomers && (
+        {!isKitchenOperator && user?.role !== "kasir" && canCustomers && (
           <NavLink
             to="/pelanggan"
             className={({ isActive }) =>
@@ -325,7 +326,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </div>
         )}
 
-        {canCorePos && (
+        {!isKitchenOperator && canCorePos && (
           <NavLink
             to="/transaksi"
             className={({ isActive }) =>
@@ -350,7 +351,7 @@ export default function Sidebar({ open, onClose }: Props) {
           </NavLink>
         )}
 
-        {user?.role !== "kasir" && canReports && (
+        {!isKitchenOperator && user?.role !== "kasir" && canReports && (
           <NavLink
             to="/laporan"
             className={({ isActive }) =>

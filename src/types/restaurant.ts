@@ -53,6 +53,8 @@ export type RestaurantOrder = {
   items: RestaurantOrderItem[];
 };
 
+export type KitchenQueueItem = Omit<RestaurantOrderItem, "hargaJual" | "subtotal">;
+
 export type KitchenQueueOrder = {
   orderId: string;
   orderNumber: string;
@@ -60,7 +62,7 @@ export type KitchenQueueOrder = {
   tableCode: string;
   tableName: string;
   openedAt: string;
-  items: RestaurantOrderItem[];
+  items: KitchenQueueItem[];
 };
 
 export type RestaurantProduct = {

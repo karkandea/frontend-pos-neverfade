@@ -51,7 +51,8 @@ function isTenantContext(value: unknown): value is TenantContext {
         (outletId) => typeof outletId === "string"))) &&
     (candidate.role === "owner" ||
       candidate.role === "admin" ||
-      candidate.role === "kasir")
+      candidate.role === "kasir" ||
+      candidate.role === "dapur")
   );
 }
 

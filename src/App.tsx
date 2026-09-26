@@ -198,7 +198,7 @@ export default function App() {
   const isAdmin =
     user?.role === "owner" ||
     user?.role === "admin";
-  const roleLanding = isAdmin ? "/dashboard" : "/kasir";
+  const roleLanding = user?.role === "dapur" ? "/dapur" : (isAdmin ? "/dashboard" : "/kasir");
 
   function protectedPage(
     page: ReactNode,

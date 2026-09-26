@@ -71,10 +71,13 @@ export default function MobileNav({ onOpenMenu }: Props) {
   const canCorePos = hasCapability("core_pos");
   const canReports = hasCapability("reports");
   const canFinance = hasCapability("finance_withdrawal");
+  const kitchenOperator = role === "dapur";
 
   return (
     <nav className="mobile-bottom-nav" aria-label="Navigasi cepat">
-      {canCorePos ? (
+      {kitchenOperator ? (
+        <MobileNavItem to="/dapur" label="Dapur" icon="dashboard" />
+      ) : canCorePos ? (
         <>
           <MobileNavItem to="/kasir" label="Kasir" icon="cashier" />
           <MobileNavItem to="/transaksi" label="Transaksi" icon="transactions" />

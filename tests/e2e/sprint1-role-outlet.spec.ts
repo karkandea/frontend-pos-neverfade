@@ -8,7 +8,7 @@ function respond(route: Route, body: unknown) {
   return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
 }
 
-async function session(page: Page, role: "owner" | "kasir", fnb = false) {
+async function session(page: Page, role: "owner" | "kasir" | "dapur", fnb = false) {
   await page.addInitScript(() => localStorage.setItem("nfpos_token", "s1-test-token"));
   const user = {
     id: role === "owner" ? "11111111-1111-1111-1111-111111111111" : cashierId,
@@ -23,7 +23,7 @@ async function session(page: Page, role: "owner" | "kasir", fnb = false) {
     role, tenantStatus: "active", assignedOutletIds: [mainId],
     effectivePermissions: role === "owner"
       ? ["users.manage", "restaurant.tables.read", "restaurant.tables.manage", "pos.sell", "reports.read"]
-      : ["restaurant.tables.read", "pos.sell"],
+      : role === "dapur" ? ["outlets.read", "restaurant.kitchen.operate"] : ["restaurant.tables.read", "pos.sell"],
   }));
 }
 
@@ -79,4 +79,26 @@ test("cashier cannot open table creation from empty restaurant", async ({ page }
   await expect(page.getByText("Belum ada meja", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Tambah Meja", exact: true })).toHaveCount(0);
   await expect(page.getByText(/hubungi owner\/admin/i)).toBeVisible();
+});
+
+
+test("dedicated kitchen account only navigates to price-free operator ticket route", async ({ page }) => {
+  await session(page, "dapur", true);
+  let operatorRequests = 0;
+  let legacyRequests = 0;
+  await page.route("**/api/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    if (path === "/api/restaurant/kitchen/operator") operatorRequests += 1;
+    if (path === "/api/restaurant/kitchen") legacyRequests += 1;
+    return respond(route, []);
+  });
+  await page.goto("/dapur");
+  await expect(page.getByRole("heading", { name: "Dapur" })).toBeVisible();
+  await expect.poll(() => operatorRequests).toBeGreaterThan(0);
+  expect(legacyRequests).toBe(0);
+  await expect(page.getByRole("link", { name: "Kasir", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Produk", exact: true })).toHaveCount(0);
+  await page.goto("/kasir");
+  await expect(page).toHaveURL(/\/dapur$/);
 });
