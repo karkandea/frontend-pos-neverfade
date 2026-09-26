@@ -105,3 +105,34 @@
     min-height: 104px;
   }
 }
+
+/* Progressive disclosure: the app list appears only after choosing free exploration. */
+.demo-business-header { margin-bottom: 18px; }
+.demo-business-back { margin-bottom: 20px; }
+.demo-mode-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: 910px; }
+.demo-mode-card {
+  min-width: 0; min-height: 275px; padding: 22px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 13px;
+  border: 1px solid #dedee0; border-radius: 17px;
+  background: #fff; color: #161616; text-align: left; font: inherit; cursor: pointer;
+  transition: border-color .18s, box-shadow .18s, transform .18s;
+}
+.demo-mode-card:hover:not(:disabled), .demo-mode-card:focus-visible { border-color: #242424; box-shadow: 0 10px 25px rgba(0,0,0,.07); transform: translateY(-2px); }
+.demo-mode-card:focus-visible { outline: 2px solid #111; outline-offset: 3px; }
+.demo-mode-card:disabled { cursor: wait; opacity: .7; }
+.demo-mode-card--recommended { background: #171719; border-color: #171719; color: #fff; }
+.demo-mode-card--recommended:hover:not(:disabled), .demo-mode-card--recommended:focus-visible { border-color: #888; }
+.demo-mode-badge { font-size: 10px; font-weight: 750; letter-spacing: .1em; padding: 5px 9px; border-radius: 6px; background: #3b3b3e; color: #f5f5f5; }
+.demo-mode-title { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 750; letter-spacing: -.035em; }
+.demo-mode-title svg { width: 23px; height: 23px; stroke-width: 1.7; }
+.demo-mode-description { max-width: 360px; font-size: 13px; line-height: 1.6; color: #62626a; }
+.demo-mode-card--recommended .demo-mode-description { color: #c9c9d0; }
+.demo-mode-detail { font-size: 12px; color: #85858d; }
+.demo-mode-card--recommended .demo-mode-detail { color: #ececf0; }
+.demo-mode-cta { margin-top: auto; width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-radius: 9px; background: #fff; color: #111; font-size: 13px; font-weight: 760; }
+.demo-mode-cta svg { width: 18px; height: 18px; }
+.demo-mode-cta--light { background: #111; color: #fff; }
+.demo-mode-footnote { color: #8c8c94; font-size: 11px; margin: 17px 0; }
+.demo-free-section { margin: 24px 0; }
+.demo-free-section h2 { font-size: 17px; margin: 0 0 14px; }
+@media(max-width:720px) { .demo-mode-grid { grid-template-columns: 1fr; } .demo-mode-card { min-height: 230px; } }

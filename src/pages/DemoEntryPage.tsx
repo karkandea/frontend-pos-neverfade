@@ -1,54 +1,10 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, ShieldCheck } from "lucide-react";
+import { demoJourneys } from "../lib/demoJourney";
+import { trackDemo } from "../lib/demoAnalytics";
 import DemoShell from "../components/demo/DemoShell";
 import "./DemoEntryPage.css";
-
-type Category = {
-  slug: string;
-  label: string;
-  description: string;
-  icon: string;
-  highlights: [string, string, string];
-};
-
-const categories: Category[] = [
-  {
-    slug: "restaurant",
-    label: "F&B",
-    description: "Restoran · Kafe · Coffee shop",
-    icon: "restaurant",
-    highlights: ["Meja & pesanan", "Antrean dapur", "Kasir & laporan"],
-  },
-  {
-    slug: "retail",
-    label: "Retail & Minimarket",
-    description: "Warung · Toko · Minimarket",
-    icon: "minimarket",
-    highlights: ["Kasir cepat", "Stok & inventaris", "Laporan penjualan"],
-  },
-  {
-    slug: "fashion",
-    label: "Fashion",
-    description: "Butik · Distro · Thrift",
-    icon: "fashion",
-    highlights: ["Varian ukuran & warna", "Harga satuan & grosir", "Retur & tukar"],
-  },
-  {
-    slug: "laundry",
-    label: "Laundry",
-    description: "Kiloan · Satuan · Express",
-    icon: "laundry",
-    highlights: ["Penerimaan order", "Status cucian", "Pembayaran & struk"],
-  },
-  {
-    slug: "salon",
-    label: "Salon & Barbershop",
-    description: "Salon · Barber · Hair studio",
-    icon: "salon",
-    highlights: ["Kasir layanan", "Pelanggan & riwayat", "Tim & laporan"],
-  },
-];
 
 export default function DemoEntryPage() {
   useEffect(() => {
@@ -67,8 +23,13 @@ export default function DemoEntryPage() {
       <div className="nf-cinematic-picker">
         <header className="nf-cinematic-header">
           <span className="nf-cinematic-eyebrow">NEVERFADE POS · DEMO INTERAKTIF</span>
-          <h1>POS untuk bisnis kamu.</h1>
-          <p>Pilih jenis usaha, lalu coba alur kerja yang sesuai—langsung dengan data simulasi.</p>
+          <h1>Coba langsung POS untuk usahamu.</h1>
+          <p>Lihat bagaimana NeverFade menghubungkan transaksi, operasional, dan laporan dalam satu sistem.</p>
+          <div className="nf-cinematic-trust" aria-label="Tentang demo">
+            <span><Check aria-hidden="true" /> Interaktif</span>
+            <span><Check aria-hidden="true" /> Data simulasi</span>
+            <span><ShieldCheck aria-hidden="true" /> Aman dicoba</span>
+          </div>
         </header>
 
         <section className="nf-cinematic-panel" aria-label="Pilih jenis usaha">
@@ -77,12 +38,13 @@ export default function DemoEntryPage() {
           </div>
 
           <div className="nf-cinematic-grid">
-            {categories.map(({ slug, label, description, icon, highlights }) => (
+            {demoJourneys.map(({ slug, title, examples, benefit, icon, actions }) => (
               <Link
                 key={slug}
                 to={`/demo/business/${slug}`}
                 className="nf-cinematic-card"
-                aria-label={`Coba gratis demo ${label}`}
+                aria-label={`Pilih demo ${title}`}
+                onClick={() => trackDemo("category_selected", slug)}
               >
                 <span className="nf-cinematic-card-header">
                   <span className="nf-cinematic-icon" aria-hidden="true">
@@ -96,19 +58,21 @@ export default function DemoEntryPage() {
                     />
                   </span>
                   <span className="nf-cinematic-card-title">
-                    <strong>{label}</strong>
-                    <small>{description}</small>
+                    <strong>{title}</strong>
+                    <small>{examples}</small>
                   </span>
                 </span>
 
+                <p className="nf-cinematic-benefit">{benefit}</p>
+                <span className="nf-cinematic-features-label">YANG AKAN KAMU COBA</span>
                 <ul className="nf-cinematic-features">
-                  {highlights.map((feature) => (
-                    <li key={feature}><Check aria-hidden="true" />{feature}</li>
+                  {actions.map((action) => (
+                    <li key={action}><Check aria-hidden="true" />{action}</li>
                   ))}
                 </ul>
 
                 <span className="nf-cinematic-cta">
-                  Coba Gratis <ArrowRight size={17} aria-hidden="true" />
+                  Coba Demo <ArrowRight size={17} aria-hidden="true" />
                 </span>
               </Link>
             ))}

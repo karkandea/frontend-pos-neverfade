@@ -1628,3 +1628,38 @@ body.nf-demo-picker-active {
   box-shadow: none;
 }
 .demo-home--cinematic .demo-start-button:hover { background: #e8e8e8; }
+
+/* Benefit-first copy, compact and in the existing monochrome language. */
+.nf-cinematic-header { margin-bottom: 16px; }
+.nf-cinematic-header h1 { font-size: clamp(29px, 3vw, 40px); }
+.nf-cinematic-trust {
+  display: flex; align-items: center; justify-content: center; gap: 18px;
+  margin-top: 12px; color: #e1e1e5; font-size: 11px;
+}
+.nf-cinematic-trust span { display: inline-flex; align-items: center; gap: 5px; }
+.nf-cinematic-trust svg { width: 13px; height: 13px; }
+.nf-cinematic-card { min-height: 240px; padding: 16px 18px; }
+.nf-cinematic-benefit { color: #eeeef0; font-size: 12px; margin: 12px 0 0; line-height: 1.35; }
+.nf-cinematic-features-label { color: #92929a; font-size: 9px; letter-spacing: .1em; font-weight: 750; margin-top: 12px; }
+.nf-cinematic-features { margin: 7px 0 13px; gap: 4px; }
+.nf-cinematic-features li { font-size: 11px; }
+.nf-cinematic-panel { padding: 17px; }
+@media (max-width: 720px) {
+  .nf-cinematic-trust { flex-wrap: wrap; gap: 7px 13px; }
+  .nf-cinematic-panel { padding: 12px; }
+}
+
+
+/* Marketing routes can scroll; merchant POS remains scroll-locked. */
+html.nf-demo-marketing-active,
+body.nf-demo-marketing-active {
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.nf-cinematic-icon img { filter: brightness(.55) contrast(1.25); }
+.demo-ambient-shade {
+  background: linear-gradient(180deg, rgba(5, 6, 9, .77), rgba(5, 6, 9, .84)),
+              linear-gradient(95deg, rgba(5, 6, 9, .24), transparent 70%);
+}

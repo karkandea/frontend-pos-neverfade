@@ -6,7 +6,9 @@ import QrisPaymentModal from "../components/kasir/QrisPaymentModal";
 import ReceiptModal from "../components/kasir/ReceiptModal";
 import PaymentSuccessModal from "../components/kasir/PaymentSuccessModal";
 import AppShell from "../components/layout/AppShell";
-import api from "../lib/api";
+import api, { DEMO_SESSION_KEY } from "../lib/api";
+import { demoJourneys } from "../lib/demoJourney";
+import { trackDemo } from "../lib/demoAnalytics";
 import { flattenRetailCatalog, getRetailPriceOptions, resolveProductRetailPrice } from "../lib/retailPricing";
 import {
   clearRestaurantCheckout,
@@ -1249,6 +1251,12 @@ export default function TransactionPage() {
           ? normalizeTransactionItems(response.data.items)
           : receiptItems,
       });
+
+      if (sessionStorage.getItem(DEMO_SESSION_KEY) === "1") {
+        const category = useTenantContextStore.getState().context?.businessType;
+        const journey = demoJourneys.find((x) => x.businessType === category);
+        if (journey) trackDemo("scenario_step_completed", journey.slug, "free", "sale_completed");
+      }
 
       setCashSuccess({
         transactionId: response.data.id,

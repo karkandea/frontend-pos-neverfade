@@ -15,6 +15,7 @@ import AbsensiPage from "./pages/AbsensiPage";
 import AttendanceManagementPage from "./pages/AttendanceManagementPage";
 import DashboardPage from "./pages/DashboardPage";
 import DemoEntryPage from "./pages/DemoEntryPage";
+import DemoGuidedPage from "./pages/DemoGuidedPage";
 import DemoBusinessPage from "./pages/DemoBusinessPage";
 import DemoInfoPage from "./pages/DemoInfoPage";
 import InventarisPage from "./pages/InventarisPage";
@@ -239,6 +240,7 @@ export default function App() {
         <Route path="/shared-pos" element={<SharedPosPage />} />
         <Route path="/demo" element={<DemoEntryPage />} />
         <Route path="/demo/business/:slug" element={<DemoBusinessPage />} />
+        <Route path="/demo/guide/:slug" element={<DemoGuidedPage />} />
         <Route path="/demo/features" element={<DemoInfoPage kind="features" />} />
         <Route path="/demo/pricing" element={<DemoInfoPage kind="pricing" />} />
         <Route path="/demo/how-it-works" element={<DemoInfoPage kind="how-it-works" />} />

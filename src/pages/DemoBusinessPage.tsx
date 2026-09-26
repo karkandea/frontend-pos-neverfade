@@ -13,6 +13,9 @@ import {
   UserRound,
   Users,
   WashingMachine,
+  ArrowRight,
+  Compass,
+  CheckCircle2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,6 +27,8 @@ import {
 } from "../lib/demoScope";
 import type { BusinessType } from "../types/platform";
 import { useAuthStore } from "../stores/auth";
+import { findDemoJourney } from "../lib/demoJourney";
+import { trackDemo } from "../lib/demoAnalytics";
 import "./DemoEntryPage.css";
 import "./DemoBusinessPage.css";
 
@@ -124,7 +129,9 @@ export default function DemoBusinessPage() {
   const enterDemo = useAuthStore((state) => state.enterDemo);
   const [loadingApp, setLoadingApp] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [freeOpen, setFreeOpen] = useState(false);
   const demo = useMemo(() => businessDemos[slug], [slug]);
+  const journey = findDemoJourney(slug);
 
   if (!demo) {
     return (
@@ -144,6 +151,7 @@ export default function DemoBusinessPage() {
 
     try {
       await enterDemo(demo.businessType);
+      if (journey) trackDemo("demo_started", journey.slug, "free");
 
       if (app.persona) {
         setDemoScope({ persona: app.persona, businessSlug: slug });
@@ -158,6 +166,23 @@ export default function DemoBusinessPage() {
     }
   }
 
+  async function startGuided() {
+    if (!journey || !demo || loadingApp) return;
+    setLoadingApp("guided");
+    setError("");
+    sessionStorage.removeItem(`nfpos_demo_guided_${journey.slug}`);
+    trackDemo("demo_mode_selected", journey.slug, "guided");
+    try {
+      await enterDemo(demo.businessType);
+      clearDemoScope();
+      trackDemo("demo_started", journey.slug, "guided");
+      navigate(`/demo/guide/${journey.slug}`, { replace: true });
+    } catch (cause: unknown) {
+      setError(cause instanceof Error ? cause.message : "Demo belum bisa dibuka. Coba lagi.");
+      setLoadingApp(null);
+    }
+  }
+
   return (
     <DemoShell>
       <button className="demo-business-back" type="button" onClick={() => navigate("/demo")}>
@@ -166,34 +191,80 @@ export default function DemoBusinessPage() {
       </button>
 
       <header className="demo-page-header demo-business-header">
-        <span className="demo-overline">DEMO BISNIS</span>
+        <span className="demo-overline">PILIH CARA MENCOBA</span>
         <h1>{demo.title}</h1>
-        <p>{demo.description}</p>
+        <p>{journey?.benefit ?? demo.description}</p>
       </header>
 
-      <section className="demo-app-grid" aria-label={`Aplikasi demo ${demo.title}`}>
-        {demo.apps.map((app) => {
-          const Icon = app.icon;
-          const loading = loadingApp === app.title;
-
-          return (
-            <button
-              key={`${app.title}-${app.destination}`}
-              type="button"
-              className="demo-app-card"
-              disabled={Boolean(loadingApp)}
-              aria-busy={loading}
-              onClick={() => void openApp(app)}
-            >
-              <span className="demo-app-icon"><Icon aria-hidden="true" /></span>
-              <span className="demo-app-copy">
-                <strong>{app.title}</strong>
-                <small>{loading ? "Menyiapkan demo…" : app.description}</small>
-              </span>
-            </button>
-          );
-        })}
+      <section className="demo-mode-grid" aria-label="Pilih pengalaman demo">
+        <button
+          type="button"
+          className="demo-mode-card demo-mode-card--recommended"
+          disabled={Boolean(loadingApp)}
+          onClick={() => void startGuided()}
+        >
+          <span className="demo-mode-badge">DIREKOMENDASIKAN</span>
+          <span className="demo-mode-title"><CheckCircle2 aria-hidden="true" /> Demo Terpandu</span>
+          <span className="demo-mode-description">
+            Coba satu skenario bisnis yang nyata, selangkah demi selangkah. Tanpa tutorial panjang.
+          </span>
+          <span className="demo-mode-detail">{journey?.guidedTitle}</span>
+          <span className="demo-mode-cta">
+            {loadingApp === "guided" ? "Menyiapkan demo…" : "Mulai Demo Terpandu"}
+            <ArrowRight aria-hidden="true" />
+          </span>
+        </button>
+        <button
+          type="button"
+          className="demo-mode-card"
+          disabled={Boolean(loadingApp)}
+          onClick={() => {
+            if (journey) trackDemo("demo_mode_selected", journey.slug, "free");
+            setFreeOpen((value) => !value);
+          }}
+          aria-expanded={freeOpen}
+        >
+          <span className="demo-mode-title"><Compass aria-hidden="true" /> Eksplorasi Bebas</span>
+          <span className="demo-mode-description">
+            Langsung masuk ke aplikasi yang ingin kamu lihat dan coba sendiri fiturnya.
+          </span>
+          <span className="demo-mode-detail">Kasir, operasional, produk, dan laporan sesuai kategori.</span>
+          <span className="demo-mode-cta demo-mode-cta--light">
+            {freeOpen ? "Tutup pilihan aplikasi" : "Pilih aplikasi"}
+            <ArrowRight aria-hidden="true" />
+          </span>
+        </button>
       </section>
+
+      {freeOpen ? (
+        <section className="demo-free-section" aria-label={`Eksplorasi bebas ${demo.title}`}>
+          <h2>Mau mulai dari mana?</h2>
+          <div className="demo-app-grid">
+            {demo.apps.map((app) => {
+              const Icon = app.icon;
+              const loading = loadingApp === app.title;
+              return (
+                <button
+                  key={`${app.title}-${app.destination}`}
+                  type="button"
+                  className="demo-app-card"
+                  disabled={Boolean(loadingApp)}
+                  aria-busy={loading}
+                  onClick={() => void openApp(app)}
+                >
+                  <span className="demo-app-icon"><Icon aria-hidden="true" /></span>
+                  <span className="demo-app-copy">
+                    <strong>{app.title}</strong>
+                    <small>{loading ? "Menyiapkan demo…" : app.description}</small>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      <p className="demo-mode-footnote">Tanpa registrasi · Data simulasi · Bebas berpindah mode</p>
 
       {error ? <div className="demo-picker-error" role="alert">{error}</div> : null}
     </DemoShell>

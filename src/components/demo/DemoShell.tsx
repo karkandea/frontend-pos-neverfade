@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import DemoAmbient from "./DemoAmbient";
 import { Link, NavLink } from "react-router-dom";
 import {
@@ -23,6 +23,16 @@ function BrandMark() {
 }
 
 export default function DemoShell({ children, cinematic = false }: DemoShellProps) {
+  useEffect(() => {
+    // POS intentionally locks document scroll. Marketing pages must scroll independently.
+    document.documentElement.classList.add("nf-demo-marketing-active");
+    document.body.classList.add("nf-demo-marketing-active");
+    return () => {
+      document.documentElement.classList.remove("nf-demo-marketing-active");
+      document.body.classList.remove("nf-demo-marketing-active");
+    };
+  }, []);
+
   return (
     <main className={cinematic ? "demo-home demo-home--cinematic" : "demo-home"}>
       <aside className="demo-sidebar">

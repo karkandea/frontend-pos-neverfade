@@ -1,4 +1,9 @@
 import { useRef } from "react";
+import { Link } from "react-router-dom";
+import { useAuthStore } from "../../stores/auth";
+import { useTenantContextStore } from "../../stores/tenantContext";
+import { demoJourneys } from "../../lib/demoJourney";
+import { trackDemo } from "../../lib/demoAnalytics";
 
 import { useDialogFocus } from "./useDialogFocus";
 
@@ -32,6 +37,8 @@ export default function PaymentSuccessModal({
   onNewTransaction,
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const isDemo = useAuthStore((x) => x.isDemo);
+  const businessType = useTenantContextStore((x) => x.context?.businessType);
 
   useDialogFocus(open, dialogRef);
 
@@ -83,6 +90,20 @@ export default function PaymentSuccessModal({
             Lihat Struk
           </button>
         </div>
+        {isDemo ? (
+          <div style={{ textAlign: "center", padding: "0 12px 18px", fontSize: 12 }}>
+            <Link
+              to="/demo/pricing"
+              onClick={() => {
+                const journey = demoJourneys.find((x) => x.businessType === businessType);
+                if (journey) trackDemo("conversion_cta_clicked", journey.slug, "free", "pricing");
+              }}
+              style={{ color: "#262626", textDecoration: "underline", textUnderlineOffset: 3 }}
+            >
+              Lihat paket NeverFade setelah mencoba transaksi
+            </Link>
+          </div>
+        ) : null}
       </div>
     </div>
   );
