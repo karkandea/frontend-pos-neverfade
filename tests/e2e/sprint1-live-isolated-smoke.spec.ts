@@ -269,3 +269,72 @@ test("isolated public QA kitchen operator is restricted to assigned tickets", as
   await page.goto("/kasir");
   await expect(page).toHaveURL(/\/dapur$/);
 });
+
+test.describe("persisted setup checklist on isolated QA", () => {
+  test.skip(process.env.NF_S1_ONBOARDING_SMOKE !== "1", "Requires deployed onboarding API and QA fixtures");
+  for (const [username, expectedStep] of [
+    ["qa.resto", "restaurant_tables"],
+    ["qa.laundry", "laundry_services"],
+    ["qa.fashion", "catalog"],
+  ] as const) {
+    test(`${username} sees its own derived setup without any state mutation`, async ({ page }) => {
+      await page.goto("/login");
+      await page.getByLabel("Username").fill(username);
+      await page.getByLabel("Password", { exact: true }).fill("owner123");
+      await page.getByRole("button", { name: "Masuk" }).click();
+      await expect(page).toHaveURL(/\/produk$/);
+      await page.goto("/mulai");
+      await expect(page.getByRole("heading", { name: "Setup Usaha" })).toBeVisible();
+      const result = await page.evaluate(async () => {
+        const token = sessionStorage.getItem("nfpos_token") ?? localStorage.getItem("nfpos_token");
+        const response = await fetch("/api/tenant/onboarding", { headers: { Authorization: `Bearer ${token}` } });
+        return { status: response.status, data: await response.json() };
+      });
+      expect(result.status).toBe(200);
+      expect(result.data.mode).toBe("live");
+      expect(result.data.steps.some((step: { id: string }) => step.id === expectedStep)).toBe(true);
+      expect(result.data.completedRequired).toBeLessThanOrEqual(result.data.totalRequired);
+      await expect(page.getByText(/bukan sertifikasi kesiapan production/i)).toBeVisible();
+    });
+  }
+
+  test("cashier cannot read or open owner setup", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByLabel("Username").fill("qa.resto.kasir");
+    await page.getByLabel("Password", { exact: true }).fill("kasir123");
+    await page.getByRole("button", { name: "Masuk" }).click();
+    await expect(page).toHaveURL(/\/kasir$/);
+    const code = await page.evaluate(async () => {
+      const token = sessionStorage.getItem("nfpos_token") ?? localStorage.getItem("nfpos_token");
+      const response = await fetch("/api/tenant/onboarding", { headers: { Authorization: `Bearer ${token}` } });
+      return response.status;
+    });
+    expect(code).toBe(403);
+    await page.goto("/mulai");
+    await expect(page).toHaveURL(/\/kasir$/);
+  });
+});
+
+test("isolated QA laundry operator has queue-only UI and redacted API", async ({ page }) => {
+  test.skip(process.env.NF_S1_LAUNDRY_OPERATOR_SMOKE !== "1", "Requires dedicated laundry QA fixture");
+  await page.goto("/login");
+  await page.getByLabel("Username").fill("qa.laundry.operator");
+  await page.getByLabel("Password", { exact: true }).fill("owner123");
+  await page.getByRole("button", { name: "Masuk" }).click();
+  await expect(page).toHaveURL(/\/laundry\/antrean$/);
+  await expect(page.getByRole("heading", { name: "Antrean Laundry" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Kasir", exact: true })).toHaveCount(0);
+  const access = await page.evaluate(async () => {
+    const token = sessionStorage.getItem("nfpos_token") ?? localStorage.getItem("nfpos_token");
+    const headers = { Authorization: `Bearer ${token}` };
+    const queue = await fetch("/api/laundry/operator", { headers });
+    const raw = await queue.text();
+    const transactions = await fetch("/api/transactions", { headers });
+    const legacy = await fetch("/api/laundry/work-orders", { headers });
+    return { queue: queue.status, redacted: !/unitPrice|subtotal|paymentStatus|transactionId|customerPhone/i.test(raw),
+      transactions: transactions.status, legacy: legacy.status };
+  });
+  expect(access).toEqual({ queue: 200, redacted: true, transactions: 403, legacy: 403 });
+  await page.goto("/kasir");
+  await expect(page).toHaveURL(/\/laundry\/antrean$/);
+});
