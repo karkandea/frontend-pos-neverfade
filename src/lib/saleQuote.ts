@@ -111,3 +111,21 @@ export async function commitCashSale(input: CashSaleCommitRequest): Promise<Cash
   });
   return data;
 }
+
+/** A missing record is inconclusive while the original POST may be in flight;
+ * never replace the original idempotency key after a 404. */
+export async function findCommittedCashSale(outletId: string, idempotencyKey: string): Promise<CashSaleCommitResponse | null> {
+  if (!outletId || !/^[A-Za-z0-9_-]{16,128}$/.test(idempotencyKey))
+    throw new Error("Outlet atau kunci transaksi tidak valid.");
+  try {
+    const response = await api.get<CashSaleCommitResponse>(
+      `/api/v2/sales/cash/idempotency/${encodeURIComponent(idempotencyKey)}`,
+      { headers: { "X-Outlet-Id": outletId } },
+    );
+    return response.data;
+  } catch (error) {
+    const status = (error as { response?: { status?: number } }).response?.status;
+    if (status === 404) return null;
+    throw error;
+  }
+}

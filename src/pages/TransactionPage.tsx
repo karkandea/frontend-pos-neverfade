@@ -8,7 +8,7 @@ import PaymentSuccessModal from "../components/kasir/PaymentSuccessModal";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
 import { getActiveOutletId } from "../lib/outlet";
-import { commitCashSale, createSaleQuote } from "../lib/saleQuote";
+import { commitCashSale, createSaleQuote, findCommittedCashSale } from "../lib/saleQuote";
 import { clearConfirmedCashSale, isDefiniteCashRejection, readPendingCashSale,
   savePendingCashSale, type PendingCashSale } from "../lib/pendingCashSale";
 import { flattenRetailCatalog, getRetailPriceOptions, resolveProductRetailPrice } from "../lib/retailPricing";
@@ -1149,7 +1149,8 @@ export default function TransactionPage() {
       // use another outlet or mint a fresh idempotency key during recovery.
       if (getActiveOutletId() !== attempt.outletId)
         throw new Error("Pilih outlet asli transaksi untuk pemulihan. Jangan bayar ulang.");
-      const confirmed = await commitCashSale(attempt);
+      const confirmed = await findCommittedCashSale(attempt.outletId, attempt.idempotencyKey)
+        ?? await commitCashSale(attempt);
       const receiptResponse = await api.get<TransactionResponse>(
         `/api/transactions/${confirmed.data.id}`, {
           headers: { "X-Outlet-Id": attempt.outletId },

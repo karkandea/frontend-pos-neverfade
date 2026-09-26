@@ -14,10 +14,14 @@ function respond(route: Route, body: unknown, status = 200) {
   return route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 }
 
-type Options = { uncertainFirst?: boolean; quoteTotal?: number; terminalRetry?: boolean };
+type Options = {
+  uncertainFirst?: boolean; quoteTotal?: number; terminalRetry?: boolean;
+  committedAfterUnknown?: boolean; lookupUnavailable?: boolean;
+};
 async function setup(page: Page, options: Options = {}) {
   const state = {
     quotes: 0,
+    lookups: [] as string[],
     commits: [] as { key: string; body: unknown }[],
     legacySales: 0,
   };
@@ -64,6 +68,20 @@ async function setup(page: Page, options: Options = {}) {
         tax: 0, serviceCharge: 0, total: options.quoteTotal ?? 25000,
         currency: "IDR", warnings: [],
       }, meta: { correlationId: "qa-s2" } });
+    }
+    if (path.startsWith("/api/v2/sales/cash/idempotency/") && request.method() === "GET") {
+      const key = decodeURIComponent(path.split("/").at(-1) ?? "");
+      state.lookups.push(key);
+      if (options.lookupUnavailable)
+        return respond(route, { code: "TEMPORARY_UNAVAILABLE", message: "Status belum tersedia" }, 503);
+      if (options.committedAfterUnknown && state.commits.length > 0) return respond(route, {
+        data: {
+          id: transactionId, noTrx: "TRX-20260926-0099", status: "paid",
+          metodePembayaran: "tunai", total: 25000, dibayar: 25000, kembalian: 0,
+        },
+        meta: { correlationId: "qa-s2", replayed: true },
+      });
+      return respond(route, { code: "CASH_COMMIT_NOT_CONFIRMED", message: "Belum terkonfirmasi" }, 404);
     }
     if (path === "/api/v2/sales/cash" && request.method() === "POST") {
       state.commits.push({ key: request.headers()["idempotency-key"] ?? "", body: request.postDataJSON() });
@@ -139,6 +157,7 @@ test("unconfirmed cash reply persists quote/key across reload and retries exactl
   await page.getByRole("button", { name: "Pulihkan Transaksi Tunai" }).click();
   await expect(page.getByRole("heading", { name: "Transaksi Berhasil" })).toBeVisible();
   expect(state.quotes).toBe(1);
+  expect(state.lookups).toEqual([state.commits[0].key]);
   expect(state.commits).toHaveLength(2);
   expect(state.commits[1]).toEqual(state.commits[0]);
   expect(state.legacySales).toBe(0);
@@ -168,5 +187,38 @@ test("only authoritative no-sale rejection releases a pending quote", async ({ p
   await expect(page.getByText("Transaksi tunai belum terkonfirmasi.")).toHaveCount(0);
   expect(state.commits).toHaveLength(2);
   expect(state.commits[1]).toEqual(state.commits[0]);
+  expect(state.legacySales).toBe(0);
+});
+
+
+test("read-only key lookup recovers completed sale without second write", async ({ page }) => {
+  const state = await setup(page, { uncertainFirst: true, committedAfterUnknown: true });
+  page.on("dialog", async (dialog) => { await dialog.accept(); });
+  await beginSale(page);
+  await expect(page.getByText("Transaksi tunai belum terkonfirmasi.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Transaksi tunai belum terkonfirmasi.")).toBeVisible();
+  const mobileClose = page.getByRole("button", { name: "Tutup keranjang" });
+  if (await mobileClose.isVisible().catch(() => false)) await mobileClose.click();
+  await page.getByRole("button", { name: "Pulihkan Transaksi Tunai" }).click();
+  await expect(page.getByRole("heading", { name: "Transaksi Berhasil" })).toBeVisible();
+  expect(state.quotes).toBe(1);
+  expect(state.lookups).toEqual([state.commits[0].key]);
+  expect(state.commits).toHaveLength(1);
+  expect(state.legacySales).toBe(0);
+});
+
+test("lookup 503 preserves original cash key without speculative replay", async ({ page }) => {
+  const state = await setup(page, { uncertainFirst: true, lookupUnavailable: true });
+  page.on("dialog", async (dialog) => { await dialog.accept(); });
+  await beginSale(page);
+  await expect(page.getByText("Transaksi tunai belum terkonfirmasi.")).toBeVisible();
+  const mobileClose = page.getByRole("button", { name: "Tutup keranjang" });
+  if (await mobileClose.isVisible().catch(() => false)) await mobileClose.click();
+  await page.getByRole("button", { name: "Pulihkan Transaksi Tunai" }).click();
+  await expect(page.getByText("Status transaksi tunai perlu perhatian.")).toBeVisible();
+  await expect(page.getByText("Transaksi tunai belum terkonfirmasi.")).toBeVisible();
+  expect(state.lookups).toEqual([state.commits[0].key]);
+  expect(state.commits).toHaveLength(1);
   expect(state.legacySales).toBe(0);
 });
