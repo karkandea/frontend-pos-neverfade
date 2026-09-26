@@ -54,22 +54,22 @@ const businessDemos: Record<string, BusinessDemo> = {
     description: "Pilih bagian bisnis yang ingin kamu coba.",
     apps: [
       {
-        title: "Kasir",
-        description: "Kasir, meja, dan transaksi",
+        title: "Terima Pesanan",
+        description: "Meja dan transaksi pelanggan",
         destination: "/kasir",
         icon: Receipt,
         persona: "cashier",
       },
       {
-        title: "Kitchen",
+        title: "Kelola Dapur",
         description: "Antrean dan status pesanan dapur",
         destination: "/dapur",
         icon: CookingPot,
         persona: "kitchen",
       },
       {
-        title: "Owner",
-        description: "Operasional, laporan, tim, dan keuangan",
+        title: "Pantau Usaha",
+        description: "Operasional, laporan, dan tim",
         destination: "/dashboard",
         icon: LayoutDashboard,
         persona: "owner",
@@ -81,9 +81,9 @@ const businessDemos: Record<string, BusinessDemo> = {
     title: "Toko dan minimarket",
     description: "Pilih bagian bisnis yang ingin kamu coba.",
     apps: [
-      { title: "Kasir", description: "Transaksi harian", destination: "/kasir", icon: Receipt },
-      { title: "Stok", description: "Barang & persediaan", destination: "/inventaris", icon: Boxes },
-      { title: "Owner", description: "Penjualan & laporan", destination: "/dashboard", icon: BarChart3 },
+      { title: "Jual Barang", description: "Buat transaksi harian", destination: "/kasir", icon: Receipt },
+      { title: "Kelola Stok", description: "Cek barang dan persediaan", destination: "/inventaris", icon: Boxes },
+      { title: "Pantau Usaha", description: "Penjualan dan laporan", destination: "/dashboard", icon: BarChart3 },
     ],
   },
   fashion: {
@@ -91,10 +91,10 @@ const businessDemos: Record<string, BusinessDemo> = {
     title: "Butik dan distro",
     description: "Pilih bagian bisnis yang ingin kamu coba.",
     apps: [
-      { title: "Kasir", description: "Transaksi harian", destination: "/kasir", icon: Receipt },
-      { title: "Produk & Varian", description: "Ukuran, warna & harga", destination: "/retail/variants-pricing", icon: Shirt },
-      { title: "Stok", description: "Barang & persediaan", destination: "/inventaris", icon: PackageSearch },
-      { title: "Owner", description: "Penjualan & laporan", destination: "/dashboard", icon: LayoutDashboard },
+      { title: "Jual Barang", description: "Buat transaksi harian", destination: "/kasir", icon: Receipt },
+      { title: "Atur Produk & Harga", description: "Lihat ukuran, warna dan tingkat harga", destination: "/retail/variants-pricing", icon: Shirt },
+      { title: "Kelola Stok", description: "Barang dan persediaan", destination: "/inventaris", icon: PackageSearch },
+      { title: "Pantau Usaha", description: "Penjualan dan laporan", destination: "/dashboard", icon: LayoutDashboard },
     ],
   },
   laundry: {
@@ -102,10 +102,10 @@ const businessDemos: Record<string, BusinessDemo> = {
     title: "Laundry kiloan dan express",
     description: "Pilih bagian bisnis yang ingin kamu coba.",
     apps: [
-      { title: "Front Desk", description: "Terima order pelanggan", destination: "/laundry", icon: UserRound },
-      { title: "Proses Laundry", description: "Pantau status cucian", destination: "/laundry", icon: WashingMachine },
-      { title: "Kasir", description: "Pembayaran & struk", destination: "/kasir", icon: Receipt },
-      { title: "Owner", description: "Penjualan & laporan", destination: "/dashboard", icon: LayoutDashboard },
+      { title: "Terima Cucian", description: "Catat order pelanggan", destination: "/laundry", icon: UserRound },
+      { title: "Proses Cucian", description: "Pantau status order", destination: "/laundry", icon: WashingMachine },
+      { title: "Terima Pembayaran", description: "Pembayaran dan struk", destination: "/kasir", icon: Receipt },
+      { title: "Pantau Usaha", description: "Penjualan dan laporan", destination: "/dashboard", icon: LayoutDashboard },
     ],
   },
   salon: {
@@ -113,10 +113,10 @@ const businessDemos: Record<string, BusinessDemo> = {
     title: "Salon dan barbershop",
     description: "Pilih bagian bisnis yang ingin kamu coba.",
     apps: [
-      { title: "Kasir / Reception", description: "Layanan & pembayaran", destination: "/kasir", icon: Scissors },
-      { title: "Pelanggan", description: "Data & riwayat kunjungan", destination: "/pelanggan", icon: Users },
-      { title: "Staff", description: "Tim & absensi", destination: "/karyawan", icon: UserRound },
-      { title: "Owner", description: "Penjualan & laporan", destination: "/dashboard", icon: LayoutDashboard },
+      { title: "Terima Pembayaran", description: "Catat layanan dan pembayaran", destination: "/kasir", icon: Scissors },
+      { title: "Kenali Pelanggan", description: "Data dan riwayat pelanggan", destination: "/pelanggan", icon: Users },
+      { title: "Kelola Tim", description: "Staf dan absensi", destination: "/karyawan", icon: UserRound },
+      { title: "Pantau Usaha", description: "Penjualan dan laporan", destination: "/dashboard", icon: LayoutDashboard },
     ],
   },
 };
@@ -228,9 +228,9 @@ export default function DemoBusinessPage() {
           <span className="demo-mode-description">
             Langsung masuk ke aplikasi yang ingin kamu lihat dan coba sendiri fiturnya.
           </span>
-          <span className="demo-mode-detail">Kasir, operasional, produk, dan laporan sesuai kategori.</span>
+          <span className="demo-mode-detail">Pilih aktivitas yang mau kamu coba.</span>
           <span className="demo-mode-cta demo-mode-cta--light">
-            {freeOpen ? "Tutup pilihan aplikasi" : "Pilih aplikasi"}
+            {freeOpen ? "Tutup pilihan aktivitas" : "Pilih aktivitas"}
             <ArrowRight aria-hidden="true" />
           </span>
         </button>
@@ -238,7 +238,7 @@ export default function DemoBusinessPage() {
 
       {freeOpen ? (
         <section className="demo-free-section" aria-label={`Eksplorasi bebas ${demo.title}`}>
-          <h2>Mau mulai dari mana?</h2>
+          <h2>Apa yang ingin kamu lakukan?</h2>
           <div className="demo-app-grid">
             {demo.apps.map((app) => {
               const Icon = app.icon;

@@ -1,6 +1,6 @@
 .demo-home {
-  --nf-red: #d70022;
-  --nf-red-dark: #b6001d;
+  --nf-red: #171719;
+  --nf-red-dark: #303034;
   --nf-text: #17171a;
   --nf-muted: #74747c;
   --nf-line: #e7e7ea;
@@ -123,14 +123,14 @@
 .demo-start-button {
   height: 42px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #ea0029 0%, #c90020 100%);
+  background: #0a0a0a;
   color: #fff;
   text-decoration: none;
   display: grid;
   place-items: center;
   font-size: 13px;
   font-weight: 700;
-  box-shadow: inset 0 1px rgba(255,255,255,.2);
+  box-shadow: none;
 }
 
 .demo-sidebar-bottom small {
@@ -425,7 +425,7 @@
 }
 
 .demo-art-orb-one { width: 64px; height: 64px; right: 43%; bottom: 22px; background: rgba(255,255,255,.65); }
-.demo-art-orb-two { width: 28px; height: 28px; right: 38%; bottom: 70px; background: rgba(215,0,34,.14); }
+.demo-art-orb-two { width: 28px; height: 28px; right: 38%; bottom: 70px; background: rgba(0,0,0,.08); }
 
 .demo-features-section {
   padding-top: 30px;
@@ -1663,3 +1663,9 @@ body.nf-demo-marketing-active {
   background: linear-gradient(180deg, rgba(5, 6, 9, .77), rgba(5, 6, 9, .84)),
               linear-gradient(95deg, rgba(5, 6, 9, .24), transparent 70%);
 }
+
+/* One monochrome language across picker, mode choice, guides and info pages. */
+.demo-home:not(.demo-home--cinematic) .nf-brand-mark i { background: #111; }
+.demo-home:not(.demo-home--cinematic) .demo-sidebar { background: rgba(250,250,250,.97); }
+.demo-home:not(.demo-home--cinematic) .demo-start-button:hover { background: #303034; }
+.demo-home:not(.demo-home--cinematic) .demo-nav a.active { background: #e9e9ec; color: #111; }

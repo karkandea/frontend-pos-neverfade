@@ -5,6 +5,7 @@ import axios from "axios";
 import api from "../lib/api";
 import { findDemoJourney, type DemoBusinessSlug } from "../lib/demoJourney";
 import { trackDemo } from "../lib/demoAnalytics";
+import { getDemoSalesWhatsappUrl } from "../lib/demoSales";
 import { useAuthStore } from "../stores/auth";
 import DemoShell from "../components/demo/DemoShell";
 import "./DemoEntryPage.css";
@@ -111,8 +112,11 @@ export default function DemoGuidedPage() {
   const { slug = "" } = useParams();
   const navigate = useNavigate();
   const journey = findDemoJourney(slug);
+  const whatsappUrl = journey ? getDemoSalesWhatsappUrl(journey.slug) : null;
   const demoActive = useAuthStore((x) => x.isDemo);
+  const authLoading = useAuthStore((x) => x.loading);
   const enterDemo = useAuthStore((x) => x.enterDemo);
+  const [sessionError, setSessionError] = useState("");
   const [progress, setProgress] = useState<Progress>(() => restoreProgress(slug));
   const [products, setProducts] = useState<Product[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
@@ -131,6 +135,20 @@ export default function DemoGuidedPage() {
   const complete = progress.index >= steps.length;
   const selectedProduct = products.find((x) => x.id === (progress.productId ?? selectedProductId));
   const quantity = slug === "laundry" ? 2.5 : 1;
+
+  useEffect(() => {
+    if (!journey || demoActive || authLoading) return;
+    let cancelled = false;
+    // Direct links and expired sessions should initialize without another click.
+    void enterDemo(journey.businessType)
+      .then(() => {
+        if (!cancelled) trackDemo("demo_started", journey.slug, "guided");
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) setSessionError(getErrorMessage(cause));
+      });
+    return () => { cancelled = true; };
+  }, [journey, demoActive, authLoading, enterDemo]);
 
   useEffect(() => {
     if (!journey || !demoActive) return;
@@ -308,13 +326,20 @@ export default function DemoGuidedPage() {
         </header>
 
         {!demoActive ? (
-          <div className="demo-guided-missing">
-            <p>Mulai sesi demo untuk mencoba skenario ini.</p>
-            <button type="button" onClick={() => void enterDemo(journey.businessType).then(() => {
-              trackDemo("demo_started", journey.slug, "guided");
-            }).catch((cause: unknown) => setError(getErrorMessage(cause)))}>
-              Masuk Demo
-            </button>
+          <div className="demo-guided-missing" role="status">
+            {sessionError ? (
+              <>
+                <p>{sessionError}</p>
+                <button type="button" onClick={() => {
+                  setSessionError("");
+                  void enterDemo(journey.businessType).then(() => {
+                    trackDemo("demo_started", journey.slug, "guided");
+                  }).catch((cause: unknown) => setSessionError(getErrorMessage(cause)));
+                }}>
+                  Coba Lagi
+                </button>
+              </>
+            ) : <p>Menyiapkan demo otomatis…</p>}
           </div>
         ) : (
           <div className="demo-guided-layout">
@@ -346,11 +371,25 @@ export default function DemoGuidedPage() {
                   </Link>
                   <div className="demo-guided-conversion">
                     <strong>Cocok untuk operasional bisnismu?</strong>
-                    <p>Lihat pilihan paketnya atau lanjut eksplorasi sebelum memutuskan.</p>
+                    <p>Bandingkan paket, lanjut eksplorasi, atau tanya tim NeverFade sebelum memutuskan.</p>
                     <div className="demo-guided-conversion-actions">
-                      <Link to="/demo/pricing" onClick={() => trackDemo("conversion_cta_clicked", journey.slug, "guided", "pricing")}>Lihat Harga <ArrowRight size={15} aria-hidden="true" /></Link>
-                      <Link to="/login" onClick={() => trackDemo("conversion_cta_clicked", journey.slug, "guided", "merchant_login")}>Masuk Merchant</Link>
+                      {whatsappUrl ? (
+                        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
+                          onClick={() => trackDemo("conversion_cta_clicked", journey.slug, "guided", "contact")}>
+                          Konsultasi via WhatsApp <ArrowRight size={15} aria-hidden="true" />
+                        </a>
+                      ) : null}
+                      <Link to="/demo/pricing" onClick={() => trackDemo("conversion_cta_clicked", journey.slug, "guided", "pricing")}>
+                        Lihat Harga <ArrowRight size={15} aria-hidden="true" />
+                      </Link>
+                      <Link to={`/demo/business/${journey.slug}`}>
+                        Lanjut Eksplorasi
+                      </Link>
                     </div>
+                    <Link className="demo-guided-login-link" to="/login"
+                      onClick={() => trackDemo("conversion_cta_clicked", journey.slug, "guided", "merchant_login")}>
+                      Sudah punya akun? Masuk Merchant
+                    </Link>
                   </div>
                 </div>
               ) : (

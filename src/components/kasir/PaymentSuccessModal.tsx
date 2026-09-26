@@ -4,6 +4,7 @@ import { useAuthStore } from "../../stores/auth";
 import { useTenantContextStore } from "../../stores/tenantContext";
 import { demoJourneys } from "../../lib/demoJourney";
 import { trackDemo } from "../../lib/demoAnalytics";
+import { getDemoSalesWhatsappUrl } from "../../lib/demoSales";
 
 import { useDialogFocus } from "./useDialogFocus";
 
@@ -39,6 +40,8 @@ export default function PaymentSuccessModal({
   const dialogRef = useRef<HTMLDivElement>(null);
   const isDemo = useAuthStore((x) => x.isDemo);
   const businessType = useTenantContextStore((x) => x.context?.businessType);
+  const journey = demoJourneys.find((x) => x.businessType === businessType);
+  const whatsappUrl = journey ? getDemoSalesWhatsappUrl(journey.slug) : null;
 
   useDialogFocus(open, dialogRef);
 
@@ -92,6 +95,13 @@ export default function PaymentSuccessModal({
         </div>
         {isDemo ? (
           <div style={{ textAlign: "center", padding: "0 12px 18px", fontSize: 12 }}>
+            {whatsappUrl && journey ? (
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
+                onClick={() => trackDemo("conversion_cta_clicked", journey.slug, "free", "contact")}
+                style={{ display: "block", marginBottom: 9, color: "#171717", fontWeight: 700 }}>
+                Konsultasi via WhatsApp
+              </a>
+            ) : null}
             <Link
               to="/demo/pricing"
               onClick={() => {
