@@ -7,22 +7,24 @@ import type { CashSaleCommitRequest } from "./saleQuote";
  */
 export type PendingCashSale = CashSaleCommitRequest & {
   tenantId: string;
+  userId: string;
   cartFingerprint: string;
 };
 
 const PREFIX = "nfpos_s2_pending_cash:";
 
-function key(tenantId: string) {
-  if (!tenantId) throw new Error("Tenant wajib dipilih untuk pemulihan transaksi.");
-  return `${PREFIX}${tenantId}`;
+function key(tenantId: string, userId: string) {
+  if (!tenantId || !userId) throw new Error("Tenant dan kasir wajib tersedia untuk pemulihan transaksi.");
+  return `${PREFIX}${tenantId}:${userId}`;
 }
 
-export function readPendingCashSale(tenantId: string): PendingCashSale | null {
-  const raw = sessionStorage.getItem(key(tenantId));
+export function readPendingCashSale(tenantId: string, userId: string): PendingCashSale | null {
+  const raw = sessionStorage.getItem(key(tenantId, userId));
   if (!raw) return null;
   try {
     const item = JSON.parse(raw) as PendingCashSale;
-    if (item.tenantId === tenantId && item.outletId && item.quoteId &&
+    if (item.tenantId === tenantId && item.userId === userId &&
+        item.outletId && item.quoteId &&
         item.quoteVersion && /^[A-Za-z0-9_-]{16,128}$/.test(item.idempotencyKey) &&
         Number.isFinite(item.amountReceived) && item.amountReceived >= 0 &&
         typeof item.cartFingerprint === "string") return item;
@@ -31,18 +33,18 @@ export function readPendingCashSale(tenantId: string): PendingCashSale | null {
 }
 
 export function savePendingCashSale(attempt: PendingCashSale) {
-  const previous = readPendingCashSale(attempt.tenantId);
+  const previous = readPendingCashSale(attempt.tenantId, attempt.userId);
   if (previous && (previous.quoteId !== attempt.quoteId ||
       previous.idempotencyKey !== attempt.idempotencyKey))
     throw new Error("Ada transaksi tunai yang belum dipastikan. Pulihkan attempt sebelumnya.");
-  sessionStorage.setItem(key(attempt.tenantId), JSON.stringify(attempt));
+  sessionStorage.setItem(key(attempt.tenantId, attempt.userId), JSON.stringify(attempt));
 }
 
 export function clearConfirmedCashSale(attempt: PendingCashSale) {
-  const previous = readPendingCashSale(attempt.tenantId);
+  const previous = readPendingCashSale(attempt.tenantId, attempt.userId);
   if (previous && previous.quoteId === attempt.quoteId &&
       previous.idempotencyKey === attempt.idempotencyKey)
-    sessionStorage.removeItem(key(attempt.tenantId));
+    sessionStorage.removeItem(key(attempt.tenantId, attempt.userId));
 }
 
 /** Safe only when the server returns an explicit terminal rejection after the

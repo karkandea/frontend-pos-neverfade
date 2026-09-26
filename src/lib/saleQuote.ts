@@ -129,3 +129,52 @@ export async function findCommittedCashSale(outletId: string, idempotencyKey: st
     throw error;
   }
 }
+
+/** Prepared != paid: original key is server-persisted before any sale write. */
+export type PreparedCashSale = CashSaleCommitRequest & {
+  status: "prepared" | "committed" | "abandoned";
+  transactionId?: string | null;
+  total: number;
+  preparedAt: string;
+  quoteExpiresAt: string;
+};
+
+function preparedHeaders(input: CashSaleCommitRequest) {
+  if (!input.outletId || !input.quoteId || !input.quoteVersion ||
+      !/^[A-Za-z0-9_-]{16,128}$/.test(input.idempotencyKey) ||
+      !Number.isFinite(input.amountReceived))
+    throw new Error("Data attempt tunai tidak lengkap. Jangan membuat key baru.");
+  return { "X-Outlet-Id": input.outletId, "Idempotency-Key": input.idempotencyKey };
+}
+
+export async function prepareCashSale(input: CashSaleCommitRequest): Promise<PreparedCashSale> {
+  const response = await api.post<PreparedCashSale>("/api/v2/sales/cash/prepare", {
+    quoteId: input.quoteId, quoteVersion: input.quoteVersion,
+    amountReceived: input.amountReceived,
+  }, { headers: preparedHeaders(input) });
+  return response.data;
+}
+
+export async function getCurrentPreparedCashSale(outletId: string): Promise<PreparedCashSale | null> {
+  const response = await api.get<PreparedCashSale | "">("/api/v2/sales/cash/current", {
+    headers: outletId ? { "X-Outlet-Id": outletId } : undefined,
+  });
+  if (response.status === 204) return null;
+  const attempt = response.data as PreparedCashSale;
+  if (!attempt || attempt.status !== "prepared" ||
+      !attempt.quoteId || !attempt.quoteVersion || !attempt.outletId ||
+      !/^[A-Za-z0-9_-]{16,128}$/.test(attempt.idempotencyKey) ||
+      !Number.isFinite(attempt.amountReceived))
+    throw new Error("Status tunai server tidak valid; jangan buat transaksi baru.");
+  return attempt;
+}
+
+export async function abandonPreparedCashSale(input: CashSaleCommitRequest): Promise<PreparedCashSale> {
+  const response = await api.post<PreparedCashSale>("/api/v2/sales/cash/abandon", {
+    quoteId: input.quoteId, quoteVersion: input.quoteVersion,
+    amountReceived: input.amountReceived,
+  }, { headers: preparedHeaders(input) });
+  if (response.data.status !== "abandoned")
+    throw new Error("Server belum memastikan attempt ditutup. Jangan membuat tagihan baru.");
+  return response.data;
+}
