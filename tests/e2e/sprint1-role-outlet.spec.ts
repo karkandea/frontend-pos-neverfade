@@ -22,7 +22,7 @@ async function session(page: Page, role: "owner" | "kasir" | "dapur" | "laundry_
       ...(fnb ? ["table_orders", "kitchen_queue"] : []), ...(laundry ? ["work_orders"] : [])],
     role, tenantStatus: "active", assignedOutletIds: [mainId],
     effectivePermissions: role === "owner"
-      ? ["users.manage", "restaurant.tables.read", "restaurant.tables.manage", "pos.sell", "reports.read"]
+      ? ["users.manage", "settings.manage", "restaurant.tables.read", "restaurant.tables.manage", "pos.sell", "reports.read"]
       : role === "dapur" ? ["outlets.read", "restaurant.kitchen.operate"]
       : role === "laundry_operator" ? ["outlets.read", "laundry.work.operate"]
       : ["restaurant.tables.read", "pos.sell"],
@@ -163,4 +163,35 @@ test("laundry operator only sees price-free work queue and cannot navigate to ch
   await page.goto("/kasir");
   await expect(page).toHaveURL(/\/laundry\/antrean$/);
   expect(calls.some((entry) => entry.path.startsWith("/api/laundry/work-orders"))).toBe(false);
+});
+
+test("owner setup checklist is read-only, linked and clearly not a production release gate", async ({ page }) => {
+  await session(page, "owner");
+  await page.route("**/api/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    if (path === "/api/tenant/onboarding") return respond(route, {
+      tenantId: mainId, mode: "demo", businessType: "food_beverage",
+      completedRequired: 1, totalRequired: 3, requiredStepsComplete: false,
+      steps: [
+        { id: "business_profile", title: "Identitas usaha", description: "Isi alamat", actionPath: "/pengaturan", required: true, complete: false },
+        { id: "catalog", title: "Katalog produk atau jasa", description: "Tambah produk", actionPath: "/produk", required: true, complete: true },
+        { id: "staff_assignment", title: "Petugas outlet", description: "Opsional", actionPath: "/pengguna", required: false, complete: false },
+      ],
+    });
+    return respond(route, []);
+  });
+  await page.goto("/mulai");
+  await expect(page.getByRole("heading", { name: "Setup Usaha" })).toBeVisible();
+  await expect(page.getByText("1 dari 3 langkah wajib")).toBeVisible();
+  await expect(page.getByRole("note")).toContainText("bukan persetujuan rilis production");
+  await expect(page.getByRole("link", { name: "Buka pengaturan" }).first()).toHaveAttribute("href", "/pengaturan");
+  await expect(page.getByRole("heading", { name: "Petugas outlet" })).toBeVisible();
+});
+
+test("cashier cannot directly open owner setup checklist", async ({ page }) => {
+  await session(page, "kasir");
+  await page.goto("/mulai");
+  await expect(page).toHaveURL(/\/kasir$/);
+  await expect(page.getByRole("link", { name: "Setup Usaha" })).toHaveCount(0);
 });

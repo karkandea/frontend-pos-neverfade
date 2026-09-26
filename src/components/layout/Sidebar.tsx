@@ -92,6 +92,12 @@ export default function Sidebar({ open, onClose }: Props) {
           </div>
         )}
 
+        {isAdmin && (
+          <NavLink to="/mulai" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+            <span>Setup Usaha</span>
+          </NavLink>
+        )}
+
         {!isRestrictedOperator && canCorePos && (
           <NavLink
             to="/kasir"

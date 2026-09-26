@@ -26,6 +26,7 @@ import LaundryWorkOrdersPage from "./pages/LaundryWorkOrdersPage";
 import LoginPage from "./pages/LoginPage";
 import PelangganPage from "./pages/PelangganPage";
 import PengaturanPage from "./pages/PengaturanPage";
+import OnboardingPage from "./pages/OnboardingPage";
 import PenggunaPage from "./pages/PenggunaPage";
 import ProductPage from "./pages/ProductPage";
 import RetailVariantPricingPage from "./pages/RetailVariantPricingPage";
@@ -92,6 +93,7 @@ const pagePermissions: Record<string, string> = {
   "/laundry/antrean": "laundry.work.operate",
   "/pengguna": "users.manage",
   "/pengaturan": "settings.manage",
+  "/mulai": "settings.manage",
 };
 
 const pageTitles: Record<string, string> = {
@@ -116,6 +118,7 @@ const pageTitles: Record<string, string> = {
   "/shared-pos": "Shared POS",
   "/pengguna": "Pengguna",
   "/pengaturan": "Pengaturan",
+  "/mulai": "Setup Usaha",
   "/qa/qris-scanner": "QA QRIS Scanner",
   "/platform/login": "Platform Login",
   "/platform/tenants": "Tenant Platform",
@@ -395,6 +398,10 @@ export default function App() {
         <Route
           path="/pengaturan"
           element={protectedPage(<PengaturanPage />, true)}
+        />
+        <Route
+          path="/mulai"
+          element={protectedPage(<OnboardingPage />, true)}
         />
 
         <Route
