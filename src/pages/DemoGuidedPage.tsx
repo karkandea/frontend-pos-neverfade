@@ -133,7 +133,7 @@ export default function DemoGuidedPage() {
   const quantity = slug === "laundry" ? 2.5 : 1;
 
   useEffect(() => {
-    if (!journey || !demoActive) { setLoading(false); return; }
+    if (!journey || !demoActive) return;
     let cancelled = false;
     async function load() {
       try {
