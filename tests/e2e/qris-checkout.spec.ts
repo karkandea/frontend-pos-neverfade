@@ -59,6 +59,7 @@ async function setupCheckout(
     statusCount: 0,
     receiptCount: 0,
     cancelCount: 0,
+    cashCreateCount: 0,
   };
   const statuses = options.statuses ?? ["pending"];
   const qrisEnabled = options.qrisEnabled ?? true;
@@ -138,6 +139,18 @@ async function setupCheckout(
       }, 503);
 
       return json(route, payment);
+    }
+
+    if (path === "/api/transactions" && request.method() === "POST") {
+      state.cashCreateCount++;
+      return json(route, {
+        id: payment.transactionId, noTrx: "TRX-20260926-0099",
+        createdAt: "2026-09-26T12:00:00Z", kasir: "Owner QA", customerId: null,
+        subtotal: 25000, discAmt: 0, taxAmt: 0, total: 25000,
+        dibayar: 25000, kembalian: 0, metodePembayaran: "tunai",
+        items: [{ id: product.id, nama: product.nama, hargaJual: 25000,
+          qty: 1, quantity: 1, subtotal: 25000 }],
+      });
     }
 
     if (path === `/api/payments/${payment.id}`) {
@@ -570,4 +583,13 @@ test("503 uncertain create restores the original attempt instead of opening anot
   await expect(page.getByRole("button", { name: "Customer Batal" })).toHaveCount(0);
   await expect(page.getByAltText("Kode QRIS pembayaran")).toHaveCount(0);
   expect(state.createCount).toBe(1);
+});
+
+
+test("default checkout stays on legacy cash route when S2 feature flag is absent", async ({ page }) => {
+  const state = await setupCheckout(page, { qrisEnabled: false });
+  await page.locator("#cash-received").fill("25000");
+  await submitCheckout(page);
+  await expect(page.getByRole("heading", { name: "Transaksi Berhasil" })).toBeVisible();
+  expect(state.cashCreateCount).toBe(1);
 });
