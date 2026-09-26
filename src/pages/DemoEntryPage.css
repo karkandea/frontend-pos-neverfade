@@ -44,7 +44,7 @@
   width: 8px;
   height: 25px;
   top: 0;
-  background: var(--nf-red, #d70022);
+  background: var(--nf-red, #171719);
   border-radius: 3px;
   transform: rotate(-42deg);
 }
@@ -1306,7 +1306,7 @@
 .demo-home--cinematic .demo-nav a > svg { color: inherit; }
 .demo-home--cinematic .demo-nav a:hover { color: #fff; background: rgba(255, 255, 255, .07); }
 .demo-home--cinematic .demo-nav a.active { color: #fff; background: rgba(255, 255, 255, .11); }
-.demo-home--cinematic .demo-nav a.active > svg { color: #ef3858; }
+.demo-home--cinematic .demo-nav a.active > svg { color: #f5f5f7; }
 .demo-home--cinematic .demo-sidebar-bottom { border-color: rgba(255, 255, 255, .12); }
 .demo-home--cinematic .demo-login-link { color: #dddde2; }
 .demo-home--cinematic .demo-sidebar-bottom small { color: #888891; }
