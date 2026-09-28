@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
+import { OUTLET_CHANGED_EVENT } from "../lib/outlet";
 
 type Product = {
   id: string;
@@ -62,7 +63,10 @@ export default function InventarisPage() {
     useState<Form>(emptyForm);
 
   useEffect(() => {
-    load();
+    void load();
+    const onOutletChanged = () => void load();
+    window.addEventListener(OUTLET_CHANGED_EVENT, onOutletChanged);
+    return () => window.removeEventListener(OUTLET_CHANGED_EVENT, onOutletChanged);
   }, []);
 
   async function load() {
