@@ -119,12 +119,12 @@ test("mobile product management uses cards without horizontal overflow", async (
 });
 
 
-test("product catalog request follows the active outlet", async ({ page }, testInfo) => {
+test("product catalog refetches for the selected outlet", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "Desktop Chromium", "Outlet header regression runs once.");
 
-  await page.evaluate(() => localStorage.setItem("nfpos_active_outlet", "outlet-branch"));
+  await expect(page.getByLabel("Outlet aktif")).toBeVisible();
   productOutletHeaders = [];
-  await page.reload();
+  await page.getByLabel("Outlet aktif").selectOption("outlet-branch");
 
   await expect.poll(() => productOutletHeaders.at(-1)).toBe("outlet-branch");
 });
