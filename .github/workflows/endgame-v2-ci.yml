@@ -1,0 +1,111 @@
+name: Endgame v2 Frontend Gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Scan committed secrets
+        run: python3 qa/scan-secrets.py
+
+      - name: Dependency vulnerability gate
+        run: npm audit --audit-level=moderate
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start candidate frontend
+        env:
+          VITE_API_URL: http://127.0.0.1:9999
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 5273 --strictPort > /tmp/neverfade-endgame-vite.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:5273/login >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/neverfade-endgame-vite.log
+          exit 1
+
+      - name: Critical contract and recovery E2E
+        run: >-
+          npx playwright test
+          tests/e2e/auth-navigation.spec.ts
+          tests/e2e/sprint1-role-outlet.spec.ts
+          tests/e2e/sprint2-cash-optin.spec.ts
+          tests/e2e/qris-checkout.spec.ts
+          --project="Desktop Chromium"
+
+      - name: Publish immutable candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifact
+          tar -C dist -czf artifact/neverfade-frontend-\${GITHUB_SHA}.tar.gz .
+          sha256sum artifact/neverfade-frontend-\${GITHUB_SHA}.tar.gz > artifact/SHA256SUMS
+          python3 - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          payload = {
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "sha": os.environ["GITHUB_SHA"],
+              "runId": os.environ["GITHUB_RUN_ID"],
+              "runAttempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "generatedAt": datetime.now(timezone.utc).isoformat(),
+          }
+          with open("artifact/deployment-record.json", "w") as f:
+              json.dump(payload, f, indent=2)
+          PY
+
+      - name: Upload candidate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: neverfade-frontend-\${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            artifact/neverfade-frontend-*.tar.gz
+            artifact/SHA256SUMS
+            artifact/deployment-record.json
+            playwright-report
+            test-results
+
+      - name: Attest release candidate provenance
+        if: github.event_name != 'pull_request'
+        uses: actions/attest@v4
+        with:
+          subject-path: artifact/neverfade-frontend-*.tar.gz
+
+      - name: Show frontend log on failure
+        if: failure()
+        run: cat /tmp/neverfade-endgame-vite.log || true
