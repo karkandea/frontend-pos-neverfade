@@ -13,7 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-type DemoShellProps = { children: ReactNode; cinematic?: boolean };
+type DemoShellProps = { children: ReactNode; cinematic?: boolean; ambient?: boolean };
 
 function BrandMark() {
   return (
@@ -24,7 +24,7 @@ function BrandMark() {
   );
 }
 
-export default function DemoShell({ children, cinematic = false }: DemoShellProps) {
+export default function DemoShell({ children, cinematic = false, ambient = true }: DemoShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     // POS intentionally locks document scroll. Marketing pages must scroll independently.
@@ -61,7 +61,7 @@ export default function DemoShell({ children, cinematic = false }: DemoShellProp
       </aside>
 
       <section className="demo-main">
-        {cinematic ? <DemoAmbient /> : null}
+        {cinematic && ambient ? <DemoAmbient /> : null}
         <div className="demo-content">{children}</div>
       </section>
     </main>
