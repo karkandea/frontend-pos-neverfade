@@ -71,8 +71,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifact
-          tar -C dist -czf artifact/neverfade-frontend-\${GITHUB_SHA}.tar.gz .
-          sha256sum artifact/neverfade-frontend-\${GITHUB_SHA}.tar.gz > artifact/SHA256SUMS
+          tar -C dist -czf artifact/neverfade-frontend-${GITHUB_SHA}.tar.gz .
+          sha256sum artifact/neverfade-frontend-${GITHUB_SHA}.tar.gz > artifact/SHA256SUMS
           python3 - <<'PY'
           import json, os
           from datetime import datetime, timezone
@@ -91,7 +91,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: neverfade-frontend-\${{ github.sha }}
+          name: neverfade-frontend-${{ github.sha }}
           if-no-files-found: error
           path: |
             artifact/neverfade-frontend-*.tar.gz
