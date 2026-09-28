@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import api from "../lib/api";
+import api, { formatApiError } from "../lib/api";
 import { businessModeOptions, capabilityLabels } from "../lib/businessModes";
 import type { TenantCapability, TenantContext } from "../types/platform";
 
@@ -77,10 +77,16 @@ export const useTenantContextStore = create<TenantContextState>((set, get) => ({
       set({ loading: true, error: "" });
 
       try {
-        const { data } = await api.get<unknown>("/api/tenant/context");
-        if (!isTenantContext(data)) {
+        const { data: response } = await api.get<unknown>("/api/v2/context");
+        // Production v2 returns {data,meta}; accepting a raw context here keeps
+        // compatibility with transitional/mock clients without changing server contract.
+        const payload = response && typeof response === "object" && "data" in response
+          ? (response as { data: unknown }).data
+          : response;
+        if (!isTenantContext(payload)) {
           throw new Error("Invalid tenant context response.");
         }
+        const data = payload;
 
         if (generation !== restoreGeneration) {
           return;
@@ -92,7 +98,7 @@ export const useTenantContextStore = create<TenantContextState>((set, get) => ({
           error: "",
           loadedForToken: token,
         });
-      } catch {
+      } catch (error) {
         if (generation !== restoreGeneration) {
           return;
         }
@@ -100,7 +106,7 @@ export const useTenantContextStore = create<TenantContextState>((set, get) => ({
         set({
           context: null,
           loading: false,
-          error: "Konteks bisnis belum dapat dimuat. Coba lagi.",
+          error: formatApiError(error, "Konteks bisnis belum dapat dimuat. Coba lagi."),
           loadedForToken: null,
         });
       }

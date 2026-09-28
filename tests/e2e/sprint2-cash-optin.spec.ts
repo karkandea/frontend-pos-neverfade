@@ -42,7 +42,7 @@ async function setup(page: Page, options: Options = {}) {
     if (path === "/api/auth/me") return respond(route, {
       id: state.activeUserId, nama: "Owner QA", username: "qa.owner", role: "owner",
     });
-    if (path === "/api/tenant/context") return respond(route, {
+    if (path === "/api/v2/context") return respond(route, {
       tenantId, namaToko: "NeverFade QA", businessType: "general_retail", mode: "demo",
       capabilities: ["core_pos", "inventory", "customers", "reports"], role: "owner",
     });

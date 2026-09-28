@@ -97,7 +97,7 @@ async function fashionSession(page: Page) {
   });
 
   await page.route("**/api/auth/me", (route) => json(route, owner));
-  await page.route("**/api/tenant/context", (route) =>
+  await page.route("**/api/v2/context", (route) =>
     json(route, {
       tenantId: "99999999-9999-9999-9999-999999999999",
       namaToko: "NeverFade Fashion QA",
@@ -118,7 +118,7 @@ test("fashion checkout uses variant and price-level snapshots", async ({ page },
   await page.route("**/api/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
-    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    if (path === "/api/auth/me" || path === "/api/v2/context") return route.fallback();
     if (path === "/api/retail/catalog") return json(route, catalog);
     if (path === "/api/customers") return json(route, []);
     if (path === "/api/settings") return json(route, { defaultTax: 0, headerStruk: "QA", footerStruk: "QA" });

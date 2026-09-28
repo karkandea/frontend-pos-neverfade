@@ -116,7 +116,7 @@ function json(route: Route, body: unknown, status = 200) {
 async function returnsSession(page: Page) {
   await page.addInitScript(() => localStorage.setItem("nfpos_token", "returns-token"));
   await page.route("**/api/auth/me", (route) => json(route, owner));
-  await page.route("**/api/tenant/context", (route) =>
+  await page.route("**/api/v2/context", (route) =>
     json(route, {
       tenantId: "99999999-9999-9999-9999-999999999999",
       namaToko: "NeverFade Fashion QA",
@@ -170,7 +170,7 @@ async function mockReturnsApi(page: Page, capture: (payload: Record<string, unkn
   await page.route("**/api/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
-    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    if (path === "/api/auth/me" || path === "/api/v2/context") return route.fallback();
     if (path === "/api/transactions" && request.method() === "GET") return json(route, [transaction]);
     if (path === "/api/retail/catalog") return json(route, catalog);
     if (path === "/api/retail/returns" && request.method() === "GET") return json(route, history);

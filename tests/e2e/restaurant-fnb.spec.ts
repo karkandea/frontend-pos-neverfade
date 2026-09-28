@@ -50,7 +50,7 @@ async function tenantSession(
     json(route, owner)
   );
 
-  await page.route("**/api/tenant/context", (route) =>
+  await page.route("**/api/v2/context", (route) =>
     json(route, {
       tenantId: "99999999-9999-9999-9999-999999999999",
       namaToko: "NeverFade FNB QA",
@@ -142,7 +142,7 @@ test(
 
       if (
         path === "/api/auth/me" ||
-        path === "/api/tenant/context"
+        path === "/api/v2/context"
       ) {
         return route.fallback();
       }
@@ -479,7 +479,7 @@ test(
 
       if (
         path === "/api/auth/me" ||
-        path === "/api/tenant/context"
+        path === "/api/v2/context"
       ) {
         return route.fallback();
       }
@@ -702,7 +702,7 @@ test(
 
       if (
         path === "/api/auth/me" ||
-        path === "/api/tenant/context"
+        path === "/api/v2/context"
       ) {
         return route.fallback();
       }
@@ -785,7 +785,7 @@ test(
 
       if (
         path === "/api/auth/me" ||
-        path === "/api/tenant/context" ||
+        path === "/api/v2/context" ||
         path === "/api/products"
       ) {
         return route.fallback();

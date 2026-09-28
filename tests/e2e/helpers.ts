@@ -47,7 +47,7 @@ export async function loginAsOwner(
       const url = new URL(response.url());
 
       return (
-        url.pathname === "/api/tenant/context" &&
+        url.pathname === "/api/v2/context" &&
         response.request().method() === "GET"
       );
     });
