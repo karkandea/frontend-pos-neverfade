@@ -49,7 +49,8 @@ test.describe("isolated category fixtures", () => {
         const response = await fetch("/api/v2/context", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        return { status: response.status, data: await response.json() };
+        const payload = await response.json();
+        return { status: response.status, data: payload?.data ?? payload };
       });
       expect(context.status).toBe(200);
       expect(context.data.businessType).toBe(businessType);
