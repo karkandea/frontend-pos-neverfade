@@ -12,6 +12,8 @@ const user = {
   role: "owner",
 };
 
+let productOutletHeaders: Array<string | undefined> = [];
+
 const products = [
   {
     id: "p-1",
@@ -48,6 +50,8 @@ const products = [
 ];
 
 test.beforeEach(async ({ page }) => {
+  productOutletHeaders = [];
+
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
@@ -56,7 +60,12 @@ test.beforeEach(async ({ page }) => {
       return json(route, { token: "owner-product-token", user });
     }
     if (path === "/api/auth/me") return json(route, user);
+    if (path === "/api/outlets") return json(route, [
+      { id: "outlet-main", code: "MAIN", name: "Utama", address: "", phone: "", isDefault: true, active: true },
+      { id: "outlet-branch", code: "BR", name: "Cabang", address: "", phone: "", isDefault: false, active: true },
+    ]);
     if (path === "/api/products") {
+      productOutletHeaders.push(route.request().headers()["x-outlet-id"]);
       const search = (url.searchParams.get("search") ?? "").toLowerCase();
       const kategori = url.searchParams.get("kategori") ?? "";
       const filtered = products.filter((product) => {
@@ -107,4 +116,15 @@ test("mobile product management uses cards without horizontal overflow", async (
     document: document.documentElement.scrollWidth,
   }));
   expect(widths.document).toBeLessThanOrEqual(widths.viewport + 1);
+});
+
+
+test("product catalog request follows the active outlet", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Desktop Chromium", "Outlet header regression runs once.");
+
+  await page.evaluate(() => localStorage.setItem("nfpos_active_outlet", "outlet-branch"));
+  productOutletHeaders = [];
+  await page.reload();
+
+  await expect.poll(() => productOutletHeaders.at(-1)).toBe("outlet-branch");
 });
