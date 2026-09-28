@@ -46,7 +46,7 @@ test.describe("isolated category fixtures", () => {
       await expect(page).toHaveURL(/\/produk$/);
       const context = await page.evaluate(async () => {
         const token = sessionStorage.getItem("nfpos_token") ?? localStorage.getItem("nfpos_token");
-        const response = await fetch("/api/tenant/context", {
+        const response = await fetch("/api/v2/context", {
           headers: { Authorization: `Bearer ${token}` },
         });
         return { status: response.status, data: await response.json() };

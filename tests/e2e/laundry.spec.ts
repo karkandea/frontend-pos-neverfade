@@ -75,7 +75,7 @@ async function tenantSession(
   );
 
   await page.route(
-    "**/api/tenant/context",
+    "**/api/v2/context",
     (route) =>
       json(route, {
         tenantId:
@@ -166,7 +166,7 @@ test(
         if (
           path === "/api/auth/me" ||
           path ===
-            "/api/tenant/context"
+            "/api/v2/context"
         ) {
           return route.fallback();
         }
@@ -740,7 +740,7 @@ test(
 
         if (
           path === "/api/auth/me" ||
-          path === "/api/tenant/context"
+          path === "/api/v2/context"
         ) {
           return route.fallback();
         }
@@ -862,7 +862,7 @@ test(
 
         if (
           path === "/api/auth/me" ||
-          path === "/api/tenant/context"
+          path === "/api/v2/context"
         ) {
           return route.fallback();
         }
@@ -977,7 +977,7 @@ test(
           path ===
             "/api/auth/me" ||
           path ===
-            "/api/tenant/context" ||
+            "/api/v2/context" ||
           path ===
             "/api/products"
         ) {

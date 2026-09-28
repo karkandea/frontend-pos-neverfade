@@ -15,7 +15,7 @@ async function session(page: Page, role: "owner" | "kasir" | "dapur" | "laundry_
     nama: role === "owner" ? "Owner QA" : "Kasir QA", username: role, role,
   };
   await page.route("**/api/auth/me", (route) => respond(route, user));
-  await page.route("**/api/tenant/context", (route) => respond(route, {
+  await page.route("**/api/v2/context", (route) => respond(route, {
     tenantId: "99999999-9999-9999-9999-999999999999",
     namaToko: "S1 QA", businessType: fnb ? "food_beverage" : laundry ? "laundry" : "general_retail",
     capabilities: ["core_pos", "inventory", "customers", "reports", "attendance", "finance_withdrawal",
@@ -34,7 +34,7 @@ test("owner assigns and revokes staff outlet from user management", async ({ pag
   let submitted: unknown = null;
   await page.route("**/api/**", (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    if (path === "/api/auth/me" || path === "/api/v2/context") return route.fallback();
     if (path === "/api/outlets") return respond(route, [
       { id: mainId, name: "Utama", active: true, isDefault: true },
       { id: branchId, name: "Cabang Dua", active: true, isDefault: false },
@@ -61,7 +61,7 @@ test("empty restaurant offers owner direct table creation", async ({ page }) => 
   await session(page, "owner", true);
   await page.route("**/api/**", (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    if (path === "/api/auth/me" || path === "/api/v2/context") return route.fallback();
     return respond(route, []);
   });
   await page.goto("/meja");
@@ -74,7 +74,7 @@ test("cashier cannot open table creation from empty restaurant", async ({ page }
   await session(page, "kasir", true);
   await page.route("**/api/**", (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    if (path === "/api/auth/me" || path === "/api/v2/context") return route.fallback();
     return respond(route, []);
   });
   await page.goto("/meja");
@@ -90,7 +90,7 @@ test("dedicated kitchen account only navigates to price-free operator ticket rou
   let legacyRequests = 0;
   await page.route("**/api/**", (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    if (path === "/api/auth/me" || path === "/api/v2/context") return route.fallback();
     if (path === "/api/restaurant/kitchen/operator") operatorRequests += 1;
     if (path === "/api/restaurant/kitchen") legacyRequests += 1;
     return respond(route, []);
@@ -110,7 +110,7 @@ test("reports default to aggregate and explicitly filter all report requests by 
   const selectedHeaders: Record<string, string | null> = {};
   await page.route("**/api/**", (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    if (path === "/api/auth/me" || path === "/api/v2/context") return route.fallback();
     if (path === "/api/outlets") return respond(route, [
       { id: mainId, name: "Utama", active: true, isDefault: true },
       { id: branchId, name: "Cabang Dua", active: true, isDefault: false },
@@ -139,7 +139,7 @@ test("laundry operator only sees price-free work queue and cannot navigate to ch
   const calls: Array<{ path: string; method: string }> = [];
   await page.route("**/api/**", (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    if (path === "/api/auth/me" || path === "/api/v2/context") return route.fallback();
     calls.push({ path, method: route.request().method() });
     if (path === "/api/laundry/operator") return respond(route, [{
       id: mainId, orderNumber: "LDR-QA-01", customerName: "Pelanggan QA",
@@ -169,7 +169,7 @@ test("owner setup checklist is read-only, linked and clearly not a production re
   await session(page, "owner");
   await page.route("**/api/**", (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    if (path === "/api/auth/me" || path === "/api/v2/context") return route.fallback();
     if (path === "/api/tenant/onboarding") return respond(route, {
       tenantId: mainId, mode: "demo", businessType: "food_beverage",
       completedRequired: 1, totalRequired: 3, requiredStepsComplete: false,
@@ -194,4 +194,48 @@ test("cashier cannot directly open owner setup checklist", async ({ page }) => {
   await page.goto("/mulai");
   await expect(page).toHaveURL(/\/kasir$/);
   await expect(page.getByRole("link", { name: "Setup Usaha" })).toHaveCount(0);
+});
+
+test("owner payment triage shows unresolved provider reference without charge or cancel actions", async ({ page }) => {
+  await session(page, "owner");
+  let requestedOutlet: string | null = null;
+  await page.route("**/api/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/auth/me" || path === "/api/v2/context") return route.fallback();
+    if (path === "/api/outlets") return respond(route, [
+      { id: mainId, name: "Utama", active: true, isDefault: true },
+    ]);
+    if (path === "/api/payments/attention") {
+      requestedOutlet = route.request().headers()["x-outlet-id"] ?? null;
+      return respond(route, {
+        outletId: mainId, total: 1, hasMore: false,
+        items: [{
+          paymentId: "77777777-7777-7777-7777-777777777777",
+          transactionId: "88888888-8888-8888-8888-888888888888",
+          providerReferenceId: "nf-77777777777777777777777777777777",
+          providerPaymentRequestId: null, status: "creating",
+          reason: "provider_request_unknown", amount: 25000,
+          currency: "IDR", createdAt: "2026-09-26T12:00:00Z", expiresAt: null,
+        }],
+      });
+    }
+    return respond(route, []);
+  });
+  await page.goto("/pembayaran/perlu-perhatian");
+  await expect(page.getByRole("heading", { name: "Status Pembayaran" })).toBeVisible();
+  await expect(page.getByText("1 pembayaran belum final")).toBeVisible();
+  await expect(page.getByText("nf-77777777777777777777777777777777")).toBeVisible();
+  await expect(page.getByText(/jangan buat QRIS baru/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /buat qr|cancel|batal/i })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Status Pembayaran" })).toBeVisible();
+  await expect.poll(() => requestedOutlet).toBe(mainId);
+  await page.getByRole("button", { name: "Periksa Lagi" }).click();
+  await expect(page.getByText("1 pembayaran belum final")).toBeVisible();
+});
+
+test("cashier cannot open payment triage page or see its navigation", async ({ page }) => {
+  await session(page, "kasir");
+  await page.goto("/pembayaran/perlu-perhatian");
+  await expect(page).toHaveURL(/\/kasir$/);
+  await expect(page.getByRole("link", { name: "Status Pembayaran" })).toHaveCount(0);
 });

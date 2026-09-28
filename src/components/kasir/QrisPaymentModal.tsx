@@ -93,6 +93,8 @@ export default function QrisPaymentModal({
   const expired = status === "expired";
   const failed = status === "failed" || expired;
   const pending = status === "pending" || status === "creating";
+  const creatingWithoutReference = status === "creating" &&
+    !payment?.providerPaymentRequestId;
   const displayExpired = pending && Boolean(
     payment?.expiresAt && new Date(payment.expiresAt).getTime() <= currentTime
   );
@@ -135,6 +137,8 @@ export default function QrisPaymentModal({
                 ? "Pembayaran berhasil"
                 : expired
                   ? "Pembayaran kedaluwarsa"
+                  : creatingWithoutReference
+                    ? "Status pembuatan QRIS belum pasti"
                   : displayExpired
                     ? "Menunggu kepastian pembayaran"
                   : failed
@@ -156,7 +160,7 @@ export default function QrisPaymentModal({
 
           <div className="qris-reference">
             <span>Referensi pembayaran</span>
-            <strong>{payment.providerPaymentRequestId}</strong>
+            <strong>{payment.providerPaymentRequestId || payment.providerReferenceId}</strong>
             {expiresAt ? <small>Berlaku sampai {expiresAt} WIB</small> : null}
           </div>
 
@@ -205,7 +209,7 @@ export default function QrisPaymentModal({
                 <strong>{rupiah(payment.amount)}</strong>
               </div>
 
-              {!displayExpired ? <div className="qris-code-frame">
+              {!displayExpired && !creatingWithoutReference ? <div className="qris-code-frame">
                 {currentQrImage ? (
                   <img
                     src={currentQrImage}
@@ -216,7 +220,12 @@ export default function QrisPaymentModal({
                 )}
               </div> : null}
 
-              {displayExpired ? (
+              {creatingWithoutReference ? (
+                <div className="qris-status-error" role="alert">
+                  <strong>Permintaan mungkin sudah diterima provider</strong>
+                  <p>Jangan ulang checkout atau buat QRIS baru. Periksa status referensi di atas; jika belum tersedia, hubungi admin untuk rekonsiliasi.</p>
+                </div>
+              ) : displayExpired ? (
                 <div className="qris-status-error" role="alert">
                   <strong>Waktu scan telah berakhir</strong>
                   <p>Jangan meminta pelanggan membayar ulang. Konfirmasi provider dapat datang terlambat; periksa status atau batalkan kode ini secara aman.</p>
@@ -246,9 +255,11 @@ export default function QrisPaymentModal({
                 <button type="button" className="btn-secondary" onClick={onRetryStatus} disabled={cancelling}>
                   Periksa Status
                 </button>
-                <button type="button" className="btn-danger" onClick={onCancel} disabled={cancelling}>
-                  {cancelling ? "Membatalkan…" : "Customer Batal"}
-                </button>
+                {!creatingWithoutReference ? (
+                  <button type="button" className="btn-danger" onClick={onCancel} disabled={cancelling}>
+                    {cancelling ? "Membatalkan…" : "Customer Batal"}
+                  </button>
+                ) : null}
               </div>
             </>
           ) : null}

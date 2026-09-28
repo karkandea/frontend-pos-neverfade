@@ -87,7 +87,7 @@ test("owner login waits for tenant context before capability routing", async ({ 
       });
     }
 
-    if (path === "/api/tenant/context") {
+    if (path === "/api/v2/context") {
       tenantContextRequests += 1;
       await tenantContextGate;
 

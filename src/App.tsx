@@ -27,6 +27,7 @@ import LoginPage from "./pages/LoginPage";
 import PelangganPage from "./pages/PelangganPage";
 import PengaturanPage from "./pages/PengaturanPage";
 import OnboardingPage from "./pages/OnboardingPage";
+import PaymentAttentionPage from "./pages/PaymentAttentionPage";
 import PenggunaPage from "./pages/PenggunaPage";
 import ProductPage from "./pages/ProductPage";
 import RetailVariantPricingPage from "./pages/RetailVariantPricingPage";
@@ -108,6 +109,7 @@ const pageTitles: Record<string, string> = {
   "/transaksi": "Transaksi",
   "/laporan": "Laporan",
   "/keuangan": "Keuangan",
+  "/pembayaran/perlu-perhatian": "Status Pembayaran",
   "/meja": "Meja & Pesanan",
   "/dapur": "Dapur",
   "/laundry": "Pesanan Laundry",
@@ -354,6 +356,10 @@ export default function App() {
         <Route
           path="/keuangan"
           element={protectedPage(<FinancePage />, false, true, "finance_withdrawal")}
+        />
+        <Route
+          path="/pembayaran/perlu-perhatian"
+          element={protectedPage(<PaymentAttentionPage />, true, false, "core_pos")}
         />
 
         <Route

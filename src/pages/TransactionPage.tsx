@@ -7,6 +7,12 @@ import ReceiptModal from "../components/kasir/ReceiptModal";
 import PaymentSuccessModal from "../components/kasir/PaymentSuccessModal";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
+import { getActiveOutletId, OUTLET_CHANGED_EVENT } from "../lib/outlet";
+import { useAuthStore } from "../stores/auth";
+import { abandonPreparedCashSale, commitCashSale, createSaleQuote, findCommittedCashSale,
+  getCurrentPreparedCashSale, prepareCashSale, type PreparedCashSale } from "../lib/saleQuote";
+import { clearConfirmedCashSale, isDefiniteCashRejection, readPendingCashSale,
+  savePendingCashSale, type PendingCashSale } from "../lib/pendingCashSale";
 import { flattenRetailCatalog, getRetailPriceOptions, resolveProductRetailPrice } from "../lib/retailPricing";
 import {
   clearRestaurantCheckout,
@@ -60,6 +66,7 @@ type CartItem = {
 };
 
 type Settings = {
+  showTax?: boolean;
   defaultTax: number;
   headerStruk: string;
   footerStruk: string;
@@ -90,6 +97,8 @@ type TransactionResponse = ReceiptData & {
 
 const PAYMENT_POLL_INTERVAL_MS = 1000;
 const ACTIVE_QRIS_KEY = "nfpos_active_qris";
+/** Enabled only in deliberately configured Sprint 2 QA builds; never default-on. */
+const S2_CASH_CHECKOUT_ENABLED = import.meta.env.VITE_S2_CASH_CHECKOUT === "enabled";
 
 function wait(milliseconds: number, signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
@@ -205,12 +214,58 @@ function normalizeTransactionItems(
   });
 }
 
+function restoreServerCashAttempt(server: PreparedCashSale, tenantId: string,
+  userId: string, cartFingerprint = ""): PendingCashSale {
+  return {
+    tenantId, userId, outletId: server.outletId, quoteId: server.quoteId,
+    quoteVersion: server.quoteVersion, amountReceived: server.amountReceived,
+    idempotencyKey: server.idempotencyKey, cartFingerprint,
+  };
+}
+
 export default function TransactionPage() {
+  const userId = useAuthStore((state) => state.user?.id ?? "");
+  const tenantId = useTenantContextStore((state) => state.context?.tenantId ?? "");
+  const businessType = useTenantContextStore((state) => state.context?.businessType);
+  const s2RetailCashEnabled = S2_CASH_CHECKOUT_ENABLED &&
+    (businessType === "general_retail" || businessType === "fashion_retail");
+  const [pendingCash, setPendingCash] = useState<PendingCashSale | null>(null);
+  const [cashRecoveryError, setCashRecoveryError] = useState("");
+  const [cashOutletRevision, setCashOutletRevision] = useState(0);
   const hasAdvancedRetail = useTenantContextStore(
     (state) =>
       state.hasCapability("product_variants") &&
       state.hasCapability("multi_pricing")
   );
+  useEffect(() => {
+    const onOutletChange = () => setCashOutletRevision((value) => value + 1);
+    window.addEventListener(OUTLET_CHANGED_EVENT, onOutletChange);
+    return () => window.removeEventListener(OUTLET_CHANGED_EVENT, onOutletChange);
+  }, []);
+  useEffect(() => {
+    if (!s2RetailCashEnabled || !tenantId || !userId) return;
+    let active = true;
+    try {
+      const local = readPendingCashSale(tenantId, userId);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPendingCash(local);
+      void getCurrentPreparedCashSale(getActiveOutletId()).then((server) => {
+        if (!active || !server) return;
+        if (local && (local.quoteId !== server.quoteId ||
+            local.idempotencyKey !== server.idempotencyKey)) {
+          setCashRecoveryError("Attempt browser dan server berbeda. Periksa bersama admin; jangan lanjut pembayaran.");
+          return;
+        }
+        const restored = restoreServerCashAttempt(server, tenantId, userId,
+          local?.cartFingerprint ?? "");
+        savePendingCashSale(restored);
+        setPendingCash(restored);
+      }).catch((error) => {
+        if (active) setCashRecoveryError(`Status transaksi tunai server belum dapat diperiksa. Jangan buat pembayaran baru. ${getErrorMessage(error)}`);
+      });
+    } catch (error) { setCashRecoveryError(getErrorMessage(error)); }
+    return () => { active = false; };
+  }, [tenantId, userId, s2RetailCashEnabled, cashOutletRevision]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -286,6 +341,7 @@ export default function TransactionPage() {
   const [qrisCancelling, setQrisCancelling] = useState(false);
 
   const submissionLock = useRef(false);
+  const cashPreflightLock = useRef(false);
   const checkoutAbort = useRef<AbortController | null>(null);
 
   const categories = useMemo(
@@ -370,7 +426,8 @@ export default function TransactionPage() {
       );
       setTax(
         clampPercent(Number(
-          settingsResponse.data.defaultTax ?? 0
+          settingsResponse.data.showTax === false ? 0 :
+            settingsResponse.data.defaultTax ?? 0
         ))
       );
 
@@ -989,7 +1046,7 @@ export default function TransactionPage() {
     setPaid(0);
     setCustomerId("");
     setDiscount(0);
-    setTax(settings.defaultTax ?? 0);
+    setTax(settings.showTax === false ? 0 : settings.defaultTax ?? 0);
     setPaymentMethod("tunai");
   }
 
@@ -1086,7 +1143,126 @@ export default function TransactionPage() {
     return "";
   }
 
+  async function showConfirmedCashSale(data: TransactionResponse, fallbackItems: CartItem[] = []) {
+    setReceipt({
+      transactionId: data.id,
+      customerId: data.customerId ?? null,
+      transactionDate: data.createdAt ?? new Date().toISOString(),
+      noTrx: data.noTrx,
+      kasir: data.kasir,
+      subtotal: data.subtotal,
+      discAmt: data.discAmt,
+      taxAmt: data.taxAmt,
+      total: data.total,
+      dibayar: data.dibayar,
+      kembalian: data.kembalian,
+      metodePembayaran: data.metodePembayaran,
+      items: data.items ? normalizeTransactionItems(data.items) : fallbackItems,
+    });
+    setCashSuccess({
+      transactionId: data.id,
+      transactionNumber: data.noTrx,
+      amount: data.total,
+      paid: data.dibayar,
+      change: data.kembalian,
+      method: data.metodePembayaran,
+    });
+    setCashRecoveryError("");
+    clearCart();
+    try { await reloadProducts(); }
+    catch { /* Sale is already committed; product refresh cannot revoke receipt. */ }
+  }
+
+  async function closeServerRejectedCash(attempt: PendingCashSale, reason: unknown) {
+    // Never clear after a network failure. This lock-backed endpoint either
+    // confirms NO sale or refuses if the original commit already won.
+    await abandonPreparedCashSale(attempt);
+    clearConfirmedCashSale(attempt);
+    setPendingCash(null);
+    setCashRecoveryError(`Server memastikan attempt ini ditutup tanpa penjualan: ${getErrorMessage(reason)}. Perbarui harga dan stok sebelum transaksi baru.`);
+  }
+
+  async function recoverPendingCash() {
+    if (!s2RetailCashEnabled || !tenantId || !userId || submitting) return;
+    submissionLock.current = true;
+    setSubmitting(true);
+    setCashRecoveryError("");
+    try {
+      let attempt = readPendingCashSale(tenantId, userId);
+      const server = await getCurrentPreparedCashSale(getActiveOutletId());
+      if (server) {
+        if (attempt && (attempt.quoteId !== server.quoteId ||
+            attempt.idempotencyKey !== server.idempotencyKey))
+          throw new Error("Attempt browser dan server berbeda. Jangan buat transaksi baru.");
+        if (!attempt) {
+          attempt = restoreServerCashAttempt(server, tenantId, userId);
+          savePendingCashSale(attempt);
+          setPendingCash(attempt);
+        }
+      }
+      if (!attempt) { setPendingCash(null); return; }
+      if (getActiveOutletId() !== attempt.outletId)
+        throw new Error("Pilih outlet asli transaksi untuk pemulihan. Jangan bayar ulang.");
+      const known = await findCommittedCashSale(attempt.outletId, attempt.idempotencyKey);
+      if (!known) {
+        const prepared = await prepareCashSale(attempt);
+        if (prepared.status !== "prepared" && prepared.status !== "committed")
+          throw new Error("Server belum menyimpan attempt tunai dengan benar.");
+      }
+      const confirmed = known ?? await commitCashSale(attempt);
+      const receiptResponse = await api.get<TransactionResponse>(
+        `/api/transactions/${confirmed.data.id}`, {
+          headers: { "X-Outlet-Id": attempt.outletId },
+        });
+      await showConfirmedCashSale(receiptResponse.data);
+      clearConfirmedCashSale(attempt);
+      setPendingCash(null);
+    } catch (error) {
+      const original = readPendingCashSale(tenantId, userId);
+      if (original && isDefiniteCashRejection(error)) {
+        try { await closeServerRejectedCash(original, error); }
+        catch (closeError) {
+          setCashRecoveryError(`Attempt belum bisa ditutup dengan aman. ${getErrorMessage(closeError)}. Jangan buat pembayaran baru.`);
+        }
+      } else {
+        setCashRecoveryError(`Status transaksi tunai belum pasti. Jangan ulang dengan key baru. ${getErrorMessage(error)}`);
+      }
+    } finally {
+      submissionLock.current = false;
+      setSubmitting(false);
+    }
+  }
+
   async function checkout() {
+    // Lock before the first awaited server check. Two fast clicks must not
+    // each observe an empty server attempt and create independent quotes.
+    if (cashPreflightLock.current || submissionLock.current || submitting) return;
+    cashPreflightLock.current = true;
+    try {
+    if (s2RetailCashEnabled && tenantId && userId) {
+      try {
+        const outstanding = readPendingCashSale(tenantId, userId);
+        const server = await getCurrentPreparedCashSale(getActiveOutletId());
+        if (server) {
+          if (outstanding && (outstanding.quoteId !== server.quoteId ||
+              outstanding.idempotencyKey !== server.idempotencyKey))
+            throw new Error("Attempt browser dan server berbeda. Periksa bersama admin sebelum checkout baru.");
+          const restored = outstanding ?? restoreServerCashAttempt(server, tenantId, userId);
+          savePendingCashSale(restored);
+          setPendingCash(restored);
+          setCashRecoveryError("Masih ada transaksi tunai di server. Pulihkan attempt yang sama sebelum checkout baru.");
+          return;
+        }
+        if (outstanding) {
+          setPendingCash(outstanding);
+          setCashRecoveryError("Pulihkan transaksi tunai sebelumnya sebelum membuat pembayaran baru, termasuk QRIS.");
+          return;
+        }
+      } catch (error) {
+        setCashRecoveryError(getErrorMessage(error));
+        return;
+      }
+    }
     if (
       restaurantCheckout?.transactionId ||
       laundryCheckout?.transactionId
@@ -1216,10 +1392,66 @@ export default function TransactionPage() {
         return;
       }
 
-      const response = await api.post<TransactionResponse>(
-        "/api/transactions",
-        payload
-      );
+      let response: { data: TransactionResponse };
+      if (s2RetailCashEnabled && paymentMethod === "tunai" &&
+          !restaurantCheckout && !laundryCheckout) {
+        if (!tenantId || !userId) throw new Error("Konteks tenant atau kasir belum tersedia.");
+        const outletId = getActiveOutletId();
+        if (!outletId) throw new Error("Pilih outlet sebelum transaksi tunai.");
+        const fingerprint = JSON.stringify({
+          outletId, customerId: customerId || null, discount, tax, paid,
+          lines: cart.map((item) => ({
+            productId: item.parentProductId ?? item.id,
+            variantId: item.productVariantId ?? null,
+            priceLevelId: item.manualPriceLevelId ?? null,
+            quantity: item.qty, note: item.note?.trim() ?? "",
+          })),
+        });
+        let attempt = readPendingCashSale(tenantId, userId);
+        if (attempt && (attempt.outletId !== outletId ||
+            attempt.cartFingerprint !== fingerprint))
+          throw new Error("Ada transaksi tunai sebelumnya yang belum pasti. Pulihkan transaksi itu sebelum membuka pembayaran lain.");
+        if (!attempt) {
+          const quote = await createSaleQuote({
+            outletId, customerId: customerId || null, discountPercent: discount,
+            lines: cart.map((item) => ({
+              productId: item.parentProductId ?? item.id,
+              variantId: item.productVariantId ?? null,
+              priceLevelId: item.manualPriceLevelId ?? null,
+              quantity: item.qty, note: item.note?.trim() ?? "",
+            })),
+          });
+          // No payment is attempted when the server disagrees with the shown
+          // total or configured tax. Client totals never override quote money.
+          const cents = (value: number) => Math.round(value * 100);
+          if (quote.status !== "quoted" || quote.outletId !== outletId ||
+              quote.discountPercent !== discount || quote.taxRatePercent !== tax ||
+              cents(quote.total) !== cents(total))
+            throw new Error("Total atau pajak dari server berbeda. Muat ulang keranjang dan pengaturan sebelum menerima pembayaran.");
+          attempt = {
+            tenantId, userId, outletId, quoteId: quote.quoteId,
+            quoteVersion: quote.quoteVersion, amountReceived: paid,
+            idempotencyKey: crypto.randomUUID().replaceAll("-", ""),
+            cartFingerprint: fingerprint,
+          };
+          savePendingCashSale(attempt);
+          setPendingCash(attempt);
+        }
+        const prepared = await prepareCashSale(attempt);
+        if (prepared.status !== "prepared" && prepared.status !== "committed")
+          throw new Error("Server belum menerima attempt pembayaran tunai.");
+        const confirmed = await commitCashSale(attempt);
+        response = await api.get<TransactionResponse>(
+          `/api/transactions/${confirmed.data.id}`, {
+            headers: { "X-Outlet-Id": outletId },
+          });
+        // Only clear once both the server commit and transaction detail have
+        // returned. Timeout/503 keeps the original quote + key for replay.
+        clearConfirmedCashSale(attempt);
+        setPendingCash(null);
+      } else {
+        response = await api.post<TransactionResponse>("/api/transactions", payload);
+      }
 
       if (restaurantCheckout) {
         const linked = markRestaurantCheckoutTransaction(
@@ -1247,40 +1479,32 @@ export default function TransactionPage() {
         );
       }
 
-      setReceipt({
-        transactionId: response.data.id,
-        customerId: customerId || null,
-        transactionDate: response.data.createdAt ?? new Date().toISOString(),
-        noTrx: response.data.noTrx,
-        kasir: response.data.kasir,
-        subtotal: response.data.subtotal,
-        discAmt: response.data.discAmt,
-        taxAmt: response.data.taxAmt,
-        total: response.data.total,
-        dibayar: response.data.dibayar,
-        kembalian: response.data.kembalian,
-        metodePembayaran: response.data.metodePembayaran,
-        items: response.data.items
-          ? normalizeTransactionItems(response.data.items)
-          : receiptItems,
-      });
-
-      setCashSuccess({
-        transactionId: response.data.id,
-        transactionNumber: response.data.noTrx,
-        amount: response.data.total,
-        paid: response.data.dibayar,
-        change: response.data.kembalian,
-        method: response.data.metodePembayaran,
-      });
-      clearCart();
-
-      await reloadProducts();
+      await showConfirmedCashSale(response.data, receiptItems);
     } catch (error) {
       if (checkoutAbort.current?.signal.aborted) {
         return;
       }
 
+      const apiCode = (error as { response?: { data?: { code?: string } } })
+        ?.response?.data?.code;
+      if (paymentMethod === "qris" && apiCode === "PAYMENT_CREATION_UNCERTAIN") {
+        // Server has persisted the original attempt. Restore that exact attempt
+        // instead of returning to a checkout button that could look retryable.
+        setQrisStatusError(getErrorMessage(error));
+        await restoreQrisPayment();
+        return;
+      }
+
+      if (s2RetailCashEnabled && paymentMethod === "tunai" &&
+          tenantId && userId && isDefiniteCashRejection(error)) {
+        const rejected = readPendingCashSale(tenantId, userId);
+        if (rejected) {
+          try { await closeServerRejectedCash(rejected, error); }
+          catch (closeError) {
+            setCashRecoveryError(`Attempt tidak aman dilepas. ${getErrorMessage(closeError)}. Jangan buat pembayaran baru.`);
+          }
+        }
+      }
       window.alert(getErrorMessage(error));
 
       try {
@@ -1292,6 +1516,9 @@ export default function TransactionPage() {
       checkoutAbort.current = null;
       submissionLock.current = false;
       setSubmitting(false);
+    }
+    } finally {
+      cashPreflightLock.current = false;
     }
   }
 
@@ -1402,6 +1629,24 @@ export default function TransactionPage() {
           </div>
         ) : null}
 
+        {s2RetailCashEnabled && pendingCash ? (
+          <div className="payment-recovery-banner" role="alert">
+            <strong>Transaksi tunai belum terkonfirmasi.</strong>
+            <span>Jangan terima pembayaran kedua. Pulihkan dengan quote dan kunci transaksi yang sama, pada outlet semula.</span>
+            <button type="button" className="btn-secondary" disabled={submitting}
+              onClick={() => void recoverPendingCash()}>
+              {submitting ? "Memeriksa…" : "Pulihkan Transaksi Tunai"}
+            </button>
+          </div>
+        ) : null}
+
+        {s2RetailCashEnabled && cashRecoveryError ? (
+          <div className="payment-recovery-banner" role="alert">
+            <strong>Status transaksi tunai perlu perhatian.</strong>
+            <span>{cashRecoveryError}</span>
+          </div>
+        ) : null}
+
         {qrisStatusError && !qrisPayment ? (
           <div className="payment-recovery-banner" role="alert">
             <strong>Pembayaran sebelumnya belum dapat diperiksa.</strong>
@@ -1448,12 +1693,13 @@ export default function TransactionPage() {
               submitting={
                 submitting || qrisStatus === "pending"
               }
-              locked={Boolean(laundryCheckout)}
+              locked={Boolean(laundryCheckout || pendingCash)}
               items={cart}
               customers={customers}
               customerId={customerId}
               discount={discount}
               tax={tax}
+              taxLocked={s2RetailCashEnabled && !restaurantCheckout && !laundryCheckout}
               subtotal={subtotal}
               total={total}
               paymentMethod={paymentMethod}

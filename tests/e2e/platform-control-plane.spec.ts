@@ -87,7 +87,7 @@ test("super admin provisions business mode, updates profile, and controls tenant
       });
     }
 
-    if (path === "/api/tenant/context") {
+    if (path === "/api/v2/context") {
       const isNewTenant = request.headers().authorization === "Bearer new-tenant-token";
       return json(route, {
         tenantId: isNewTenant

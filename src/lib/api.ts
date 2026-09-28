@@ -19,6 +19,47 @@ export class ApiNetworkError extends Error {
   }
 }
 
+
+export type ApiErrorPayload = {
+  code?: string;
+  message?: string;
+  correlationId?: string;
+  details?: { field?: string; code?: string; message?: string }[];
+};
+
+export type ApiErrorPresentation = {
+  status?: number;
+  code: string;
+  message: string;
+  correlationId: string;
+  action: "login" | "review" | "refresh" | "retry" | "contact_admin";
+};
+
+export function getApiErrorPresentation(error: unknown, fallback = "Permintaan belum dapat diproses."): ApiErrorPresentation {
+  const value = error as {
+    response?: { status?: number; data?: ApiErrorPayload };
+    code?: string;
+    message?: string;
+  };
+  const status = value?.response?.status;
+  const payload = value?.response?.data;
+  const code = payload?.code ?? value?.code ?? "REQUEST_FAILED";
+  const message = payload?.message ?? (error instanceof ApiNetworkError ? error.message : fallback);
+  const correlationId = payload?.correlationId ?? "";
+  const action = status === 401 ? "login" :
+    status === 403 ? "contact_admin" :
+    status === 409 ? "refresh" :
+    status === 429 || status === 503 || !status ? "retry" : "review";
+  return { status, code, message, correlationId, action };
+}
+
+export function formatApiError(error: unknown, fallback?: string) {
+  const result = getApiErrorPresentation(error, fallback);
+  return result.correlationId
+    ? `${result.message} (Ref: ${result.correlationId})`
+    : result.message;
+}
+
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {

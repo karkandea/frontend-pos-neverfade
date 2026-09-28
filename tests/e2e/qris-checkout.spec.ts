@@ -36,6 +36,9 @@ type SetupOptions = {
   receiptFailures?: number;
   receiptFailureAt?: number[];
   currentFailure?: boolean;
+  currentPayment?: typeof payment;
+  skipCart?: boolean;
+  createUncertain?: boolean;
 };
 
 function json(route: Route, body: unknown, status = 200) {
@@ -56,6 +59,7 @@ async function setupCheckout(
     statusCount: 0,
     receiptCount: 0,
     cancelCount: 0,
+    cashCreateCount: 0,
   };
   const statuses = options.statuses ?? ["pending"];
   const qrisEnabled = options.qrisEnabled ?? true;
@@ -106,6 +110,11 @@ async function setupCheckout(
       if (options.currentFailure) {
         return json(route, { message: "Provider belum dapat diperiksa." }, 503);
       }
+      if (options.currentPayment) return json(route, options.currentPayment);
+      if (options.createUncertain && state.createCount > 0) return json(route, {
+        ...payment, providerPaymentRequestId: "", status: "creating",
+        qrString: null, expiresAt: null,
+      });
       return route.fulfill({ status: 204, body: "" });
     }
 
@@ -124,8 +133,24 @@ async function setupCheckout(
           setTimeout(resolve, options.createDelay)
         );
       }
+      if (options.createUncertain) return json(route, {
+        code: "PAYMENT_CREATION_UNCERTAIN",
+        message: "Kepastian pembuatan QRIS belum diterima. Jangan buat tagihan baru.",
+      }, 503);
 
       return json(route, payment);
+    }
+
+    if (path === "/api/transactions" && request.method() === "POST") {
+      state.cashCreateCount++;
+      return json(route, {
+        id: payment.transactionId, noTrx: "TRX-20260926-0099",
+        createdAt: "2026-09-26T12:00:00Z", kasir: "Owner QA", customerId: null,
+        subtotal: 25000, discAmt: 0, taxAmt: 0, total: 25000,
+        dibayar: 25000, kembalian: 0, metodePembayaran: "tunai",
+        items: [{ id: product.id, nama: product.nama, hargaJual: 25000,
+          qty: 1, quantity: 1, subtotal: 25000 }],
+      });
     }
 
     if (path === `/api/payments/${payment.id}`) {
@@ -136,11 +161,16 @@ async function setupCheckout(
         state.statusCount,
         statuses.length - 1
       );
-      const status = statuses[index];
+      const status = options.createUncertain ? "creating" :
+        options.currentPayment?.status ?? statuses[index];
       state.statusCount += 1;
 
       return json(route, {
         ...payment,
+        ...(options.currentPayment ?? {}),
+        ...(options.createUncertain ? {
+          providerPaymentRequestId: "", qrString: null, expiresAt: null,
+        } : {}),
         status,
         failureCode: status === "expired" ? "PAYMENT_REQUEST_EXPIRED" : null,
         updatedAt: "2026-08-11T17:45:00Z",
@@ -202,6 +232,8 @@ async function setupCheckout(
   await expect(
     page.getByRole("heading", { name: "Kasir", exact: true })
   ).toBeVisible();
+
+  if (options.skipCart) return state;
 
   await page
     .getByRole("button", {
@@ -519,4 +551,45 @@ test("duplicate QRIS submit is prevented while request is pending", async ({
     .toBe(1);
   await expect(checkout).toBeDisabled();
   await expect(page.getByText("Menunggu pembayaran")).toBeVisible();
+});
+
+
+test("unconfirmed provider create retains the same attempt without offering a new charge", async ({ page }) => {
+  const unknown = {
+    ...payment,
+    providerPaymentRequestId: "",
+    status: "creating",
+    qrString: null,
+    expiresAt: null,
+  };
+  const state = await setupCheckout(page, { currentPayment: unknown, skipCart: true });
+  await expect(page.getByRole("dialog", { name: "Pembayaran QRIS" })).toBeVisible();
+  await expect(page.getByText("Status pembuatan QRIS belum pasti")).toBeVisible();
+  await expect(page.getByText("Permintaan mungkin sudah diterima provider")).toBeVisible();
+  await expect(page.getByText(unknown.providerReferenceId)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Periksa Status", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Customer Batal" })).toHaveCount(0);
+  await expect(page.getByAltText("Kode QRIS pembayaran")).toHaveCount(0);
+  expect(state.createCount).toBe(0);
+});
+
+
+test("503 uncertain create restores the original attempt instead of opening another payment", async ({ page }) => {
+  const state = await setupCheckout(page, { createUncertain: true });
+  await submitCheckout(page);
+  await expect(page.getByRole("dialog", { name: "Pembayaran QRIS" })).toBeVisible();
+  await expect(page.getByText("Status pembuatan QRIS belum pasti")).toBeVisible();
+  await expect(page.getByText("Permintaan mungkin sudah diterima provider")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Customer Batal" })).toHaveCount(0);
+  await expect(page.getByAltText("Kode QRIS pembayaran")).toHaveCount(0);
+  expect(state.createCount).toBe(1);
+});
+
+
+test("default checkout stays on legacy cash route when S2 feature flag is absent", async ({ page }) => {
+  const state = await setupCheckout(page, { qrisEnabled: false });
+  await page.locator("#cash-received").fill("25000");
+  await submitCheckout(page);
+  await expect(page.getByRole("heading", { name: "Transaksi Berhasil" })).toBeVisible();
+  expect(state.cashCreateCount).toBe(1);
 });

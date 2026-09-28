@@ -23,7 +23,7 @@ export async function mockTenantContext(
   role: "owner" | "admin" | "kasir" = "owner",
   capabilities: TenantCapability[] = commonTenantCapabilities
 ) {
-  await page.route("**/api/tenant/context", (route) =>
+  await page.route("**/api/v2/context", (route) =>
     json(route, {
       tenantId: "99999999-9999-9999-9999-999999999999",
       namaToko: "NeverFade QA",

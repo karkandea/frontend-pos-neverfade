@@ -82,7 +82,7 @@ test("receipt shows cashier and supports 58/80 mm print media", async ({ page },
   let capturedNote = "";
   await page.route("**/api/**", (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path === "/api/tenant/context" || path === "/api/auth/me") return route.fallback();
+    if (path === "/api/v2/context" || path === "/api/auth/me") return route.fallback();
     if (path === "/api/products") return json(route, [product]);
     if (path === "/api/customers") return json(route, []);
     if (path === "/api/settings") return json(route, { defaultTax: 0, headerStruk: "Neverfade QA", footerStruk: "Terima kasih" });

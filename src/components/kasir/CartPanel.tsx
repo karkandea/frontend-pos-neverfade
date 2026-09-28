@@ -31,6 +31,7 @@ type Props = {
   customerId: string;
   discount: number;
   tax: number;
+  taxLocked?: boolean;
 
   subtotal: number;
   total: number;
@@ -75,6 +76,7 @@ export default function CartPanel({
   customerId,
   discount,
   tax,
+  taxLocked = false,
 
   subtotal,
   total,
@@ -370,7 +372,7 @@ export default function CartPanel({
               </div>
 
               <div className="summary-row">
-                <span>Pajak (PPN)</span>
+                <span>Pajak (PPN){taxLocked ? " · mengikuti pengaturan usaha" : ""}</span>
 
                 <div className="discount-input-wrap">
                   <input
@@ -379,7 +381,7 @@ export default function CartPanel({
                     inputMode="decimal"
                     min={0}
                     max={100}
-                    disabled={locked}
+                    disabled={locked || taxLocked}
                     value={tax}
                     onChange={(e) =>
                       onTaxChange(
