@@ -86,6 +86,9 @@ api.interceptors.request.use((config) => {
     config.url?.startsWith("/api/retail/") ||
     config.url === "/api/transactions" || config.url?.startsWith("/api/transactions/") ||
     config.url === "/api/payments/current" || config.url?.startsWith("/api/payments/") ||
+    config.url === "/api/products" || config.url?.startsWith("/api/products/") ||
+    config.url === "/api/stock-history" || config.url?.startsWith("/api/stock-history/") ||
+    config.url?.startsWith("/api/retail/") ||
     config.url?.startsWith("/api/restaurant/") ||
     config.url?.startsWith("/api/laundry/")
   )) {
