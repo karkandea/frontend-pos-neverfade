@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import DemoAmbient from "./DemoAmbient";
 import { Link, NavLink } from "react-router-dom";
 import {
@@ -6,6 +6,8 @@ import {
   BadgeDollarSign,
   CircleHelp,
   LayoutGrid,
+  Menu,
+  X,
   LogIn,
   PlayCircle,
   Sparkles,
@@ -23,6 +25,7 @@ function BrandMark() {
 }
 
 export default function DemoShell({ children, cinematic = false }: DemoShellProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     // POS intentionally locks document scroll. Marketing pages must scroll independently.
     document.documentElement.classList.add("nf-demo-marketing-active");
@@ -41,7 +44,8 @@ export default function DemoShell({ children, cinematic = false }: DemoShellProp
           <span><strong>NeverFade</strong><small>POS</small></span>
         </div>
 
-        <nav className="demo-nav" aria-label="Demo navigation">
+        <button className="demo-mobile-menu" type="button" aria-label={menuOpen ? "Tutup menu" : "Buka menu"} aria-expanded={menuOpen} aria-controls="demo-navigation" onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}<span>Menu</span></button>
+        <nav id="demo-navigation" className={menuOpen ? "demo-nav demo-nav--open" : "demo-nav"} aria-label="Demo navigation" onClick={() => setMenuOpen(false)}>
           <NavLink end to="/demo"><LayoutGrid aria-hidden="true" />Demo</NavLink>
           <NavLink to="/demo/features"><Sparkles aria-hidden="true" />Fitur</NavLink>
           <NavLink to="/demo/pricing"><BadgeDollarSign aria-hidden="true" />Harga</NavLink>

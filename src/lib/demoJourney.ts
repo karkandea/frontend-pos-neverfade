@@ -1,6 +1,6 @@
 import type { BusinessType } from "../types/platform";
 
-export type DemoBusinessSlug = "restaurant" | "retail" | "fashion" | "laundry" | "salon";
+export type DemoBusinessSlug = "restaurant" | "retail" | "fashion" | "laundry" | "salon" | "barbershop";
 
 export type DemoJourney = {
   slug: DemoBusinessSlug;
@@ -20,7 +20,7 @@ export const demoJourneys: DemoJourney[] = [
     slug: "restaurant", businessType: "food_beverage", title: "Restoran & Kafe",
     examples: "Restoran · Kafe · Coffee shop", benefit: "Kelola pesanan sampai pembayaran.", icon: "restaurant",
     actions: ["Buat pesanan meja", "Kirim pesanan ke dapur", "Terima pembayaran"],
-    guidedTitle: "Dari meja ke laporan, dalam satu alur.",
+    guidedTitle: "Dari pesanan meja sampai transaksi tercatat.",
     guidedDescription: "Buat pesanan, kirim ke dapur, selesaikan pembayaran tunai, lalu lihat bukti transaksi.",
     guidedOutcome: "Pesanan ditutup dan transaksi tersimpan untuk laporan.",
   },
@@ -49,11 +49,19 @@ export const demoJourneys: DemoJourney[] = [
     guidedOutcome: "Work order selesai, riwayat status dan pembayaran tersimpan.",
   },
   {
-    slug: "salon", businessType: "salon_barbershop", title: "Salon & Barbershop",
-    examples: "Salon · Barber · Hair studio", benefit: "Catat layanan dan pembayaran pelanggan.", icon: "salon",
+    slug: "salon", businessType: "salon_barbershop", title: "Salon",
+    examples: "Salon · Hair studio · Perawatan", benefit: "Catat layanan dan pembayaran pelanggan.", icon: "salon",
     actions: ["Pilih layanan", "Terima pembayaran", "Lihat transaksi"],
     guidedTitle: "Dari layanan ke transaksi tercatat.",
     guidedDescription: "Coba kasir jasa menggunakan layanan simulasi, lalu cek transaksi di sistem.",
+    guidedOutcome: "Pembayaran layanan tersimpan tanpa mengurangi stok barang.",
+  },
+  {
+    slug: "barbershop", businessType: "salon_barbershop", title: "Barbershop",
+    examples: "Barber · Pangkas rambut · Grooming", benefit: "Catat layanan barber dan pembayarannya.", icon: "barbershop",
+    actions: ["Pilih layanan", "Terima pembayaran", "Lihat transaksi"],
+    guidedTitle: "Dari layanan barber ke transaksi tercatat.",
+    guidedDescription: "Coba kasir jasa dengan layanan simulasi, lalu cek transaksi di sistem.",
     guidedOutcome: "Pembayaran layanan tersimpan tanpa mengurangi stok barang.",
   },
 ];

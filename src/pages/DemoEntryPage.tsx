@@ -23,8 +23,8 @@ export default function DemoEntryPage() {
       <div className="nf-cinematic-picker">
         <header className="nf-cinematic-header">
           <span className="nf-cinematic-eyebrow">NEVERFADE POS · DEMO INTERAKTIF</span>
-          <h1>Coba langsung POS untuk usahamu.</h1>
-          <p>Lihat bagaimana NeverFade menghubungkan transaksi, operasional, dan laporan dalam satu sistem.</p>
+          <h1>Coba cara kerja POS di usahamu.</h1>
+          <p>Pilih jenis usaha, lalu coba alur transaksi dengan data simulasi.</p>
           <div className="nf-cinematic-trust" aria-label="Tentang demo">
             <span><Check aria-hidden="true" /> Interaktif</span>
             <span><Check aria-hidden="true" /> Data simulasi</span>
@@ -34,7 +34,7 @@ export default function DemoEntryPage() {
 
         <section className="nf-cinematic-panel" aria-label="Pilih jenis usaha">
           <div className="nf-cinematic-panel-head">
-            <span>PILIH JENIS USAHA</span>
+            <span>PILIH JENIS USAHA</span><small>6 pilihan · pilih untuk mulai</small>
           </div>
 
           <div className="nf-cinematic-grid">
@@ -72,7 +72,7 @@ export default function DemoEntryPage() {
                 </ul>
 
                 <span className="nf-cinematic-cta">
-                  Coba Demo <ArrowRight size={17} aria-hidden="true" />
+                  Lihat demo <ArrowRight size={17} aria-hidden="true" />
                 </span>
               </Link>
             ))}

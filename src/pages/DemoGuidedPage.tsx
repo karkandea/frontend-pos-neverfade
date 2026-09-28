@@ -62,7 +62,7 @@ const saleSteps: JourneyStep[] = [
 ];
 
 const startingProductCodes: Record<DemoBusinessSlug, string> = {
-  restaurant: "FNB002", retail: "GEN001", fashion: "RTL003", laundry: "LDR001", salon: "SAL001",
+  restaurant: "FNB002", retail: "GEN001", fashion: "RTL003", laundry: "LDR001", salon: "SAL001", barbershop: "SAL001",
 };
 
 const rupiah = (value: number) => new Intl.NumberFormat("id-ID", {

@@ -136,3 +136,15 @@
 .demo-free-section { margin: 24px 0; }
 .demo-free-section h2 { font-size: 17px; margin: 0 0 14px; }
 @media(max-width:720px) { .demo-mode-grid { grid-template-columns: 1fr; } .demo-mode-card { min-height: 230px; } }
+
+@media (min-width: 721px) and (max-width: 1050px) {
+  .demo-mode-card { padding: 18px; }
+  .demo-mode-title { font-size: 19px; }
+}
+@media (max-width: 720px) {
+  .demo-mode-grid { gap: 12px; }
+  .demo-mode-card { min-height: 0; padding: 18px; gap: 11px; }
+  .demo-mode-title { font-size: 20px; }
+  .demo-mode-cta { min-height: 44px; }
+  .demo-app-card { min-height: 88px; }
+}

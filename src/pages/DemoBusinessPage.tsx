@@ -110,7 +110,7 @@ const businessDemos: Record<string, BusinessDemo> = {
   },
   salon: {
     businessType: "salon_barbershop",
-    title: "Salon dan barbershop",
+    title: "Salon",
     description: "Pilih bagian bisnis yang ingin kamu coba.",
     apps: [
       { title: "Terima Pembayaran", description: "Catat layanan dan pembayaran", destination: "/kasir", icon: Scissors },
@@ -206,7 +206,7 @@ export default function DemoBusinessPage() {
           <span className="demo-mode-badge">DIREKOMENDASIKAN</span>
           <span className="demo-mode-title"><CheckCircle2 aria-hidden="true" /> Demo Terpandu</span>
           <span className="demo-mode-description">
-            Coba satu skenario bisnis yang nyata, selangkah demi selangkah. Tanpa tutorial panjang.
+            Ikuti simulasi {demo.title.toLowerCase()} dari awal hingga transaksi tercatat.
           </span>
           <span className="demo-mode-detail">{journey?.guidedTitle}</span>
           <span className="demo-mode-cta">
@@ -226,9 +226,9 @@ export default function DemoBusinessPage() {
         >
           <span className="demo-mode-title"><Compass aria-hidden="true" /> Eksplorasi Bebas</span>
           <span className="demo-mode-description">
-            Langsung masuk ke aplikasi yang ingin kamu lihat dan coba sendiri fiturnya.
+            Pilih aktivitas, lalu coba fitur yang tersedia di aplikasi demo.
           </span>
-          <span className="demo-mode-detail">Pilih aktivitas yang mau kamu coba.</span>
+          <span className="demo-mode-detail">Cocok jika kamu ingin melihat kasir, operasional, atau laporan.</span>
           <span className="demo-mode-cta demo-mode-cta--light">
             {freeOpen ? "Tutup pilihan aktivitas" : "Pilih aktivitas"}
             <ArrowRight aria-hidden="true" />
