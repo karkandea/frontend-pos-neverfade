@@ -22,7 +22,7 @@ async function session(page: Page, role: "owner" | "kasir" | "dapur" | "laundry_
       ...(fnb ? ["table_orders", "kitchen_queue"] : []), ...(laundry ? ["work_orders"] : [])],
     role, tenantStatus: "active", assignedOutletIds: [mainId],
     effectivePermissions: role === "owner"
-      ? ["users.manage", "settings.manage", "restaurant.tables.read", "restaurant.tables.manage", "pos.sell", "reports.read"]
+      ? ["users.manage", "settings.manage", "products.manage", "inventory.manage", "restaurant.tables.read", "restaurant.tables.manage", "pos.sell", "reports.read"]
       : role === "dapur" ? ["outlets.read", "restaurant.kitchen.operate"]
       : role === "laundry_operator" ? ["outlets.read", "laundry.work.operate"]
       : ["restaurant.tables.read", "pos.sell"],
@@ -55,6 +55,34 @@ test("owner assigns and revokes staff outlet from user management", async ({ pag
   await page.getByRole("button", { name: "Simpan Penugasan" }).click();
   await expect.poll(() => submitted).toEqual({ outletIds: [mainId, branchId] });
   await expect(page.getByRole("dialog", { name: "Penugasan outlet" })).toHaveCount(0);
+});
+
+test("active outlet scopes product and inventory API requests", async ({ page }) => {
+  await session(page, "owner");
+  await page.addInitScript((outletId) => {
+    localStorage.setItem("nfpos_active_outlet", outletId);
+  }, branchId);
+
+  const scopedHeaders: Record<string, string | null> = {};
+  await page.route("**/api/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/auth/me" || path === "/api/v2/context") return route.fallback();
+    if (path === "/api/outlets") return respond(route, [
+      { id: mainId, code: "MAIN", name: "Utama", active: true, isDefault: true },
+      { id: branchId, code: "BRANCH", name: "Cabang Dua", active: true, isDefault: false },
+    ]);
+    if (path === "/api/products" || path === "/api/stock-history") {
+      scopedHeaders[path] = route.request().headers()["x-outlet-id"] ?? null;
+      return respond(route, []);
+    }
+    return respond(route, []);
+  });
+
+  await page.goto("/produk");
+  await expect.poll(() => scopedHeaders["/api/products"]).toBe(branchId);
+
+  await page.goto("/inventaris");
+  await expect.poll(() => scopedHeaders["/api/stock-history"]).toBe(branchId);
 });
 
 test("empty restaurant offers owner direct table creation", async ({ page }) => {

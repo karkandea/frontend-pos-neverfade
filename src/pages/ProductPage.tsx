@@ -5,6 +5,7 @@ import {
 } from "react";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
+import { OUTLET_CHANGED_EVENT } from "../lib/outlet";
 import { SkeletonTable } from "../components/common/Skeleton";
 import type { Product } from "../types/product";
 import "./ProductPage.css";
@@ -70,6 +71,7 @@ export default function ProductPage() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Form>(emptyForm);
+  const [outletRevision, setOutletRevision] = useState(0);
 
   function rememberCategories(data: Product[]) {
     setCategoryOptions((current) => {
@@ -85,6 +87,12 @@ export default function ProductPage() {
       );
     });
   }
+
+  useEffect(() => {
+    const onOutletChanged = () => setOutletRevision((value) => value + 1);
+    window.addEventListener(OUTLET_CHANGED_EVENT, onOutletChanged);
+    return () => window.removeEventListener(OUTLET_CHANGED_EVENT, onOutletChanged);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -124,7 +132,7 @@ export default function ProductPage() {
     return () => {
       active = false;
     };
-  }, [search, kategori]);
+  }, [search, kategori, outletRevision]);
 
   async function load() {
     setLoading(true);

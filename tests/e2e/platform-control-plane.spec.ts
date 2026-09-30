@@ -254,7 +254,13 @@ test("super admin provisions business mode, updates profile, and controls tenant
   await page.getByRole("link", { name: "Buat Tenant" }).first().click();
   await page.getByLabel("Nama Toko").fill("QA Platform Coffee");
   await page.getByLabel("Tipe Bisnis").selectOption("food_beverage");
+  await expect(
+    page.getByText("Tidak ada katalog atau meja contoh yang otomatis dibuat.")
+  ).toBeVisible();
   await page.getByLabel("Mode tenant").selectOption("demo");
+  await expect(
+    page.getByText("Data contoh hanya dibuat untuk tenant demo baru, bukan tenant live.")
+  ).toBeVisible();
   await page.getByLabel("Zona waktu").selectOption("Asia/Makassar");
   await expect(page.getByText("Pesanan meja", { exact: true })).toBeVisible();
   await expect(page.getByText("Antrean dapur", { exact: true })).toBeVisible();
