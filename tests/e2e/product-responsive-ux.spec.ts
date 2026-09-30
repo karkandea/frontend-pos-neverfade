@@ -94,9 +94,10 @@ test("desktop product management keeps controls compact and readable", async ({ 
   await expect(page.getByRole("heading", { name: "Produk", exact: true })).toBeVisible();
   await expect(page.getByPlaceholder("Cari nama, kode, atau barcode")).toBeVisible();
   await expect(page.getByRole("button", { name: /Tambah Produk/ })).toBeVisible();
-  await expect(page.locator(".product-desktop-list")).toBeVisible();
-  await expect(page.getByText("Rp42.000")).toBeVisible();
-  await expect(page.getByText("48 pcs")).toBeVisible();
+  const desktopList = page.locator(".product-desktop-list");
+  await expect(desktopList).toBeVisible();
+  await expect(desktopList.getByText("Rp 42.000", { exact: true })).toBeVisible();
+  await expect(desktopList.getByText("48 pcs", { exact: true })).toBeVisible();
 
   const toolbar = await page.locator(".product-toolbar").boundingBox();
   expect(toolbar?.height ?? 999).toBeLessThan(60);
@@ -105,11 +106,12 @@ test("desktop product management keeps controls compact and readable", async ({ 
 test("mobile product management uses cards without horizontal overflow", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "Mobile Chromium", "Mobile product UX runs once.");
 
-  await expect(page.locator(".product-mobile-list")).toBeVisible();
+  const mobileList = page.locator(".product-mobile-list");
+  await expect(mobileList).toBeVisible();
   await expect(page.locator(".product-desktop-list")).toBeHidden();
-  await expect(page.getByText("Burger Beef Double", { exact: true })).toBeVisible();
-  await expect(page.getByText("Rp42.000", { exact: true })).toBeVisible();
-  await expect(page.getByText("48 pcs", { exact: true })).toBeVisible();
+  await expect(mobileList.getByText("Burger Beef Double", { exact: true })).toBeVisible();
+  await expect(mobileList.getByText("Rp 42.000", { exact: true })).toBeVisible();
+  await expect(mobileList.getByText("48 pcs", { exact: true })).toBeVisible();
 
   const widths = await page.evaluate(() => ({
     viewport: innerWidth,
