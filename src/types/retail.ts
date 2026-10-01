@@ -1,7 +1,7 @@
 export type ProductVariant = {
   id:string; productId:string; sku:string; barcode:string; label:string;
   option1Name:string; option1Value:string; option2Name:string; option2Value:string;
-  option3Name:string; option3Value:string; hargaModal:number|null; hargaJual:number|null;
+  option3Name:string; option3Value:string; hargaModal?:number|null; hargaJual:number|null;
   stok:number; active:boolean;
 };
 
@@ -15,7 +15,7 @@ export type ProductPrice = {
 
 export type RetailCatalogProduct = {
   id:string; kode:string; barcode:string; nama:string; kategori:string;
-  hargaModal:number; hargaJual:number; stok:number; supplier:string; satuan:string;
+  hargaModal?:number; hargaJual:number; stok:number; supplier:string; satuan:string;
   deskripsi:string; type:"goods"|"service"; tracksStock:boolean; quantityPrecision:number;
   variants:ProductVariant[]; prices:ProductPrice[];
 };

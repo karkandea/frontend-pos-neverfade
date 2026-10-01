@@ -12,7 +12,7 @@ export type Product = {
   barcode: string;
   nama: string;
   kategori: string;
-  hargaModal: number;
+  hargaModal?: number;
   hargaJual: number;
   stok: number;
   supplier: string;

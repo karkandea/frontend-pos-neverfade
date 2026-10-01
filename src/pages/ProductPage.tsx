@@ -172,7 +172,7 @@ export default function ProductPage() {
       barcode: product.barcode ?? "",
       nama: product.nama,
       kategori: product.kategori,
-      hargaModal: product.hargaModal,
+      hargaModal: product.hargaModal ?? 0,
       hargaJual: product.hargaJual,
       stok: product.stok,
       supplier: product.supplier ?? "",
@@ -391,7 +391,7 @@ export default function ProductPage() {
                       </div>
                     </td>
                     <td>{p.kategori || "-"}</td>
-                    <td className="product-money-cell">{rupiah(p.hargaModal)}</td>
+                    <td className="product-money-cell">{p.hargaModal == null ? "—" : rupiah(p.hargaModal)}</td>
                     <td className="product-money-cell product-sale-price">
                       {rupiah(p.hargaJual)}
                     </td>
