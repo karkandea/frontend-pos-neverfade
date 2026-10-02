@@ -130,3 +130,23 @@ test("product catalog refetches for the selected outlet", async ({ page }, testI
 
   await expect.poll(() => productOutletHeaders.at(-1)).toBe("outlet-branch");
 });
+
+test("catalog status changes serialize inactive flag without affecting other fields", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "Desktop Chromium", "Desktop status management.");
+  let serialized: Record<string, unknown> | null = null;
+  await page.route("**/api/products/p-1", async (route) => {
+    if (route.request().method() === "PUT") {
+      serialized = route.request().postDataJSON() as Record<string, unknown>;
+      return json(route, { ...products[0], active: false });
+    }
+    return route.continue();
+  });
+  const row = page.locator(".product-desktop-list tr").filter({ hasText: "Burger Beef Double" });
+  await row.getByRole("button", { name: "Edit" }).click();
+  await expect(page.getByLabel("Status penjualan")).toHaveValue("active");
+  await page.getByLabel("Status penjualan").selectOption("inactive");
+  await page.getByRole("button", { name: "Simpan", exact: true }).click();
+  await expect.poll(() => serialized?.active).toBe(false);
+  expect(serialized?.kode).toBe("PRD005");
+  expect(serialized?.nama).toBe("Burger Beef Double");
+});

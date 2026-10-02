@@ -5,6 +5,7 @@ import {
 } from "react";
 import AppShell from "../components/layout/AppShell";
 import api from "../lib/api";
+import { useAuthStore } from "../stores/auth";
 import { OUTLET_CHANGED_EVENT } from "../lib/outlet";
 import { SkeletonTable } from "../components/common/Skeleton";
 import type { Product } from "../types/product";
@@ -23,6 +24,7 @@ type Form = {
   deskripsi: string;
   type: "goods" | "service";
   tracksStock: boolean;
+  active: boolean;
   quantityPrecision: number;
 };
 
@@ -39,6 +41,7 @@ const emptyForm: Form = {
   deskripsi: "",
   type: "goods",
   tracksStock: true,
+  active: true,
   quantityPrecision: 0,
 };
 
@@ -63,6 +66,8 @@ function stockLabel(product: Product) {
 }
 
 export default function ProductPage() {
+  const role = useAuthStore((state) => state.user?.role);
+  const canManage = role === "owner" || role === "admin";
   const [products, setProducts] = useState<Product[]>([]);
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -180,6 +185,7 @@ export default function ProductPage() {
       deskripsi: product.deskripsi ?? "",
       type: product.type ?? "goods",
       tracksStock: product.tracksStock ?? true,
+      active: product.active !== false,
       quantityPrecision: product.quantityPrecision ?? 0,
     });
 
@@ -326,10 +332,10 @@ export default function ProductPage() {
               ))}
             </select>
 
-            <button className="btn-primary product-add-button" onClick={openCreate}>
+            {canManage && <button className="btn-primary product-add-button" onClick={openCreate}>
               <span aria-hidden="true">+</span>
               Tambah Produk
-            </button>
+            </button>}
           </div>
         </div>
 
@@ -368,10 +374,11 @@ export default function ProductPage() {
                   <th>Kode / Barcode</th>
                   <th>Nama</th>
                   <th>Kategori</th>
-                  <th>Harga Modal</th>
+                  {canManage && <th>Harga Modal</th>}
                   <th>Harga Jual</th>
                   <th>Stok</th>
-                  <th aria-label="Aksi" />
+                  <th>Status</th>
+                  {canManage && <th aria-label="Aksi" />}
                 </tr>
               </thead>
 
@@ -391,7 +398,7 @@ export default function ProductPage() {
                       </div>
                     </td>
                     <td>{p.kategori || "-"}</td>
-                    <td className="product-money-cell">{rupiah(p.hargaModal)}</td>
+                    {canManage && <td className="product-money-cell">{rupiah(p.hargaModal)}</td>}
                     <td className="product-money-cell product-sale-price">
                       {rupiah(p.hargaJual)}
                     </td>
@@ -402,7 +409,12 @@ export default function ProductPage() {
                         {stockLabel(p)}
                       </span>
                     </td>
-                    <td className="product-actions-cell">
+                    <td>
+                      <span className={"product-state" + (p.active === false ? " is-inactive" : "") }>
+                        {p.active === false ? "Nonaktif" : "Aktif"}
+                      </span>
+                    </td>
+                    {canManage && <td className="product-actions-cell">
                       <button
                         className="product-edit-button"
                         onClick={() => openEdit(p)}
@@ -424,7 +436,7 @@ export default function ProductPage() {
                           </button>
                         </div>
                       </details>
-                    </td>
+                    </td>}
                   </tr>
                 ))}
               </tbody>
@@ -456,6 +468,7 @@ export default function ProductPage() {
                       <span>{p.kode}</span>
                       <span aria-hidden="true">•</span>
                       <span>{productTypeLabel(p)}</span>
+                      {p.active === false ? <span className="product-state is-inactive">Nonaktif</span> : null}
                       {p.kategori && (
                         <>
                           <span aria-hidden="true">•</span>
@@ -465,7 +478,7 @@ export default function ProductPage() {
                     </div>
                   </div>
 
-                  <details className="product-action-menu product-mobile-menu">
+                  {canManage && <details className="product-action-menu product-mobile-menu">
                     <summary aria-label={`Aksi untuk ${p.nama}`}>
                       <span aria-hidden="true">•••</span>
                     </summary>
@@ -478,7 +491,7 @@ export default function ProductPage() {
                         Hapus produk
                       </button>
                     </div>
-                  </details>
+                  </details>}
                 </div>
 
                 <div className="product-mobile-values">
@@ -502,9 +515,9 @@ export default function ProductPage() {
                       <span>Tanpa barcode</span>
                     )}
                   </div>
-                  <button type="button" onClick={() => openEdit(p)}>
+                  {canManage && <button type="button" onClick={() => openEdit(p)}>
                     Edit
-                  </button>
+                  </button>}
                 </div>
               </article>
             ))
@@ -534,6 +547,21 @@ export default function ProductPage() {
                   >
                     <option value="goods">Barang</option>
                     <option value="service">Jasa / layanan</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="product-sale-status">Status penjualan</label>
+                  <select
+                    id="product-sale-status"
+                    value={form.active ? "active" : "inactive"}
+                    onChange={(event) => setForm((current) => ({
+                      ...current,
+                      active: event.target.value === "active",
+                    }))}
+                  >
+                    <option value="active">Aktif — tersedia untuk dijual</option>
+                    <option value="inactive">Nonaktif — tidak bisa dijual</option>
                   </select>
                 </div>
 
