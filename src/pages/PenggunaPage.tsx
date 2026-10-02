@@ -306,6 +306,20 @@ export default function PenggunaPage() {
     }
   }
 
+  async function revokeUserSessions(user: ManagedUser) {
+    if (user.id === currentUser?.id ||
+        (user.role === "owner" && currentUser?.role !== "owner")) return;
+    if (!window.confirm(`Cabut semua sesi ${user.nama}? Pengguna harus login ulang di semua perangkat.`)) return;
+    try {
+      await api.post(`/api/users/${user.id}/revoke`, null, {
+        headers: { "Idempotency-Key": crypto.randomUUID() },
+      });
+      window.alert(`Semua sesi ${user.nama} berhasil dicabut.`);
+    } catch (error) {
+      window.alert(getErrorMessage(error));
+    }
+  }
+
   async function removeUser(
     user: ManagedUser
   ) {
@@ -470,6 +484,17 @@ export default function PenggunaPage() {
                                   Outlet
                                 </button>
                               ) : null}
+
+                              <button
+                                type="button"
+                                className="btn-secondary"
+                                disabled={user.id === currentUser?.id ||
+                                  (user.role === "owner" && currentUser?.role !== "owner")}
+                                onClick={() => void revokeUserSessions(user)}
+                                title="Cabut akses dari semua perangkat"
+                              >
+                                Cabut sesi
+                              </button>
 
                               <button
                                 type="button"

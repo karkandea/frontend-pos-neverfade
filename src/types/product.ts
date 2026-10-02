@@ -20,5 +20,6 @@ export type Product = {
   deskripsi: string;
   type: "goods" | "service";
   tracksStock: boolean;
+  active?: boolean;
   quantityPrecision: number;
 };
