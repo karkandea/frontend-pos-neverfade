@@ -41,6 +41,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaCode, setMfaCode] = useState("");
+  const [useRecovery, setUseRecovery] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(
     searchParams.get("reason") === "suspended"
@@ -60,7 +63,9 @@ export default function LoginPage() {
     const startedAt = performance.now();
 
     try {
-      await login(username, password, rememberMe);
+      await login(username, password, rememberMe,
+        mfaRequired && !useRecovery ? mfaCode.trim() : undefined,
+        mfaRequired && useRecovery ? mfaCode.trim() : undefined);
       const authState = useAuthStore.getState();
       const token = authState.token;
       const user = authState.user;
@@ -88,6 +93,15 @@ export default function LoginPage() {
         { replace: true }
       );
     } catch (error: unknown) {
+      const errorCode = axios.isAxiosError<{ code?: string }>(error)
+        ? error.response?.data?.code : undefined;
+      if (errorCode === "MFA_REQUIRED") {
+        setMfaRequired(true);
+        setError("");
+        return;
+      }
+      if (errorCode === "MFA_INVALID" || errorCode === "MFA_REPLAY_DENIED" ||
+          errorCode === "MFA_RATE_LIMIT") setMfaRequired(true);
       void reportLoginFailure(
         error,
         performance.now() - startedAt
@@ -97,6 +111,7 @@ export default function LoginPage() {
         axios.isAxiosError<{
           error?: string;
           message?: string;
+          code?: string;
         }>(error)
           ? error.response?.data?.message ??
             error.response?.data?.error
@@ -231,6 +246,39 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {mfaRequired && (
+              <div className="form-group">
+                <label htmlFor="login-mfa-code">
+                  {useRecovery ? "Kode pemulihan MFA" : "Kode autentikator (6 digit)"}
+                </label>
+                <div className="input-wrapper">
+                  <input
+                    id="login-mfa-code"
+                    type="text"
+                    inputMode={useRecovery ? "text" : "numeric"}
+                    autoComplete={useRecovery ? "off" : "one-time-code"}
+                    autoFocus
+                    maxLength={useRecovery ? 20 : 6}
+                    value={mfaCode}
+                    onChange={(event) => setMfaCode(event.target.value.trim())}
+                    placeholder={useRecovery ? "Kode pemulihan sekali pakai" : "000000"}
+                    required
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    setUseRecovery((value) => !value);
+                    setMfaCode("");
+                    setError("");
+                  }}
+                >
+                  {useRecovery ? "Gunakan kode autentikator" : "Gunakan kode pemulihan"}
+                </button>
+              </div>
+            )}
 
             <div className="login-options">
               <label className="checkbox-label">
