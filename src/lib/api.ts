@@ -125,9 +125,14 @@ api.interceptors.response.use(
   (error) => {
     const status = error?.response?.status;
 
-    // Login itself can return MFA_REQUIRED/MFA_INVALID. Do not wipe its OTP state
-    // or navigate away before LoginPage can render the challenge/error.
-    if (status === 401 && error?.config?.url !== "/api/auth/login") {
+    // Expected proof errors are not expired sessions: keep MFA login or
+    // authenticator setup on screen so users can retry safely.
+    const path = error?.config?.url;
+    const code = error?.response?.data?.code;
+    const mfaProofRejected =
+      (path === "/api/auth/mfa/enroll" && code === "MFA_PASSWORD_INVALID") ||
+      (path === "/api/auth/mfa/confirm" && code === "MFA_INVALID");
+    if (status === 401 && path !== "/api/auth/login" && !mfaProofRejected) {
       const sharedSessionActive =
         localStorage.getItem(SHARED_MODE_KEY) === "1" &&
         Boolean(sessionStorage.getItem(SHARED_SESSION_TOKEN_KEY));
