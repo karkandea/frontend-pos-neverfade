@@ -23,7 +23,9 @@ type AuthState = {
   login: (
     username: string,
     password: string,
-    remember: boolean
+    remember: boolean,
+    totpCode?: string,
+    recoveryCode?: string
   ) => Promise<void>;
   restore: () => Promise<void>;
   logout: () => void;
@@ -53,10 +55,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ token });
   },
 
-  login: async (username, password, remember) => {
+  login: async (username, password, remember, totpCode, recoveryCode) => {
     const { data } = await api.post("/api/auth/login", {
       username,
       password,
+      totpCode,
+      recoveryCode,
     });
 
     localStorage.removeItem(TOKEN_KEY);

@@ -7,6 +7,7 @@ import {
 import AppShell from "../components/layout/AppShell";
 import OutletSettingsCard from "../components/settings/OutletSettingsCard";
 import WhatsAppSettingsCard from "../components/settings/WhatsAppSettingsCard";
+import MfaSettingsCard from "../components/settings/MfaSettingsCard";
 import api from "../lib/api";
 
 type Settings = {
@@ -283,6 +284,7 @@ export default function PengaturanPage() {
 
             <OutletSettingsCard />
             <WhatsAppSettingsCard />
+            <MfaSettingsCard />
 
             <div className="card-panel">
               <div className="card-header">
