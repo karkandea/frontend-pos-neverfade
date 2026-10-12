@@ -107,9 +107,7 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <span className="status-badge">
-            ● Online
-          </span>
+
 
         </div>
 
