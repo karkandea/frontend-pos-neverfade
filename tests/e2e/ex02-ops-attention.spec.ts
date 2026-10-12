@@ -99,3 +99,12 @@ test("CORE15 failed signal retrieval does not falsely show healthy and can retry
   await expect(region.getByText("Ada anomali yang perlu diperiksa.")).toBeVisible();
   await expect(region.getByRole("alert")).toHaveCount(0);
 });
+
+test("CORE15 refreshes owner signals after one minute while dashboard is visible", async ({ page }) => {
+  await page.clock.install();
+  const calls = await openDashboard(page, "owner");
+  await expect.poll(calls).toBe(2);
+  await page.clock.fastForward(60_000);
+  await expect.poll(calls).toBe(4);
+  await expect(page.getByText("Terakhir diperiksa:")).toBeVisible();
+});
