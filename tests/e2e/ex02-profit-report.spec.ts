@@ -82,7 +82,7 @@ test("CORE17 complete cost snapshot displays estimate with financial qualifier",
 
   const profit = page.locator("#laporan-summary .summary-row")
     .filter({ hasText: "Estimasi laba kotor" });
-  await expect(profit).toContainText("Rp 100.000");
+  await expect(profit).toContainText(/Rp\\s*100\\.000/);
   await expect(page.getByText(/bukan laba bersih akuntansi/)).toBeVisible();
 });
 
