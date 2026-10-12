@@ -3,6 +3,8 @@ import AppShell from "../components/layout/AppShell";
 import DashboardChart from "./DashboardChart";
 import api from "../lib/api";
 import { SkeletonCards, Skeleton } from "../components/common/Skeleton";
+import { useAuthStore } from "../stores/auth";
+import OwnerOpsAttention from "../components/dashboard/OwnerOpsAttention";
 
 type Summary = {
   omzet: number;
@@ -26,6 +28,7 @@ function rupiah(value: number) {
 }
 
 export default function DashboardPage() {
+  const isOwner = useAuthStore((state) => state.user?.role === "owner");
   const [summary, setSummary] =
     useState<Summary>({
       omzet: 0,
@@ -181,6 +184,8 @@ export default function DashboardPage() {
 
           </div>
         )}
+
+        {isOwner ? <OwnerOpsAttention /> : null}
 
         <div className="dashboard-bottom">
 
