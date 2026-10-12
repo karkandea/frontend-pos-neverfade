@@ -21,6 +21,9 @@ type Summary = {
   transaksi: number;
   avg: number;
   pelanggan: number;
+  // Optional for compatibility with older backend deployments.
+  costIncomplete?: boolean;
+  estimatedGrossProfit?: number | null;
 };
 
 type ChartItem = {
@@ -460,6 +463,28 @@ export default function LaporanPage() {
                               0}
                           </strong>
                         </div>
+
+                        {summary &&
+                          (typeof summary.costIncomplete === "boolean" ||
+                            summary.estimatedGrossProfit !== undefined) && (
+                            <>
+                              <div className="summary-row">
+                                <span>Estimasi laba kotor</span>
+                                <strong>
+                                  {summary.costIncomplete ||
+                                  summary.estimatedGrossProfit == null
+                                    ? "Belum dapat dihitung"
+                                    : rupiah(summary.estimatedGrossProfit)}
+                                </strong>
+                              </div>
+                              <p className="section-sub" role="note">
+                                {summary.costIncomplete ||
+                                summary.estimatedGrossProfit == null
+                                  ? "Sebagian transaksi belum punya snapshot harga modal. Laba tidak dihitung menggunakan harga modal produk saat ini."
+                                  : "Estimasi setelah diskon, sebelum pajak; bukan laba bersih akuntansi."}
+                              </p>
+                            </>
+                          )}
                       </>
                     )}
                   </div>
