@@ -100,6 +100,33 @@ test("CORE15 failed signal retrieval does not falsely show healthy and can retry
   await expect(region.getByRole("alert")).toHaveCount(0);
 });
 
+test("CORE15 skips hidden-tab polling and immediately rechecks on return", async ({ page }) => {
+  await page.clock.install();
+  const calls = await openDashboard(page, "owner");
+  const region = page.getByRole("region", { name: "Pemantauan operasional owner" });
+  await expect(region.getByText("Ada anomali yang perlu diperiksa.")).toBeVisible();
+  await expect.poll(calls).toBe(2);
+
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => "hidden",
+    });
+  });
+  await page.clock.fastForward(60_000);
+  expect(calls()).toBe(2);
+
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => "visible",
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect.poll(calls).toBe(4);
+  await expect(region.getByRole("alert")).toHaveCount(0);
+});
+
 test("CORE15 refreshes owner signals after one minute while dashboard is visible", async ({ page }) => {
   await page.clock.install();
   const calls = await openDashboard(page, "owner");
