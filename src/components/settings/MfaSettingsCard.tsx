@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import QRCode from "qrcode";
 import api from "../../lib/api";
 import { useAuthStore } from "../../stores/auth";
@@ -42,8 +43,12 @@ export default function MfaSettingsCard() {
       setEnrollment(data);
       setPassword("");
       setCode("");
-    } catch {
-      setError("Gagal memulai aktivasi. Periksa password dan koneksi.");
+    } catch (error: unknown) {
+      setError(
+        axios.isAxiosError(error) && error.response?.status === 429
+          ? "Terlalu banyak percobaan. Coba lagi dalam 10 menit."
+          : "Gagal memulai aktivasi. Periksa password dan koneksi."
+      );
     } finally { setBusy(false); }
   }
 

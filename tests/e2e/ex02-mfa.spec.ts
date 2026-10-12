@@ -56,6 +56,8 @@ test("MFA setup proof failures keep settings open instead of logging out", async
       return reply(route, { enabled: false, pending: false, configured: true });
     if (path === "/api/auth/mfa/enroll") {
       const body = route.request().postDataJSON() as { password: string };
+      if (body.password === "locked")
+        return reply(route, { code: "MFA_RATE_LIMIT", message: "Terlalu banyak percobaan." }, 429);
       if (body.password !== "correct")
         return reply(route, { code: "MFA_PASSWORD_INVALID", message: "Password salah." }, 401);
       return reply(route, {
@@ -86,6 +88,11 @@ test("MFA setup proof failures keep settings open instead of logging out", async
   await page.getByLabel("Password saat ini").fill("bad");
   await page.getByRole("button", { name: "Mulai aktivasi" }).click();
   await expect(page.getByText("Gagal memulai aktivasi. Periksa password dan koneksi.")).toBeVisible();
+  await expect(page).toHaveURL(/\/pengaturan$/);
+
+  await page.getByLabel("Password saat ini").fill("locked");
+  await page.getByRole("button", { name: "Mulai aktivasi" }).click();
+  await expect(page.getByText("Terlalu banyak percobaan. Coba lagi dalam 10 menit.")).toBeVisible();
   await expect(page).toHaveURL(/\/pengaturan$/);
 
   await page.getByLabel("Password saat ini").fill("correct");
