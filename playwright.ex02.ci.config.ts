@@ -1,4 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
+import bundledChromium from "@sparticuz/chromium";
+
+const executablePath = await bundledChromium.executablePath();
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -13,6 +16,10 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:5273",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    launchOptions: {
+      executablePath,
+      args: bundledChromium.args,
+    },
   },
   webServer: {
     command: "npm run dev -- --host 127.0.0.1 --port 5273 --strictPort",
