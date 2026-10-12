@@ -66,9 +66,16 @@ export default function OwnerOpsAttention() {
     const poll = window.setInterval(() => {
       if (document.visibilityState === "visible") void load();
     }, 60_000);
+    // Immediately revalidate stale signals when returning from a background tab.
+    // A skipped interval must not leave the owner viewing an old health snapshot.
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       window.cancelAnimationFrame(frame);
       window.clearInterval(poll);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [load]);
 
