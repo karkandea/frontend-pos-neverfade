@@ -35,6 +35,7 @@ export default function OwnerOpsAttention() {
   const [alerts, setAlerts] = useState<OpsAlert[]>([]);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState("");
+  const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -48,9 +49,11 @@ export default function OwnerOpsAttention() {
       ]);
       setHealth(signal.data.data);
       setAlerts(history.data.data);
+      setLastCheckedAt(signal.data.meta.asOf);
     } catch {
       setHealth(null);
       setAlerts([]);
+      setLastCheckedAt(null);
       setError("Sinyal operasional belum dapat dimuat. Ini bukan berarti sistem aman.");
     } finally {
       setBusy(false);
@@ -60,7 +63,13 @@ export default function OwnerOpsAttention() {
   useEffect(() => {
     // Defer the initial fetch out of the effect's synchronous render phase.
     const frame = window.requestAnimationFrame(() => void load());
-    return () => window.cancelAnimationFrame(frame);
+    const poll = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, 60_000);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearInterval(poll);
+    };
   }, [load]);
 
   return (
@@ -82,6 +91,11 @@ export default function OwnerOpsAttention() {
         <p role="status">Memuat sinyal operasional...</p>
       ) : health ? (
         <div>
+          {lastCheckedAt ? (
+            <p className="section-sub">
+              Terakhir diperiksa: {new Date(lastCheckedAt).toLocaleString("id-ID")}
+            </p>
+          ) : null}
           <p role="status">
             {health.needsAttention
               ? "Ada anomali yang perlu diperiksa."
