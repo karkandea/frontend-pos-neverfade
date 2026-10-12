@@ -76,6 +76,7 @@ jobs:
           tests/e2e/sprint1-role-outlet.spec.ts
           tests/e2e/sprint2-cash-optin.spec.ts
           tests/e2e/qris-checkout.spec.ts
+          tests/e2e/ex02-mfa.spec.ts
           --project="Desktop Chromium"
 
       - name: Publish immutable candidate
