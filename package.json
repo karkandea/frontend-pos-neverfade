@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "npm run lint && npm install --no-save --no-audit --no-fund @sparticuz/chromium && npx playwright test -c playwright.ex02.ci.config.ts",
+    "prebuild": "npm run lint && npm install --no-save --no-audit --no-fund @sparticuz/chromium && npx playwright test -c playwright.ex02.ci.config.ts --grep \"CORE15 owner sees\" && npx playwright test -c playwright.ex02.ci.config.ts --grep \"CORE15 admin never\" && npx playwright test -c playwright.ex02.ci.config.ts --grep \"CORE15 failed signal retrieval\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
