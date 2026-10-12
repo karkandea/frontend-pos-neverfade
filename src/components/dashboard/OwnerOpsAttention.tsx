@@ -58,7 +58,9 @@ export default function OwnerOpsAttention() {
   }, []);
 
   useEffect(() => {
-    void load();
+    // Defer the initial fetch out of the effect's synchronous render phase.
+    const frame = window.requestAnimationFrame(() => void load());
+    return () => window.cancelAnimationFrame(frame);
   }, [load]);
 
   return (
