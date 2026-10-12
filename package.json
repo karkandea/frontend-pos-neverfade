@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "npm run lint",
+    "prebuild": "npm run lint && npm install --no-save --no-audit --no-fund @sparticuz/chromium && npx playwright test -c playwright.ex02.ci.config.ts --grep \"CORE17 missing\" && npx playwright test -c playwright.ex02.ci.config.ts --grep \"CORE17 complete\" && npx playwright test -c playwright.ex02.ci.config.ts --grep \"CORE17 legacy\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
