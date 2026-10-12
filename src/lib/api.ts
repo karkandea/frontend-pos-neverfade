@@ -73,7 +73,8 @@ api.interceptors.request.use((config) => {
     localStorage.getItem(TOKEN_KEY) ??
     sessionStorage.getItem(TOKEN_KEY);
 
-  if (token) {
+  // Password/MFA login is a fresh authentication attempt. Never attach a stale tenant JWT.
+  if (token && config.url !== "/api/auth/login") {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
@@ -124,7 +125,9 @@ api.interceptors.response.use(
   (error) => {
     const status = error?.response?.status;
 
-    if (status === 401) {
+    // Login itself can return MFA_REQUIRED/MFA_INVALID. Do not wipe its OTP state
+    // or navigate away before LoginPage can render the challenge/error.
+    if (status === 401 && error?.config?.url !== "/api/auth/login") {
       const sharedSessionActive =
         localStorage.getItem(SHARED_MODE_KEY) === "1" &&
         Boolean(sessionStorage.getItem(SHARED_SESSION_TOKEN_KEY));

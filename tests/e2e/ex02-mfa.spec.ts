@@ -14,6 +14,8 @@ test("MFA login challenges password-only attempts and submits OTP", async ({ pag
       attempted.push(body);
       if (!body.totpCode && !body.recoveryCode)
         return reply(route, { code: "MFA_REQUIRED", message: "OTP wajib." }, 401);
+      if (body.totpCode && body.totpCode !== "123456")
+        return reply(route, { code: "MFA_INVALID", message: "Kode tidak sesuai." }, 401);
       return reply(route, { token: "qa-mfa-token", user: identity });
     }
     if (path === "/api/auth/me") return reply(route, identity);
@@ -27,10 +29,18 @@ test("MFA login challenges password-only attempts and submits OTP", async ({ pag
   await page.getByLabel("Password", { exact: true }).fill("password");
   await page.getByRole("button", { name: "Masuk" }).click();
   await expect(page.getByLabel("Kode autentikator (6 digit)")).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByLabel("Kode autentikator (6 digit)").fill("000000");
+  await page.getByRole("button", { name: "Masuk" }).click();
+  await expect(page.getByText("Kode tidak sesuai.")).toBeVisible();
+  await expect(page.getByLabel("Kode autentikator (6 digit)")).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem("nfpos_token") ??
+    sessionStorage.getItem("nfpos_token"))).toBeNull();
   await page.getByLabel("Kode autentikator (6 digit)").fill("123456");
   await page.getByRole("button", { name: "Masuk" }).click();
   await expect(page).toHaveURL(/\/produk$/);
-  expect(attempted).toHaveLength(2);
-  expect(attempted[1]?.totpCode).toBe("123456");
-  expect(attempted[1]?.password).toBe("password");
+  expect(attempted).toHaveLength(3);
+  expect(attempted[1]?.totpCode).toBe("000000");
+  expect(attempted[2]?.totpCode).toBe("123456");
+  expect(attempted[2]?.password).toBe("password");
 });
