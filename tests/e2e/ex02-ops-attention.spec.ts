@@ -73,7 +73,7 @@ test("CORE15 owner sees real scoped signals, alert correlation and dispatch limi
   const region = page.getByRole("region", { name: "Pemantauan operasional owner" });
   await expect(region).toBeVisible();
   await expect(region.getByText("Ada anomali yang perlu diperiksa.")).toBeVisible();
-  await expect(region.getByText("Pembayaran tertahan", { exact: true })).toBeVisible();
+  await expect(region.locator(".stats-grid").getByText("Pembayaran tertahan", { exact: true })).toBeVisible();
   await expect(region.getByText("2", { exact: true })).toBeVisible();
   await expect(region.getByText("Webhook belum diproses", { exact: true })).toBeVisible();
   await expect(region.getByText(/ops:payment_stalled:/)).toBeVisible();
