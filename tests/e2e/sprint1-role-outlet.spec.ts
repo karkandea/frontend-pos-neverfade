@@ -133,6 +133,99 @@ test("reports default to aggregate and explicitly filter all report requests by 
   await expect.poll(() => selectedHeaders["/api/laporan/top-products"]).toBe(branchId);
 });
 
+test("transaction history follows the selected outlet without showing stale rows", async ({ page }) => {
+  await session(page, "owner");
+  let releaseBranch!: () => void;
+  const branchResponse = new Promise<void>((resolve) => { releaseBranch = resolve; });
+  await page.route("**/api/outlets", (route) => respond(route, [
+    { id: mainId, name: "Utama", active: true, isDefault: true },
+    { id: branchId, name: "Cabang Dua", active: true, isDefault: false },
+  ]));
+  await page.route("**/api/transactions**", async (route) => {
+    const outlet = route.request().headers()["x-outlet-id"];
+    if (outlet === branchId) await branchResponse;
+    return respond(route, [{
+      id: outlet || mainId,
+      noTrx: outlet === branchId ? "TRX-CABANG" : "TRX-UTAMA",
+      tanggal: "2026-09-25T08:00:00Z",
+      kasir: "Kasir QA",
+      status: "paid",
+      total: 100000,
+      items: [],
+    }]);
+  });
+  await page.goto("/transaksi");
+  const outlet = page.getByLabel("Outlet aktif");
+  await expect(outlet).toHaveValue(mainId);
+  await expect(page.getByText("TRX-UTAMA")).toBeVisible();
+
+  const search = page.getByPlaceholder("Cari transaksi...");
+  await search.fill("TRX");
+  const request = page.waitForRequest((entry) =>
+    new URL(entry.url()).pathname === "/api/transactions" &&
+    entry.headers()["x-outlet-id"] === branchId);
+  await outlet.selectOption(branchId);
+  expect(new URL((await request).url()).searchParams.get("search")).toBe("TRX");
+  await expect(page.getByText("TRX-UTAMA")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Export" })).toBeDisabled();
+  releaseBranch();
+
+  await expect(page.getByText("TRX-CABANG")).toBeVisible();
+  await expect(search).toHaveValue("TRX");
+  await outlet.selectOption(mainId);
+  await expect(page.getByText("TRX-UTAMA")).toBeVisible();
+  await expect(page.getByText("TRX-CABANG")).toHaveCount(0);
+});
+
+test("settings toggle controls the automatic PPN used by the cashier", async ({ page }) => {
+  await session(page, "owner");
+  let settings = {
+    namaToko: "Retail QA", alamat: "", telepon: "", email: "", website: "",
+    headerStruk: "", footerStruk: "", showTax: false, showPoint: true,
+    defaultTax: 0, minStok: 5, poinRate: 1,
+  };
+  await page.route("**/api/**", (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path === "/api/auth/me" || path === "/api/tenant/context") return route.fallback();
+    if (path === "/api/settings") {
+      if (request.method() === "PUT") {
+        settings = request.postDataJSON();
+        return respond(route, { ok: true });
+      }
+      return respond(route, settings);
+    }
+    if (path === "/api/products") return respond(route, [
+      { id: "retail-product", nama: "Produk Retail", hargaJual: 100000, stok: 5, type: "goods", tracksStock: true },
+    ]);
+    if (path === "/api/payments/capabilities") return respond(route, { qrisEnabled: false });
+    return respond(route, []);
+  });
+  page.on("dialog", (dialog) => dialog.accept());
+
+  for (const enabled of [false, true, false]) {
+    await page.goto("/pengaturan");
+    const taxToggle = page.getByRole("checkbox", { name: "Aktifkan PPN otomatis di kasir" });
+    await taxToggle.setChecked(enabled);
+    await page.getByLabel("Tarif PPN otomatis (%)").fill("11");
+    await expect(page.getByLabel("Email (opsional)")).toHaveValue("");
+    const saved = page.waitForResponse((response) =>
+      new URL(response.url()).pathname === "/api/settings" && response.request().method() === "PUT");
+    await page.getByRole("button", { name: "Simpan", exact: true }).click();
+    expect((await saved).ok()).toBe(true);
+    expect(settings).toMatchObject({ showTax: enabled, defaultTax: 11, email: "" });
+
+    await page.goto("/kasir");
+    await page.getByRole("button", { name: "Tambah Produk Retail ke keranjang" }).click();
+    const openCart = page.getByRole("button", { name: /Buka keranjang/ });
+    if (await openCart.isVisible()) {
+      await openCart.click();
+    }
+    await expect(page.getByLabel("Pajak persen")).toHaveValue(enabled ? "11" : "0");
+    await expect(page.locator(".total-row")).toContainText(enabled ? /111\.000/ : /100\.000/);
+  }
+});
+
 
 test("laundry operator only sees price-free work queue and cannot navigate to checkout", async ({ page }) => {
   await session(page, "laundry_operator", false, true);

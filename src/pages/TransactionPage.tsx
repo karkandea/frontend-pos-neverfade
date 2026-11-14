@@ -60,6 +60,7 @@ type CartItem = {
 };
 
 type Settings = {
+  showTax: boolean;
   defaultTax: number;
   headerStruk: string;
   footerStruk: string;
@@ -153,6 +154,10 @@ function clampPercent(value: number) {
   return Math.min(100, Math.max(0, value));
 }
 
+function defaultSaleTax(settings: Settings) {
+  return settings.showTax ? clampPercent(Number(settings.defaultTax)) : 0;
+}
+
 function paymentFromStatus(status: PaymentStatus): QrisPayment {
   return {
     id: status.id,
@@ -239,6 +244,7 @@ export default function TransactionPage() {
   const [paid, setPaid] = useState(0);
 
   const [settings, setSettings] = useState<Settings>({
+    showTax: false,
     defaultTax: 0,
     headerStruk: "",
     footerStruk: "",
@@ -368,11 +374,7 @@ export default function TransactionPage() {
           ? "tunai"
           : current
       );
-      setTax(
-        clampPercent(Number(
-          settingsResponse.data.defaultTax ?? 0
-        ))
-      );
+      setTax(defaultSaleTax(settingsResponse.data));
 
       await restoreRestaurantCheckout(loadedProducts);
       await restoreLaundryCheckout(loadedProducts);
@@ -989,7 +991,7 @@ export default function TransactionPage() {
     setPaid(0);
     setCustomerId("");
     setDiscount(0);
-    setTax(settings.defaultTax ?? 0);
+    setTax(defaultSaleTax(settings));
     setPaymentMethod("tunai");
   }
 
