@@ -388,9 +388,10 @@ export default function KaryawanPage() {
                 </div>
 
                 <div className="form-group">
-                  <label>Email</label>
+                  <label htmlFor="employee-email">Email (opsional)</label>
 
                   <input
+                    id="employee-email"
                     name="email"
                     type="email"
                     value={form.email}

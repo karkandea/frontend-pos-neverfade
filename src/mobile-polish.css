@@ -1,9 +1,3 @@
-/* Hide the legacy tax display toggle until its downstream semantics are fully wired.
-   Keeping the saved value untouched is safer than exposing a control that currently changes nothing. */
-.checkbox-label:has(input[name="showTax"]) {
-  display: none;
-}
-
 /* Cash success keeps the hand-back amount visible after the cart is cleared. */
 .payment-success-total,
 .payment-success-received {
