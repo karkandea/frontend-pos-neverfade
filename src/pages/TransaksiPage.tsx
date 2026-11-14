@@ -3,11 +3,13 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 
 import AppShell from "../components/layout/AppShell";
 import { useDialogFocus } from "../components/kasir/useDialogFocus";
 import api from "../lib/api";
+import { getActiveOutletId, OUTLET_CHANGED_EVENT } from "../lib/outlet";
 
 type TransactionItem = {
   id: string;
@@ -110,12 +112,30 @@ function csvCell(value: string | number) {
   )}"`;
 }
 
+function subscribeToOutletChanges(onChange: () => void) {
+  window.addEventListener(OUTLET_CHANGED_EVENT, onChange);
+  return () => window.removeEventListener(OUTLET_CHANGED_EVENT, onChange);
+}
+
 export default function TransaksiPage() {
+  const outletId = useSyncExternalStore(subscribeToOutletChanges, getActiveOutletId);
+  const [search, setSearch] = useState("");
+
+  return (
+    <AppShell>
+      <section id="sec-transaksi" className="content-section active">
+        <TransactionHistory key={outletId} search={search} setSearch={setSearch} />
+      </section>
+    </AppShell>
+  );
+}
+
+function TransactionHistory({ search, setSearch }: {
+  search: string;
+  setSearch: (search: string) => void;
+}) {
   const [transactions, setTransactions] =
     useState<Transaction[]>([]);
-
-  const [search, setSearch] =
-    useState("");
 
   const [loading, setLoading] =
     useState(true);
@@ -159,9 +179,9 @@ export default function TransaksiPage() {
                 }
               );
 
-            setTransactions(
-              response.data
-            );
+            if (!controller.signal.aborted) {
+              setTransactions(response.data);
+            }
           } catch (error) {
             if (
               controller.signal
@@ -289,11 +309,7 @@ export default function TransaksiPage() {
   }
 
   return (
-    <AppShell>
-      <section
-        id="sec-transaksi"
-        className="content-section active"
-      >
+    <>
         <div className="section-header">
           <div>
             <h2 className="section-title">
@@ -346,6 +362,7 @@ export default function TransaksiPage() {
               type="button"
               className="btn-secondary"
               id="btn-export-transaksi"
+              disabled={loading || Boolean(loadError)}
               onClick={exportCsv}
             >
               Export
@@ -671,7 +688,6 @@ export default function TransaksiPage() {
             </div>
           )}
         </div>
-      </section>
-    </AppShell>
+    </>
   );
 }

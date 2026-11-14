@@ -228,8 +228,9 @@ export default function PengaturanPage() {
                 </div>
 
                 <div className="form-group">
-                  <label>Email</label>
+                  <label htmlFor="settings-email">Email (opsional)</label>
                   <input
+                    id="settings-email"
                     type="email"
                     name="email"
                     placeholder="email@toko.com"
@@ -290,13 +291,25 @@ export default function PengaturanPage() {
               </div>
 
               <div className="settings-form">
-                <div className="form-group">
-                  <label>Default Pajak (%)</label>
+                <label className="settings-tax-toggle">
                   <input
+                    type="checkbox"
+                    name="showTax"
+                    checked={settings.showTax}
+                    onChange={onChange}
+                  />
+                  Aktifkan PPN otomatis di kasir
+                </label>
+
+                <div className="form-group">
+                  <label htmlFor="settings-tax-rate">Tarif PPN otomatis (%)</label>
+                  <input
+                    id="settings-tax-rate"
                     type="number"
                     name="defaultTax"
                     min={0}
                     max={100}
+                    step="0.01"
                     value={settings.defaultTax}
                     onChange={onChange}
                   />
@@ -323,17 +336,6 @@ export default function PengaturanPage() {
                     onChange={onChange}
                   />
                 </div>
-
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="showTax"
-                    checked={settings.showTax}
-                    onChange={onChange}
-                  />
-                  <span className="checkbox-custom" />
-                  <span>Tampilkan pajak pada transaksi</span>
-                </label>
 
                 <label className="checkbox-label">
                   <input
